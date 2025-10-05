@@ -67,7 +67,47 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
             throw new Exception($this->module->l('File extension not allowed.'));
         }
 
+        $mime = $this->detectMimeType($file['tmp_name']);
+        if (!$mime || !in_array($mime, ['image/jpeg', 'image/png'], true)) {
+            throw new Exception($this->module->l('The uploaded file type is not supported.'));
+        }
+
+        $imageSize = @getimagesize($file['tmp_name']);
+        if (!$imageSize) {
+            throw new Exception($this->module->l('Unable to read the uploaded image.'));
+        }
+
+        $minWidth = (int) Configuration::get(FAPConfiguration::MIN_WIDTH);
+        $minHeight = (int) Configuration::get(FAPConfiguration::MIN_HEIGHT);
+        if ($imageSize[0] < $minWidth || $imageSize[1] < $minHeight) {
+            throw new Exception(sprintf($this->module->l('The image must be at least %dx%d pixels.'), $minWidth, $minHeight));
+        }
+
         return $file;
+    }
+
+    private function detectMimeType($path)
+    {
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = finfo_file($finfo, $path);
+                finfo_close($finfo);
+
+                return $mime;
+            }
+        }
+
+        if (function_exists('mime_content_type')) {
+            return mime_content_type($path);
+        }
+
+        $imageSize = @getimagesize($path);
+        if ($imageSize && isset($imageSize['mime'])) {
+            return $imageSize['mime'];
+        }
+
+        return null;
     }
 
     private function moveToTemporary(array $file)

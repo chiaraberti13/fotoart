@@ -1,0 +1,788 @@
+<?php
+	/******************************************************************
+	*  RUSSIAN
+	******************************************************************/
+	
+	# 4.7
+	$lang['featuredGalleries']		= "Featured Galleries";
+	
+	
+	# 4.6.3	
+	$lang['ccMessage']				= "Please enter your credit card information below.";
+	$lang['ccNumber']				= "Card Number";
+	$lang['ccCVC']					= "CVC";
+	$lang['ccExpiration']			= "Expiration (MM/YYYY)";
+	
+	
+	# 4.6.1
+	$lang['passwordLeaveBlank']		= "Leave blank for no password";
+	$lang['myAlbums']				= "My Albums";
+	
+	# 4.5
+	$lang['dateDownloadUpper']		= "DATE DOWNLOADED";
+	$lang['downloadTypeUpper']		= "DOWNLOAD TYPE";
+	$lang['rss']					= "RSS";
+	
+	# 4.4.8
+	$lang['uploadFile']				= "Upload File";
+	
+	# 4.4.7
+	$lang['contrSmallFileSize']		= "The file size is too small. The file must be at least";
+	# plupload
+	$lang['plupSelectFiles']		=  "Select files";
+	$lang['plupAddFilesToQueue']	=  "Add files to the upload queue and click the start button.";
+	$lang['plupFilename']			=  "Filename";
+	$lang['plupStatus']				=  "Status";
+	$lang['plupSize']				=  "Size";
+	$lang['plupAddFiles']			=  "Add files";
+	$lang['plupStartUplaod']		=  "Start upload";
+	$lang['plupStopUpload']			=  "Stop current upload";
+	$lang['plupStartQueue']			=  "Start uploading queue";
+	$lang['plupDragFilesHere']		=  "Drag files here.";
+	
+	# 4.4.6
+	$lang['batchUploader']			= "Batch Uploader";
+	$lang['uploader'][1]			= "Java Based";
+	$lang['uploader'][2]			= "HTML5/Flash Based";
+	$lang['change']					= "Change";
+	
+	# 4.4.5
+	$lang['moreInfoPlus']				= "[More Info]";
+	
+	# 4.4.3
+	$lang['mediaLabelPropRelease']	= "Property Release";
+	
+	# 4.4.2
+	$lang['go']						= "GO";
+	
+	# 4.4.0
+	$lang['share'] 					= "Share";
+	$lang['bbcode'] 				= "BBCode";
+	$lang['html'] 					= "HTML";
+	$lang['link']					= "Link";
+	$lang['pricingCalculator']		= "Pricing Calculator";
+	$lang['noOptionsAvailable']		= "No options available";
+	$lang['viewCartUpper']			= "VIEW CART";
+		
+	# 4.3
+	$lang['vatIDNumber']			= "VAT ID Number";
+		
+	# 4.2.1
+	$lang['captchaError']			= "The captcha entered was not correct. Your message was not sent.";
+	
+	# 4.1.7
+	$lang['mediaLicenseEU'] 		= "Для редакционного использования";
+	
+	# 4.1.6
+	$lang['yourBill'] 				= "Ваш счет";
+	$lang['invoiceNumber'] 			= "Номер накладной";
+	$lang['paymentThanks'] 			= "Спасибо вам за ваш платеж.";
+	$lang['msActive'] 				= "Ваш Аккаунт активен.";
+	$lang['today'] 					= "Сегодня";
+	$lang['downloadsRemainingB']	= "Осталось загрузок";
+	
+	# 4.1.4
+	$lang['link'] 					= "Ссылка";
+	$lang['optional'] 				= "Необязательно";
+	
+	# 4.1.3
+	$lang['keywordRelevancy'] 		= "Релевантность ключевых слов";
+	$lang['mediaLicenseEX'] 		= "Расширенная лицензия";
+	
+	# 4.1.1
+	$lang['editMediaDetails'] 		= "Редактировать материалы";
+	$lang['searchResults'] 			= "Результаты поиска";
+	$lang['width'] 					= "Ширина";
+	$lang['height'] 				= "Высота";
+	$lang['hd'] 					= "HD";
+	$lang['mediaProfile'] 			= "Профиль";
+	$lang['photo'] 					= "Фото";
+	$lang['video'] 					= "Видео";
+	$lang['other'] 					= "Другое";
+	$lang['thumbnail'] 				= "Миниатюра";
+	$lang['videoSample'] 			= "Пример видео";
+	$lang['attachFile'] 			= "Прикрепить файл";
+	$lang['fileAttached'] 			= "Файл прилагается";
+	$lang['attachMessage'] 			= "Пожалуйста, выберите файл для этого профиля";
+	$lang['browse'] 				= "Обзор";
+	$lang['uploadThumb'] 			= "Добавить эскиз";
+	$lang['uploadVideo'] 			= "Загрузить Видео Просмотр";
+	
+	# 4.1
+	$lang['importSuccessMes'] 		= "Успешно импортированы!";
+	$lang['forgotPassword'] 		= "Забыл пароль?";
+	$lang['passwordSent'] 			= "E-mail был отправлен, пожалуйста, проверьте свой почтовый ящик электронной почты или папку для спама.";
+	$lang['passwordFailed'] 		= "Извините, но этот Аккаунт не существует, пожалуйста, попробуйте снова ввести адрес электронной почты.";
+	$lang['photoProfiles']			= "Фото профили";
+	$lang['videoProfiles']			= "Видео профили";
+	$lang['otherProfiles']			= "Другие профили";
+	$lang['saving']					= "Сохранение";
+	$lang['myAccount']				= "Моя учетная запись";
+	$lang['myGalleries']			= "Мои Категории";
+	$lang['noMediaAlbum']			= "Нет материалов для отображения.";
+	$lang['editDetails']			= "Редактировать";
+	$lang['approvalStatus0']		= "Ожидающие утверждения";
+	$lang['approvalStatus1']		= "Утвержден";
+	$lang['approvalStatus2']		= "Не удалось утвердить";
+	$lang['noDetailsMes']			= "Более подробная информация не предоставляется!";	
+	$lang['orphanedMedia']			= "Потеряные материалы";
+	$lang['lastBatch']				= "Последняя добавленная партия";
+	$lang['deleteAlbumMes']			= "Удалить этот альбом, и все материалы которые она содержит?";
+	$lang['mailInMedia']			= "Почта на CD/DVD";
+	$lang['deleteAlbum']			= "Удаление альбома";
+	$lang['editAlbum']				= "Редактирование альбома";
+	$lang['albumName']				= "Название альбома";
+	$lang['makePublic']				= "Сделать публичным";
+	$lang['deleteMedia']			= "Удалить материалы";
+	$lang['deleteMediaMes']			= "Удалить выбранные медиа-файлы?";
+	$lang['selectAll']				= "Выбрать все";
+	$lang['selectNone']				= "Отменить выбрать все";
+	$lang['noImportFilesMessage']	= "Нет файлов для импорта!";
+	$lang['selectAlbumMes']			= "Выберите альбом, в который вы хотите добавить эти материалы.";
+	$lang['selectGalleriesMes']		= "Выберите категории, в которые вы хотите добавить этот материал.";
+	$lang['chooseItemsMes']			= "Выбрать товары, чтобы продать из списка ниже.";
+	$lang['ablum']					= "Альбом";
+	$lang['pricing']				= "Цена";
+	$lang['px']						= "пикселей";	
+	$lang['noSales']				= "У вас нет продаж.";
+	$lang['itemUpper']				= "ТОВАР";
+	$lang['commissionUpper']		= "КОМИССИЯ";
+	$lang['addUpper']				= "ДОБАВИТЬ";	
+	$lang['cmDeleteVerify']			= "Вы уверены, что вы хотите удалить этот материал?";
+	$lang['waitingForImport']		= "Материалы в ожидании импорта";
+	$lang['importSelectedUpper']	= "ИМПОРТИРОВАТЬ ВЫБРАННЫЕ";
+	$lang['addMediaDetails']		= "Добавить подробности материалов";
+	$lang['uploadUpper']			= "ЗАГРУЗИТЬ";
+	$lang['noBioMessage']			= "В настоящее время нет био-информации для этого пользователя.";
+	$lang['collections']			= "Коллекции";
+	$lang['uploadMediaUpper']		= "ЗАГРУЗИТЬ НОВЫЕ МАТЕРИАЛЫ";
+	$lang['startUpper']				= "СТАРТ";
+	
+	# 4.0.9
+	$lang['displayName']			= "Отображаемое имя";
+	$lang['newAlbum']				= "Новый альбом";
+	$lang['albums']					= "Альбомы";
+	$lang['viewAllMedia']			= "ПОСМОТРЕТЬ ВСЕ МАТЕРИАЛЫ";
+	$lang['signUpNow']				= "ПОДПИШИТЕСЬ СЕЙЧАС";
+	
+	# 4.0.8		
+	$lang['exactMatch']				= "Точное совпадение";
+	$lang['mediaLabelMediaTypes']	= "Тип материалов";
+	
+	# 4.0.6
+	$lang['orderNumUpper']			= "НОМЕР ЗАКАЗА";
+	$lang['orderDateUpper']			= "ДАТА ЗАКАЗА";
+	$lang['paymentUpper']			= "ОПЛАТА";	
+	
+	# 4.0.5
+	$lang['dateRange']				= "Диапазон дат";
+	$lang['resolution']				= "Разрешение";
+	$lang['continueShopUpper']		= "ПРОДОЛЖИТЬ ПОКУПКИ";
+	$lang['votes']					= "голосов";
+	$lang['moreNews']				= "больше новостей";
+	$lang['currentSearch']			= "Текущий поиск";
+	$lang['dates']					= "Даты";
+	$lang['licenseType']			= "Тип лицензии";
+	$lang['searchUpper']			= "ПОИСК";
+	$lang['from']					= "От";
+	$lang['to']						= "Кому";
+	$lang['lightboxUpper']			= "ЛАЙТБОКС";
+	$lang['itemsUpper']				= "ПУНКТЫ";
+	$lang['createdUpper']			= "СОЗДАН";
+	$lang['na']						= "N/A"; 
+	$lang['galSortCDate']			= "Дата создания";
+	
+	# 4.0.4
+	$lang['digitalDownloads']		= "Загружаемый фаил";
+
+	$lang['copyright']				= "Copyright ©; ".date("Y");
+	$lang['reserved']				= "Все права защищены.";
+	
+	$lang['days']					= "Дни";
+	$lang['weeks']					= "Недели";
+	$lang['months']					= "Месяцы";
+	$lang['years']					= "Годы";
+	$lang['weekly']					= "Еженедельно";
+	$lang['monthly']				= "Ежемесячно";
+	$lang['quarterly']				= "Ежеквартально";
+	$lang['semi-annually']			= "Раз в полгода";
+	$lang['annually']				= "Ежегодно";	
+	$lang['guest']					= "Гость";	
+	$lang['login'] 					= "Вход";	
+	$lang['loginCaps'] 				= "ВХОД";
+	$lang['loginMessage']			= "Пожалуйста, введите e-mail и пароль для входа.";
+	$lang['loggedOutMessage']		= "Вы вышли.";
+	$lang['loginFailedMessage']		= "Войти не удалось: имя пользователя или пароль неверны.";
+	$lang['accountActivated']		= "Ваша учетная запись была активирована.";
+	$lang['activationEmail']		= "Письмо с подтверждением было отправлено на ваш e-mail. Пожалуйста, используйте ссылку в письме, чтобы активировать свой аккаунт.";
+	$lang['loginAccountClosed']		= "Эта учетная запись является закрытой или неактивной.";
+	$lang['loginPending']			= "Эта учетная запись не проверялась. Она должна быть проверена прежде, чем вы можете войти.";
+	$lang['yesLogin']				= "Да, я хотел бы войти.";
+	$lang['noCreateAccount']		= "Нет, я хотел бы создать аккаунт.";
+	$lang['haveAccountQuestion']	= "У вас есть аккаунт с нами?";	
+	$lang['collections']			= "Электронные коллекции";
+	$lang['featuredCollections']	= "Популярные электронные коллекции";	
+	$lang['similarMedia']			= "Похожие материалы";	
+	$lang['paypal']					= "PayPal";
+	$lang['checkMO']				= "Проверка/Деньги Заказ";
+	$lang['paypalEmail']			= "PayPal Email";	
+	$lang['paid']					= "Оплачено";
+	$lang['processing']				= "Обработка";
+	$lang['unpaid']					= "Неоплаченный";
+	$lang['refunded']				= "Возвращено";
+	$lang['failed']					= "Не удалось";
+	$lang['cancelled']				= "Отменено";
+	$lang['approved']				= "Утвержден";
+	$lang['incomplete']				= "Неполный";
+	$lang['billLater']				= "Счет Позже";
+	$lang['expired']				= "Истек срок действия";
+	$lang['unlimited']				= "Неограниченно";
+	$lang['quantityAvailable']		= "Доступное количество";	
+	$lang['shipped']				= "Доставка";
+	$lang['notShipped']				= "Не поставляется";
+	$lang['backordered']			= "Освобождающиеся";	
+	$lang['taxIncMessage']			= "Включая налог";	
+	$lang['addTag']					= "Добавить тег";
+	$lang['memberTags']				= "Участник Теги";
+	$lang['comments']				= "Комментарии";
+	$lang['showMoreComments']		= "Показать все комментарии";
+	$lang['noComments']				= "Есть не одобренные комментарии.";
+	$lang['noTags']					= "Есть не утвержденные теги.";
+	$lang['addNewComment']			= "Добавить комментарий";
+	$lang['commentPosted']			= "Ваш комментарий был добавлен.";
+	$lang['commentPending']			= "Ваш новый комментарий был представлен и будет вскоре утвержден.";
+	$lang['commentError']			= "Произошла ошибка, и ваш комментарий не был представлен.";
+	$lang['tagPosted']				= "Ваш тег был размещен.";
+	$lang['tagPending']				= "Ваш новый тег был представлен и будет утвержден вскоре.";
+	$lang['tagError']				= "Произошла ошибка и ваш тег не был представлен.";
+	$lang['tagDuplicate']			= "Этот тег уже существует.";
+	$lang['tagNotAccepted']			= "Ваш тег не был принят нашей системой.";	
+	$lang['preferredLang']			= "Язык 
+	
+	
+	";
+	$lang['dateTime']				= "Дата/Время";
+	$lang['preferredCurrency']		= "Популярные валюты";	
+	$lang['longDate']				= "Длинный формат даты";
+	$lang['shortDate']				= "Краткий формат даты";
+	$lang['numbDate']				= "Номер Дата";	
+	$lang['daylightSavings']		= "Летнее время";
+	$lang['dateFormat']				= "Формат даты";
+	$lang['timeZone']				= "Часовой пояс";
+	$lang['dateDisplay']			= "Отображение дат";
+	$lang['clockFormat']			= "Формат времени";
+	$lang['numberDateSep']			= "Номер Дата Разделитель";	
+	$lang['renew']					= "ВОЗОБНОВИТЬ";	
+	$lang['noOrders']				= "Нет заказов под этой учетной записью.";
+	$lang['noDownloads']			= "Загрузок под этой учетной записью нет.";
+	$lang['noFeatured'] 			= "Не существует никаких популярных товаров в этой области.";	
+	$lang['promotions']				= "Акции";
+	$lang['noPromotions']			= "Не существуют купоны или акции на данный момент.";	
+	$lang['autoApply']				= "Автоматически применяется при оформлении заказа.";
+	$lang['useCoupon']				= "Используйте следующий код при оформлении заказа или нажмите кнопку Применить, чтобы использовать этот купон/продвижение";	
+	$lang['couponApplied']			= "Купон или скидка была применена в корзине.";
+	$lang['couponFailed']			= "Этот купон или скидка недопустима.";	
+	$lang['couponNeedsLogin']		= "Вы должны войти, чтобы использовать этот купон или скидку.";
+	$lang['couponMinumumWarn']		= "Ваш итог не отвечает требованиям использовать этот купон или скидку.";
+	$lang['couponAlreadyUsed']		= "Вы можете использовать этот купон или скидку один раз.";
+	$lang['couponLoginWarn']		= "Вы должны войти в систему, чтобы использовать этот купон или скидку.";	
+	$lang['checkout']				= "ОФОРМИТЬ ЗАКАЗ";
+	$lang['continue']				= "ПРОДОЛЖИТЬ";	
+	$lang['shipTo']					= "Доставлено";
+	$lang['billTo']					= "Оплата на имя";
+	//$lang['mailTo']					= "Для оплаты почты";	
+	$lang['galleries']				= "Категории";
+	$lang['chooseGallery']			= "Выберите категорию ниже, чтобы просмотреть её содержимое.";
+	$lang['galleryLogin']			= "Пожалуйста, введите пароль для этой категории ниже, чтобы войти.";
+	$lang['galleryWrongPass']		= "Пароль, который вы ввели для этой категории неправильный.";	
+	$lang['newestMedia']			= "Новые Материалы";
+	$lang['popularMedia']			= "Популярные материалы";	
+	$lang['contributors']			= "Авторы";
+	$lang['contUploadNewMedia']		= "Добавить новые материалы";
+	$lang['contViewSales']			= "Просмотр продаж";
+	$lang['contPortfolio']			= "Моё портфолио";
+	$lang['contGalleries']			= "Мои категории";
+	$lang['contMedia']				= "Мои материалы";	
+	$lang['aboutUs']				= "О нас";	
+	$lang['news']					= "Новости";
+	$lang['noNews']					= "Новостей на данный момент нет.";	
+	$lang['termsOfUse']				= "Условия использования";
+	$lang['privacyPolicy']			= "Политика конфиденциальности";
+	$lang['purchaseAgreement']		= "Соглашение";	
+	$lang['iAgree']					= "Я принимаю";	
+	$lang['createAccount']			= "Создать аккаунт";
+	$lang['createAccountMessage']	= "Пожалуйста, заполните форму ниже, чтобы создать новый аккаунт.";	
+	$lang['contactUs']				= "Контакты";
+	$lang['contactMessage']			= "Благодарим Вас за обращение к нам. Мы ответим в ближайшее время.";
+	$lang['contactError']			= "Форма не была правильно заполнена. Ваше сообщение не было отправлено.";
+	$lang['contactIntro']			= "Пожалуйста, используйте форму ниже, чтобы связаться с нами. Мы постараемся ответить как можно скорее.";
+	$lang['contactEmailSubject']	= "Вопрос от контактную форму";
+	$lang['contactFromName']		= "Контактная форма";	
+	$lang['prints']					= "Печать";
+	$lang['featuredPrints']			= "Рекомендуемая печать";	
+	$lang['newBill']				= "Новый счет был создан для этого Аккаунта. Этот Аккаунт не станет активным или возобновится, пока счет не будет оплачен. Все неоплаченные счета были отменены.";
+	$lang['accountInfo']			= "Редактировать аккаунт";
+	$lang['accountUpdated']			= "Ваша учетная информация была обновлена.";
+	$lang['editAccountInfo']		= "Редактировать";
+	$lang['editAccountInfoMes']		= "Измените данные и нажмите кнопку Сохранить.";	
+	$lang['accountInfoError1']		= "Пароль и подтверждение пароля не совпадают!";
+	$lang['accountInfoError5']		= "Текущий пароль введен неверно!";
+	$lang['accountInfoError2']		= "Ваш пароль должен содержать минимум 6 символов!";
+	$lang['accountInfoError12']		= "Этот e-mail уже используется!";
+	$lang['accountInfoError13']		= "Ваш e-mail не был принят!";
+	$lang['accountInfoError3']		= "Введите слова выше!";
+	$lang['accountInfoError4']		= "Слова были введены неправильно!";
+	$lang['readAgree']				= "Я прочитал";	
+	$lang['agreements']				= "Соглашение";	
+	$lang['poweredBy']				= "Powered By";
+	$lang['captchaAudio']			= "Введите цифры, которые вы слышите";
+	$lang['captchaIncorrect']		= "Неправильно, пожалуйста, попробуйте снова";
+	$lang['captchaPlayAgain']		= "Прослушать снова";
+	$lang['captchaDownloadMP3']		= "Скачать в формате MP3";
+	$lang['captcha']				= "Captcha";
+	$lang['subHeaderID']			= "ID";
+	$lang['subHeaderSubscript']		= "ПОДПИСКА";
+	$lang['subHeaderExpires']		= "СРОК ДЕЙСТВИЯ";
+	$lang['subHeaderDPD']			= "ЗАГРУЗОК В ДЕНЬ/ОСТАЛОСЬ";
+	$lang['subHeaderStatus']		= "СТАТУС";
+	$lang['downloads']				= "Загрузка";	
+	$lang['thankRequest']			= "Спасибо за Ваш запрос. Мы свяжемся с Вами в ближайшее время.";
+	$lang['pleaseContactForm']		= "Пожалуйста, свяжитесь с нами для ценообразования на этот файл, заполнив следующую форму";
+	$lang['downWithSubscription']	= "Загрузка с использованием подписки";	
+	$lang['noInstantDownload'] 		= "Этот файл не доступен для мгновенной загрузки. Он будет доставлен администратором сайта по электронной почте по запросу или при покупке.";
+	
+	// Tickets
+	$lang['newTicketsMessage']		= "новые или обновленные билеты";
+	$lang['emptyTicket']			= "Этот билет является пустым.";
+	$lang['messageID']				= "Сообщение ID";
+	$lang['ticketNoReplies']		= "Этот билет закрыт и не может принимать новые ответы.";
+	$lang['ticketUpdated']			= "Этот билет был обновлен!";
+	$lang['ticketClosed']			= "Этот билет был закрыт!";
+	$lang['closeTicket']			= "Билет закрыт";
+	$lang['newTicket']				= "Новый билет служба поддержки";
+	$lang['newTicketButton']		= "НОВЫЙ БИЛЕТ";
+	$lang['ticketUnreadMes']		= "Билет содержит непрочитанных/новых сообщений";
+	$lang['ticketUnderAccount']		= "Не поддерживаются билеты под этой учетной записью";	
+	$lang['ticketSubmitted']		= "Ваш билет поддержки был получен.Мы свяжемся с вами вскоре.";
+	
+	$lang['mediaNotElidgiblePack']	= "Эти материалы не могут быть назначены на любой пакет!";
+	$lang['noBills']				= "Нет неоплаченных счетов.";	
+	$lang['lightbox']				= "Лайтбокс";
+	$lang['noLightboxes']			= "У вас нет лайтбоксы.";
+	$lang['lightboxDeleted']		= "Лайтбокс был удален.";
+	$lang['lbDeleteVerify']			= "Вы уверены, что вы хотите удалить этот Лайтбокс?";
+	$lang['newLightbox']			= "НОВЫЙ ЛАЙТБОКС";
+	$lang['lightboxCreated']		= "Ваш новый лайтбокс был создан.";
+	$lang['addToLightbox']			= "Добавить в Лайтбокс";
+	$lang['createNewLightbox']		= "Создать Новый Лайтбокс";
+	$lang['editLightbox']			= "Редактировать этот Лайтбокс";
+	$lang['addNotes']				= "Добавить Примечания";
+	$lang['editLightboxItem']		= "Редактировать элемент Лайтбокса";
+	$lang['removeFromLightbox']		= "УДАЛИТЬ ИЗ ЛАЙТБОКС";	
+	$lang['savedChangesMessage']	= "Ваши изменения были сохранены.";	
+	$lang['noSubs']					= "Нет подписок под этой учетной записью.";	
+	$lang['unpaidBills']			= "неоплаченные счета";	
+	$lang['notices']				= "Уведомления";	
+	$lang['subscription']			= "Подписка";	
+	$lang['assignToPackage']		= "Назначить для пакета";
+	$lang['startNewPackage']		= "Начать новый пакет";
+	$lang['packagesInCart']			= "Пакеты в вашей корзине";	
+	$lang['id']						= "ID";
+	$lang['summary']				= "Резюме";
+	$lang['status']					= "Статус";
+	$lang['lastUpdated']			= "Последнее обновление";
+	$lang['opened']					= "Открыт";
+	$lang['reply']					= "Ответ";	
+	$lang['required']				= "Требуется";	
+	$lang['bills']					= "Оплата";
+	$lang['orders']					= "Покупки";
+	$lang['downloadHistory']		= "История загрузок";
+	$lang['supportTickets']			= "Поддержка билетов";
+	$lang['order']					= "Заказ";	
+	$lang['packages']				= "Пакеты";
+	$lang['featuredPackages']		= "Рекомендуемые пакеты";	
+	$lang['products']				= "Продукты";
+	$lang['featuredProducts']		= "Рекомендуемые товары";	
+	$lang['subscriptions']			= "Подписки";
+	$lang['featuredSubscriptions']	= "Рекомендуемые подписки";	
+	$lang['yourCredits']			= "ВАШ <br/> КРЕДИТЫ";
+	$lang['featuredCredits']		= "Рекомендуемые пакеты кредитов";	
+	$lang['media'] 					= "Материалы";
+	$lang['mediaNav'] 				= "Media материалы";
+	$lang['featuredMedia']			= "Рекомендуемые Media материалы";	
+	$lang['featuredItems'] 			= "Популярные";	
+	$lang['showcasedContributors'] 	= "Авторы продемонстрированы";	
+	$lang['galleryLogin']			= "Галерея Вход";	
+	$lang['forum'] 					= "Форум";
+	$lang['randomMedia'] 			= "Случайные материалы";
+	$lang['language'] 				= "Language";	
+	$lang['priceCreditSep']			= "или";	
+	$lang['viewCollection']			= "ПРОСМОТР КОЛЛЕКЦИИ";	
+	$lang['loggedInAs']				= "Вы вошли как";	
+	$lang['editProfile']			= "Редактировать аккаунт";	
+	$lang['noItemCartWarning']		= "Вы должны выбрать фотографию, прежде чем вы можете добавить товар в корзину!";
+	$lang['cartTotalListWarning']	= "Эти значения являются ориентировочными и могут незначительно меняться из-за колебаний валютных курсов и округления.";
+	$lang['applyCouponCode']		= "Применить код купона";
+	$lang['billMeLater']			= "Bill Me Later (получи а плати позже)";
+	$lang['billMeLaterDescription']	= "Мы будем выставлять вам счета ежемесячно для покупок.";
+	$lang['shippingOptions']		= "Способы доставки";
+	$lang['paymentOptions']			= "Варианты оплаты";
+	$lang['chooseCountryFirst']		= "Выберите страну";
+	$lang['paymentCancelled']		= "Ваш платеж был отменен. Если вы хотите, вы можете попробовать оформить снова."; 
+	$lang['paymentDeclined']		= "Ваш платеж был отклонен. Если вы хотите, вы можете попробовать оформить снова."; 		
+	$lang['generalInfo']			= "Личная информация";
+	$lang['membership']				= "Аккаунт";
+	$lang['preferences']			= "Предпочтения";
+	$lang['address']				= "Адрес";
+	$lang['actions']				= "Действия";
+	$lang['changePass']				= "Изменить пароль";
+	$lang['changeAvatar']			= "Изменить Аватар";
+	$lang['bio']					= "О себе";
+	$lang['contributorSettings']	= "Параметры оплаты";
+	$lang['edit']					= "РЕДАКТИРОВАТЬ";	
+	$lang['leftToFill']				= "элементы слева, чтобы заполнить";	
+	$lang['commissionMethod']		= "Метод оплаты комиссии"; 
+	$lang['commission']				= "Комиссия";	
+	$lang['signupDate']				= "Участник с";
+	$lang['lastLogin']				= "Последний вход";	
+	$lang['clientName']				= "Имя клиента";
+	$lang['eventCode']				= "Код события";
+	$lang['eventDate']				= "Дата события";
+	$lang['eventLocation']			= "Место события";	
+	$lang['viewPackOptions']		= "Просмотр содержимого пакета и опции";
+	$lang['viewOptions']			= "Параметры просмотра";	
+	$lang['remove']					= "УДАЛИТЬ";
+	$lang['productShots']			= "Продукт Shots";
+	$lang['currentPass']			= "Текущий пароль";
+	$lang['newPass']				= "Новый пароль";
+	$lang['vNewPass']				= "Подтвердите новый пароль";
+	$lang['verifyPass']				= "Проверка пароля";
+	$lang['firstName']				= "Имя";
+	$lang['lastName']				= "Фамилия";
+	$lang['location']				= "Местонахождение";
+	$lang['memberSince']			= "Участник с";
+	$lang['portfolio']				= "ПОРТФОЛИО";
+	$lang['profile']				= "ПРОФИЛЬ";
+	$lang['address']				= "Адрес";
+	$lang['city']					= "Город";
+	$lang['state']					= "Штат/Провиция";
+	$lang['zip']					= "Почтовый индекс";
+	$lang['country']				= "Страна";
+	$lang['save'] 					= "СОХРАНИТЬ";
+	$lang['add'] 					= "ДОБАВИТЬ";
+	$lang['companyName']			= "Название компании";
+	$lang['accountStatus']			= "Состояние счета";
+	$lang['website']				= "Сайт";
+	$lang['phone']					= "Телефон";
+	$lang['email'] 					= "E-mail";
+	$lang['name'] 					= "Имя";
+	$lang['submit'] 				= "ОТПРАВИТЬ";	
+	$lang['message'] 				= "Сообщение";	
+	$lang['question']				= "Вопрос";
+	$lang['password'] 				= "Пароль";	
+	$lang['members'] 				= "Пользователи";
+	$lang['visits'] 				= "Посещений";	
+	$lang['logout'] 				= "Выход";
+	$lang['lightboxes']				= "Лайтбоксы";
+	$lang['cart']					= "Ваша корзина";
+	$lang['cartItemAdded']			= "Товар добавлен в корзину.";
+	$lang['includesTax']			= "Включает в себя НАЛОГ/НДС";
+	$lang['addToCart']				= "ДОБАВИТЬ В КОРЗИНУ";
+	$lang['items']					= "Товары";
+	$lang['item']					= "Товар";
+	$lang['qty']					= "Кол-во";
+	$lang['price']					= "Цена";
+	$lang['more']					= "Более";
+	$lang['moreInfo']				= "Подробнее";
+	$lang['back']					= "Назад";
+	$lang['none']					= "Нет";
+	$lang['details']				= "Детали";
+	$lang['options']				= "Параметры";
+	$lang['page']					= "Страница";
+	$lang['ratingSubmitted']		= "Рейтинг Представлено";
+	$lang['noMedia']				= "Эта галерея пуста";
+	$lang['itemsTotal']				= "файлов";
+	$lang['of']						= "из";
+	$lang['view']					= "СМОТРЕТЬ";
+	$lang['apply']					= "ПРИМЕНИТЬ";
+	$lang['currency']				= "изменить валюту";
+	$lang['active']					= "Активно";
+	$lang['pending']				= "Ожидание";
+	$lang['freeTrial']				= "Бесплатная пробная версия";
+	$lang['setupFee']				= "Стоимость установки";
+	$lang['free']					= "Бесплатно";
+	$lang['open']					= "Открыто";
+	$lang['close']					= "ЗАКРЫТО";
+	$lang['closed']					= "Закрыто";
+	$lang['by']						= "от";
+	$lang['download']				= "Скачать";
+	$lang['downloadUpper']			= "СКАЧАТЬ";
+	$lang['KB']						= "K";
+	$lang['MB']						= "MB";
+	$lang['files']					= "Файлы";
+	$lang['unknown']				= "Неизвестно";
+	$lang['freeDownload']			= "Скачать бесплатно";
+	$lang['prevDown']				= "Предыдущая загрузка";
+	$lang['pay']					= "ОПЛАТИТЬ";
+	$lang['purchaseCredits']		= "КУПИТЬ КРЕДИТЫ";
+	$lang['purchaseSub']			= "ПРИОБРЕСТИ ПОДПИСКУ";
+	$lang['hour'] 					= "Час";
+	$lang['slash'] 					= "Слэш";
+	$lang['period'] 				= "Период";
+	$lang['dash'] 					= "Тире";
+	$lang['gmt'] 					= "GMT";
+	$lang['avatar'] 				= "Аватар";
+	$lang['delete'] 				= "УДАЛИТЬ";
+	$lang['uploadAvatar']			= "ЗАГРУЗИТЬ АВАТАР";
+	$lang['welcome']				= "Добро пожаловать";
+	$lang['expires']				= "Срок действия";
+	$lang['msExpired']				= "Время Вашего Аккаунта истекло";
+	$lang['newSales']				= "новые продажи с момента последнего входа";
+	$lang['never']					= "Не ограничен";
+	$lang['yes']					= "Да";
+	$lang['no']						= "НЕТ";
+	$lang['create'] 				= "СОЗДАТЬ";
+	$lang['cancel'] 				= "ОТМЕНА";
+	$lang['notes'] 					= "Примечания";
+	$lang['update'] 				= "ОБНОВИТЬ";
+	$lang['each'] 					= "каждый";
+	$lang['enterKeywords']			= "Введите ключевое слово(а)";
+	$lang['send']					= "ОТПРАВИТЬ";
+	$lang['emailTo']				= "По e-mail";
+	$lang['yourName']				= "Ваше Имя";
+	$lang['yourEmail']				= "Ваш e-mail";
+	$lang['emailToFriend']			= "Отправить e-mail ссылку на материалы";
+	$lang['emailToFriendSent']		= "Сообщение было отправлено! Вы можете отправить другу или закрыть это окно.";
+	$lang['linkSentBy']				= "Ссылка на фото или видео было отправлено вам";
+	$lang['newPackageMessage']		= "Начать новый пакет ниже или выберите аналогичный пакет уже в вашей корзине";
+	$lang['warning']				= "Предупреждение!";
+	$lang['estimated']				= "Примерно";
+	$lang['doneUpper']				= "Сделаный (DONE)";
+	$lang['returnToSiteUpper']		= "ВЕРНУТЬСЯ НА САЙТ";
+	$lang['chooseCountryFirst']		= "Сначала выберите страну";
+	$lang['advancedSearch']			= "Расширенный поиск";
+	$lang['eventSearch']			= "Поиск событий";	
+	$lang['AND']					= "И";
+	$lang['OR']						= "ИЛИ";
+	$lang['NOT']					= "НЕ";
+	$lang['noAccess']				= "У вас нет доступа для просмотра этой области.";	
+	$lang['siteStats']				= "Статистика сайта";
+	$lang['membersOnline']			= "Пользователи онлайн";
+	$lang['minutesAgo']				= "минут назад";
+	$lang['seconds']				= "Секунды";	
+	$lang['megabytesAbv']			= "MB";	
+	$lang['downWithSub']			= "Загрузка с использованием подписки";
+	$lang['downloadsRemaining']		= "Загрузкок Осталось сегодня";
+	$lang['requestDownloadSuccess']	= "Мы получили ваш запрос для этого файла и свяжемся с вами в ближайшее время.";	
+	$lang['mediaLicenseNFS']		= "Not For Sale (не для продажи)";
+	$lang['mediaLicenseRF']			= "Royalty Free (бесплатная)";
+	$lang['mediaLicenseRM']			= "Rights Managed (управление правами)";
+	$lang['mediaLicenseFR']			= "Free (бесплатно)";
+	$lang['mediaLicenseCU']			= "Связаться с нами";	
+	$lang['original']				= "Оригинал";	
+	$lang['prevDownloaded']			= "Вы уже скачали этот файл. Существует не взимать плату скачать его снова.";
+	$lang['instantDownload']		= "Мгновенная загрузка";
+	$lang['requestDownload']		= "ПРОСЬБА СКАЧАТЬ";
+	$lang['request']				= "ЗАПРОС";
+	$lang['enterEmail']				= "Введите свой e-mail";	
+	$lang['license']				= "Лицензия";
+	$lang['inches']					= "дюймы";
+	$lang['centimeters']			= "Сантиметры";
+	$lang['dpi']					= "dpi";	
+	$lang['noSimilarMediaMessage']	= "Никаких подобных материалов не было найдено.";
+	$lang['backUpper']				= "НАЗАД";
+	$lang['nextUpper']				= "ВПЕРЕД";
+	$lang['prevUpper']				= "ПРЕДЫДУЩИЙ";
+	$lang['curGalleryOnly']			= "Только данная галерея";
+	$lang['sortBy']					= "Упорядочить по";
+	$lang['galSortColor']			= "Цвету";
+	$lang['galSortDate']			= "Дате добавления";
+	$lang['galSortID']				= "ID";
+	$lang['galSortTitle']			= "Названию";
+	$lang['galSortFilename']		= "Имени файла";
+	$lang['galSortFilesize']		= "Размеур файла";
+	$lang['galSortSortNum']			= "Номеру";
+	$lang['galSortBatchID']			= "Пакету ID";
+	$lang['galSortFeatured']		= "Популярности";
+	$lang['galSortWidth']			= "Ширине";
+	$lang['galSortHeight']			= "Высоте";
+	$lang['galSortViews']			= "Просмотрам";
+	$lang['galSortAsc']				= "По возрастанию";
+	$lang['galSortDesc']			= "По убыванию";
+	$lang['mediaIncludedInColl']	= "Этот медиа-файл включен в следующие коллекции.";	
+	$lang['billHeaderInvoice']		= "СЧЕТ";
+	$lang['billHeaderDate']			= "ДАТА СЧЕТА";
+	$lang['billHeaderDueDate']		= "СРОК ОПЛАТЫ";
+	$lang['billHeaderTotal']		= "ИТОГО";
+	$lang['billHeaderStatus']		= "СТАТУС";
+	
+	// Cart
+	$lang['creditsWarning']			= "Вы не имеете достаточно кредитов чтобы оформить заказ. Пожалуйста, войдите или добавить кредиты в корзину.";
+	$lang['subtotalWarning']		= "Минимальная покупка для того, чтобы оформить заказ:";
+	$lang['pleaseWait']				= "Пожалуйста, подождите, пока мы обрабатываем Ваш запрос!";
+	$lang['billMailinThanks']		= "Пожалуйста, напишите ваш чек или денежный перевод на следующих сумму по указанному адресу. После получения платежа мы будем отмечать ваш счет, как оплаченный.";
+	$lang['mailinRef']				= "См. следующий номер с вашим платежом";
+	$lang['subtotal']				= "К оплате";
+	$lang['shipping']				= "Доставка";
+	$lang['discounts']				= "Скидки/Купоны";
+	$lang['total']					= "Итого";
+	$lang['creditsSubtotal']		= "Итого кредиты";
+	$lang['creditsDiscounts']		= "Кредиты скидки";
+	$lang['credits']				= "Кредиты";
+	$lang['reviewOrder']			= "Ваш заказ";
+	$lang['payment']				= "Оплата";
+	$lang['cartNoItems']			= "У вас нет товаров в вашей корзине!";
+	$lang['enterShipInfo']			= "Пожалуйста введите информацию доставки и выставления счета ниже";
+	$lang['sameAsShipping']			= "То же, что адрес доставки";
+	$lang['differentAddress']		= "Укажите другой адрес";
+	$lang['noShipMethod']			= "Не существует способов доставки для отправки этих товаров.";	
+	$lang['choosePaymentMethod']	= "Пожалуйста, выберите способ оплаты";	
+	$lang['discountCode']			= "КОД СКИДКИ";
+	$lang['use']					= "Использовать";
+	$lang['continueNoAccount']		= "или продолжить без открытия счета ниже";
+	
+	
+	// Order
+	$lang['yourOrder']				= "Ваш заказ";
+	$lang['viewInvoice']			= "ПРОСМОТР ЗАКАЗА";
+	$lang['totalsShown']			= "Указано в";
+	$lang['downloadExpired']		= "ссылка устарела";
+	$lang['downloadExpiredMes']		= "Это ссылка для скачивания устарела. Свяжитесь с нами чтобы повторно активировать.";
+	$lang['downloadMax']			= "Превышение максимальной загрузки";
+	$lang['downloadMaxMes']			= "Вы достигли максимального количества загрузок, разрешенных для этого приобретенного файла. Пожалуйста, свяжитесь с нами, чтобы активировать повторно ссылку на скачивание.";
+	$lang['downloadNotApproved']	= "Заказ не одобрен";
+	$lang['downloadNotApprovedMes']	= "Вы не можете скачать этот файл, пока ваш заказ не будет одобрен. Пожалуйста, проверьте ближайшее время.";	
+	$lang['downloadNotAvail']		= "Мгновенная загрузка не доступна";
+	$lang['downloadNotAvailMes']	= "Этот файл не доступен для мгновенной загрузки. Пожалуйста, используйте кнопку запроса ниже, чтобы этот файл был отправлен вам по e-mail.";
+	$lang['orderNumber']			= "Номер заказа";
+	$lang['orderPlaced']			= "Дата заказа"; 
+	$lang['orderStatus']			= "Статус заказа";
+	$lang['paymentStatus']			= "Оплата";
+	
+	
+	// IPTC
+	$lang['iptc']					= "IPTC";
+	$lang['iptc_title']				= "Название";
+	$lang['iptc_description']		= "Описание";
+	$lang['iptc_instructions']		= "Инструкции";
+	$lang['iptc_date_created']		= "Дата создания";
+	$lang['iptc_author']			= "Автор";
+	$lang['iptc_city']				= "Город";
+	$lang['iptc_state']				= "Штат Область";
+	$lang['iptc_country']			= "Страна";
+	$lang['iptc_job_identifier']	= "Идентификатор задания";
+	$lang['iptc_headline']			= "Заголовок";
+	$lang['iptc_provider']			= "Creditline"; //Provider
+	$lang['iptc_source']			= "Источник";
+	$lang['iptc_description_writer']= "Описание Автора";
+	$lang['iptc_urgency']			= "Актуальность";
+	$lang['iptc_copyright_notice']	= "Уведомление об авторских правах";
+	
+	// EXIF
+	$lang['exif']							= "EXIF";
+	$lang['exif_FileName']					= "Имя файла";
+	$lang['exif_FileDateTime']				= "Файл Дата/Время";
+	$lang['exif_FileSize']					= "Размер файла";
+	$lang['exif_FileType']					= "Тип файла";
+	$lang['exif_MimeType']					= "Mime Тип";
+	$lang['exif_SectionsFound']				= "Разделы";
+	$lang['exif_ImageDescription']			= "Описание изображения";
+	$lang['exif_Make']						= "Производитель";
+	$lang['exif_Model']						= "Модель";
+	$lang['exif_Orientation']				= "Ориентация";
+	$lang['exif_XResolution']				= "X Разрешение";
+	$lang['exif_YResolution']				= "Y Разрешение";
+	$lang['exif_ResolutionUnit']			= "Resolution Unit";
+	$lang['exif_Software']					= "Software";
+	$lang['exif_DateTime']					= "Дата/Время";
+	$lang['exif_YCbCrPositioning']			= "YCbCr Positioning";
+	$lang['exif_Exif_IFD_Pointer']			= "Exif IFD Pointer";
+	$lang['exif_GPS_IFD_Pointer']			= "GPS IFD Pointer";
+	$lang['exif_ExposureTime']				= "Время экспозиции";
+	$lang['exif_FNumber']					= "FNumber";
+	$lang['exif_ExposureProgram']			= "Exposure Program";
+	$lang['exif_ISOSpeedRatings']			= "ISO Speed Ratings";
+	$lang['exif_ExifVersion']				= "Exif Version";
+	$lang['exif_DateTimeOriginal']			= "Оригинал Дата/Время";
+	$lang['exif_DateTimeDigitized']			= "Дата/Время оцифровки";
+	$lang['exif_ComponentsConfiguration']	= "Конфигурация компонентов";
+	$lang['exif_ShutterSpeedValue']			= "Значение выдержки";
+	$lang['exif_ApertureValue']				= "Значение диафрагмы";
+	$lang['exif_MeteringMode']				= "Режим замера";
+	$lang['exif_Flash']						= "Вспышка";
+	$lang['exif_FocalLength']				= "Фокусное расстояние";
+	$lang['exif_FlashPixVersion']			= "Flash Pix Версия";
+	$lang['exif_ColorSpace']				= "Цветовое пространство";
+	$lang['exif_ExifImageWidth']			= "Exif ширина изображения";
+	$lang['exif_ExifImageLength']			= "Exif Длина изображения";
+	$lang['exif_SensingMethod']				= "Метод измерения";
+	$lang['exif_ExposureMode']				= "Режим экспозиции";
+	$lang['exif_WhiteBalance']				= "Баланс белого";
+	$lang['exif_SceneCaptureType']			= "Тип захвата сцены";
+	$lang['exif_Sharpness']					= "Резкость";
+	$lang['exif_GPSLatitudeRef']			= "GPS Latitude Ref";
+	$lang['exif_GPSLatitude_0']				= "GPSLatitude 0";
+	$lang['exif_GPSLatitude_1']				= "GPSLatitude 1";
+	$lang['exif_GPSLatitude_2']				= "GPSLatitude 2";
+	$lang['exif_GPSLongitudeRef']			= "GPS Longitude Ref";
+	$lang['exif_GPSLongitude_0']			= "GPS Longitude 0";
+	$lang['exif_GPSLongitude_1']			= "GPS Longitude 1";
+	$lang['exif_GPSLongitude_2']			= "GPS Longitude 2";
+	$lang['exif_GPSTimeStamp_0']			= "GPS Timestamp 0";
+	$lang['exif_GPSTimeStamp_1']			= "GPS Timestamp 1";
+	$lang['exif_GPSTimeStamp_2']			= "GPS Timestamp 2";
+	$lang['exif_GPSImgDirectionRef']		= "GPS Imgage Direction Reference";
+	$lang['exif_GPSImgDirection']			= "GPS Imgage Direction";
+	
+	// Media Labels
+	$lang['mediaLabelTitle']		= "Название";
+	$lang['mediaLabelDesc']			= "Описание";
+	$lang['mediaLabelCopyright']	= "Авторское право";
+	$lang['mediaLabelRestrictions']	= "Ограничения использования";
+	$lang['mediaLabelRelease']		= "Релиз Модели";
+	$lang['mediaLabelKeys']			= "Ключевые слова";
+	$lang['mediaLabelFilename']		= "Имя файла";
+	$lang['mediaLabelID']			= "ID";
+	$lang['mediaLabelDate']			= "Добавлено";
+	$lang['mediaLabelDateC']		= "Создан";
+	$lang['mediaLabelDownloads']	= "Загрузки";
+	$lang['mediaLabelViews']		= "Просмотров";
+	$lang['mediaLabelPurchases']	= "Покупки";
+	$lang['mediaLabelColors']		= "Цвета";
+	$lang['mediaLabelPrice']		= "Цена";
+	$lang['mediaLabelCredits']		= "Кредиты";
+	$lang['mediaLabelOwner']		= "Автор";
+	$lang['mediaLabelUnknown']		= "Неизвестно";
+	$lang['mediaLabelResolution']	= "Пиксели";
+	$lang['mediaLabelFilesize']		= "Размер файла";
+	$lang['mediaLabelRunningTime']	= "Длительность";
+	$lang['mediaLabelFPS']			= "FPS";
+	$lang['mediaLabelFormat']		= "Формат";
+	
+	// Search
+	$lang['search']					= "Поиск";
+	$lang['searchEnterKeyMessage']	= "Пожалуйста, введите ключевые слова в поле поиска, чтобы начать поиск.";
+	$lang['searchNoResults']		= "Ваш поиск не дал результатов";
+	$lang['searchDateRange']		= "Поиск в диапазоне дат";
+	$lang['searchNarrow']			= "Ограниченные результаты поиска";
+	$lang['searchStart']			= "Начните поиск ниже!";
+	$lang['searchAll']				= "Все";
+	$lang['searchClear']			= "Очистить поиск";
+	$lang['searchKeywords']			= "Ключевые слова";
+	$lang['searchTitle']			= "Название";
+	$lang['searchDescription']		= "Описание";
+	$lang['searchFilename']			= "Имя файла";
+	$lang['searchPortrait']			= "Портрет";
+	$lang['searchLandscape']		= "Пейзаж";
+	$lang['searchSquare']			= "Площадь";
+	$lang['searchRoyaltyFree']		= "Бесплатная";
+	$lang['searchRightsManaged']	= "Управление правами";
+	$lang['searchFree']				= "Бесплатно";
+	$lang['searchContactUs']		= "Контакты";
+	$lang['searchHeaderKeywords']	= "Ключевые слова";
+	$lang['searchHeaderFields']		= "Поля";
+	$lang['searchHeaderType']		= "Тип";
+	$lang['searchHeaderOrientation']= "Ориентация";
+	$lang['searchHeaderColor']		= "Цвет";
+	$lang['searchHeaderGalleries']	= "Категории";	
+?>

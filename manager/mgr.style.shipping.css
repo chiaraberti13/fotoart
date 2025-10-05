@@ -1,0 +1,51 @@
+#fromlabel{
+	float: left;
+	width: 88px;
+}
+#tolabel{
+	float: left;
+	width: 84px;
+}
+#pricelabel{
+	float: left;
+	width: 119px;
+}
+.rangebox{
+	color: #000000;
+	width: 75px;
+	float: left;
+	margin-right: 5px;
+	border: 1px solid #abadb3;
+	padding: 2px;
+}
+.rangebox_disabled{
+	border: 1px solid #eeeeee;
+	width: 75px;
+	float: left;
+	margin-right: 5px;
+	padding: 2px;	
+	color: #999 !important;
+}
+.rangebox_error{
+	border: 1px solid #eb8383;
+	background-color: #fac5c5;
+	color: #000000;
+	width: 75px;
+	float: left;
+	margin-right: 5px;
+	padding: 2px;
+}
+.range_row, .range_row_end{
+	clear: both;
+	margin-top: 6px;
+}
+.range_rowdddddd input[type="text"]{
+	width: 75px;
+	float: left;
+	margin-right: 5px;
+	border: 1px solid #999999;
+	padding: 2px;
+}
+.rangedelete{
+	float: left;
+}

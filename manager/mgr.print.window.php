@@ -1,0 +1,2 @@
+<div id="print_window"><a href="javascript:hide_div('print_window');hide_div('overlay');"><img src='images/mgr.button.close2.png' align='right' style='margin: 6px' border="0" id="print_close" /></a><div id="print_window_inner"></div></div>
+<?php /* <a href="javascript:show_div('workbox');hide_div('print_window');"><img src='images/mgr.button.close2.png' align='right' style='margin: 6px' border="0" id="print_close" /></a><div id="print_window_inner"></div> */ ?>

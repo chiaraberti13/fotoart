@@ -1,0 +1,3 @@
+<?php
+	$config['authorize'] = '18D76E5E52F4F3DB569B1FF64F126046';
+?>

@@ -1,0 +1,7 @@
+# Forza HTTPS e rimuovi www
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://fotoartpuzzle.it/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^www\.fotoartpuzzle\.it [NC]
+RewriteRule ^(.*)$ https://fotoartpuzzle.it/$1 [R=301,L]

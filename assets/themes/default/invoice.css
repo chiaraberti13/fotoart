@@ -1,0 +1,15 @@
+body{
+	color: #333;
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;	
+	background-color: #FFF;
+	background-image: none;
+}
+
+#invoiceTemplate{
+	margin: 30px 100px 100px 100px;
+}
+
+#invoiceTemplate img{
+	vertical-align: middle;
+	margin-right: 5px;
+}

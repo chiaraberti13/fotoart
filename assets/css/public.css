@@ -1,0 +1,242 @@
+@charset "utf-8";
+
+/* RESET STYLES */
+	html,
+	body,
+	div,
+	span,
+	applet,
+	object,
+	iframe,
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6,
+	p,
+	blockquote,
+	pre,
+	a,
+	abbr,
+	acronym,
+	address,
+	big,
+	cite,
+	code,
+	del,
+	dfn,
+	em,
+	font,
+	img,
+	ins,
+	kbd,
+	q,
+	s,
+	samp,
+	small,
+	strike,
+	strong,
+	sub,
+	sup,
+	tt,
+	var,
+	b,
+	u,
+	i,
+	center,
+	dl,
+	dt,
+	dd,
+	ol,
+	ul,
+	li,
+	fieldset,
+	form,
+	label,
+	legend,
+	table,
+	caption,
+	tbody,
+	tfoot,
+	thead,
+	tr,
+	th,
+	td{
+		margin: 0;
+		padding: 0;
+		border: 0;
+		outline: 0;
+		font-size: 100%;
+		vertical-align: baseline;
+		background: transparent;
+	}
+	
+	body{
+		line-height: 1;
+	}
+	
+	ol, ul{
+		list-style: none;
+	}
+	
+	blockquote, q{
+		quotes: none;
+	}
+	
+	blockquote:before,
+	blockquote:after,
+	q:before,
+	q:after{
+		content: '';
+		content: none;
+	}
+
+	:focus {
+		outline: 0;
+	}
+
+	ins{
+		text-decoration: none;
+	}
+	del{
+		text-decoration: line-through;
+	}
+
+	table{
+		border-collapse: collapse;
+		border-spacing: 0;
+	}
+
+/* DIV TABLES */
+	.divTable{
+		display: table;
+		border-collapse: collapse;
+	}
+	
+	.divTableRow{
+		display: table-row;	
+	}
+	
+	.divTableCell{
+		display: table-cell;
+		vertical-align: top;
+	}
+	
+/* OPACITY SHORTCUTS */
+	.opac10{
+		opacity:0.1;
+		filter:alpha(opacity=10); 
+	}
+	
+	.opac20{
+		opacity:0.2;
+		filter:alpha(opacity=20); 
+	}
+	
+	.opac30{
+		opacity:0.3;
+		filter:alpha(opacity=30); 
+	}
+	
+	.opac40{
+		opacity:0.4;
+		filter:alpha(opacity=40); 
+	}
+	
+	.opac50{
+		opacity:0.5;
+		filter:alpha(opacity=50); 
+	}
+	
+	.opac60{
+		opacity:0.6;
+		filter:alpha(opacity=60); 
+	}
+	
+	.opac70{
+		opacity:0.7;
+		filter:alpha(opacity=70); 
+	}
+	
+	.opac80{
+		opacity:0.8;
+		filter:alpha(opacity=80); 
+	}
+	
+	.opac90{
+		opacity:0.9;
+		filter:alpha(opacity=90); 
+	}
+	
+/* ROUNDING SHORTCUTS */
+	.round2{
+		-moz-border-radius: 2px;
+ 		-webkit-border-radius: 2px;
+		border-radius: 2px;	
+	}
+	
+	.round4{
+		-moz-border-radius: 4px;
+ 		-webkit-border-radius: 4px;
+		border-radius: 4px;	
+	}
+	
+	.round6{
+		-moz-border-radius: 6px;
+ 		-webkit-border-radius: 6px;
+		border-radius: 6px;	
+	}
+	
+	.round8{
+		-moz-border-radius: 8px;
+ 		-webkit-border-radius: 8px;
+		border-radius: 8px;	
+	}
+	
+	.round10{
+		-moz-border-radius: 10px;
+ 		-webkit-border-radius: 10px;
+		border-radius: 10px;	
+	}
+	
+	.round14{
+		-moz-border-radius: 14px;
+ 		-webkit-border-radius: 14px;
+		border-radius: 14px;	
+	}
+	
+	.round20{
+		-moz-border-radius: 20px;
+ 		-webkit-border-radius: 20px;
+		border-radius: 20px;	
+	}
+	
+/* DROP SHADOW SHORTCUTS */
+	.dropshadowdark{
+		-moz-box-shadow: 1px 1px 4px #333; 
+		-webkit-box-shadow: 1px 1px 4px #333;     
+		box-shadow: 1px 1px 4px #333;
+		/* For IE 8 */ 
+		-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#333')";   
+		/* For IE 5.5 - 7 */     
+		filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#333'); 
+	}
+	
+	.dropshadowlight{
+		-moz-box-shadow: 1px 1px 4px #CCC; 
+		-webkit-box-shadow: 1px 1px 4px #CCC;     
+		box-shadow: 1px 1px 4px #CCC;
+		/* For IE 8 */ 
+		-ms-filter: "progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#CCC')";   
+		/* For IE 5.5 - 7 */     
+		filter: progid:DXImageTransform.Microsoft.Shadow(Strength=4, Direction=135, Color='#CCC'); 
+	}
+
+/* DEBUGGING */
+	.footerDebug{
+		padding: 20px;	
+		background-color: #FFC;
+		color: #000;
+		border-top: 1px solid #333;
+	}

@@ -1,0 +1,2111 @@
+<?php
+	
+/**
+ * FUNZIONI IMAGEMAGICK COMMAND LINE - Auto-generate da risolve.php
+ */
+
+function im_get_image_geometry($file_path) {
+    $cmd = "identify -format '%wx%h' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        list($width, $height) = explode('x', $output[0]);
+        return array('width' => (int)$width, 'height' => (int)$height);
+    }
+    return false;
+}
+
+function im_get_image_format($file_path) {
+    $cmd = "identify -format '%m' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        return trim($output[0]);
+    }
+    return false;
+}
+
+function im_scale_image($input_file, $output_file, $width, $height = 0, $format = null) {
+    $size_param = $height > 0 ? $width . "x" . $height : $width . "x";
+    $cmd = "convert " . escapeshellarg($input_file) . " -resize " . escapeshellarg($size_param) . " ";
+    
+    if ($format) {
+        $cmd .= "-format " . escapeshellarg(strtolower($format)) . " ";
+    }
+    
+    $cmd .= escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_crop_image($input_file, $output_file, $width, $height, $x, $y) {
+    $crop_param = $width . "x" . $height . "+" . $x . "+" . $y;
+    $cmd = "convert " . escapeshellarg($input_file) . " -crop " . escapeshellarg($crop_param) . " +repage " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_composite_image($base_file, $overlay_file, $output_file, $x = 0, $y = 0, $compose = "over") {
+    $cmd = "composite -compose " . escapeshellarg($compose) . " -geometry +" . $x . "+" . $y . " " . 
+           escapeshellarg($overlay_file) . " " . escapeshellarg($base_file) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_set_image_format($input_file, $output_file, $format) {
+    $cmd = "convert " . escapeshellarg($input_file) . " -format " . escapeshellarg(strtolower($format)) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_new_image($width, $height, $color, $output_file, $format = "png") {
+    $size_param = $width . "x" . $height;
+    $cmd = "convert -size " . escapeshellarg($size_param) . " xc:" . escapeshellarg($color) . " -format " . escapeshellarg($format) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_read_image($file_path) {
+    // Per command line, "leggere" significa solo verificare che esista
+    return file_exists($file_path);
+}
+
+function im_write_image($temp_file, $output_file) {
+    if (file_exists($temp_file)) {
+        return copy($temp_file, $output_file);
+    }
+    return false;
+}
+
+function im_clean_temp_files($pattern) {
+    $files = glob($pattern);
+    if ($files) {
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+
+/******************************************************************
+	*  Copyright 2011 Ktools.net LLC - All Rights Reserved
+	*  http://www.ktools.net
+	*  Created: 4-21-2011
+	*  Modified: 4-21-2011
+	******************************************************************/
+	
+	require 'enc.functions.php'; // Require the encrypted functions file
+	
+	/*
+	* Check that external file exists
+	*/
+	function checkExternalFile($url)
+	{
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_NOBODY, true);
+		curl_exec($ch);
+		$retCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);	
+		return $retCode;
+	}
+	
+	/*
+	* Print_r with line breaks
+	*/
+	function print_k($var)
+	{
+		echo '<pre>';
+		@print_r($var);
+		echo '</pre>';
+	}
+	
+	/*
+	* Patch for all mysql_result usage in the script
+	*/
+	function mysqli_result_patch($result)
+	{
+		//global $db;
+		$row = mysqli_fetch_array($result);
+		//print_r($row);
+		return $row[0];
+	}
+	
+	/*
+	* Output exception errors with more details
+	*/
+	function exceptionError($e)
+	{
+		return $e->getFile()." : ".$e->getMessage();
+	}
+	
+	/*
+	* Output logo
+	*/
+	function logo($width=NULL,$class='clipLogo')
+	{
+		global $config;
+		$logo = $config['settings']['logo'] = '<img src="'.$config['settings']['site_url'].'/assets/logos/'.$config['settings']['mainlogo'].'"';
+		if($width) $logo.= ' width="{$width}px" ';
+		$logo.= 'class="{$class}">';
+		return $config['settings']['logo'] = '<img src="'.$config['settings']['site_url'].'/assets/logos/'.$config['settings']['mainlogo'].'" class="clipLogo">';	
+	}
+	
+	/*
+	* GET THE PATH TO ANY GALLERY - SUPPLY THE ID OF THE GALLERY AS THE ID
+	*/
+	function get_gallery_path($id)
+	{
+		global $dbinfo, $folder_path, $db;				
+		$gal_result = mysqli_query($db,"SELECT name,parent_gal,gallery_id FROM {$dbinfo[pre]}galleries WHERE gallery_id = '$id'");
+		$gal = mysqli_fetch_array($gal_result);					
+
+		$folder_path = "{$gal[name]}" . " > " . $folder_path; // ($gal[gallery_id])
+		
+		if($gal['parent_gal'] != 0)
+		{
+			return get_gallery_path($gal['parent_gal']);
+		}
+		else
+		{
+			$storedPath = substr($folder_path,0,strlen($folder_path)-2);
+			$folder_path = '';
+			return $storedPath;
+		}
+	}
+	
+	/*
+	* Find the name of a country or state
+	*/
+	function getCountryName($id)
+	{
+		global $config, $dbinfo, $selectedLanguage, $db;
+		$countryResult = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}countries WHERE country_id = '{$id}'"); // Select country
+		$country = mysqli_fetch_array($countryResult);
+		$countryName = ($country['name_'.$selectedLanguage]) ? $country['name_'.$selectedLanguage] : $country['name'];
+		return $countryName;
+	}
+	
+	function getStateName($id)
+	{
+		global $config, $dbinfo, $selectedLanguage, $db;
+		$stateResult = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}states WHERE state_id = '{$id}'"); // Select state
+		$state = mysqli_fetch_array($stateResult);
+		$stateName = ($state['name_'.$selectedLanguage]) ? $state['name_'.$selectedLanguage] : $state['name'];
+		return $stateName;
+	}
+	
+	/*
+	* Testing session shortcut
+	*/
+	function test($value,$varName=NULL)
+	{
+		if(!$varName) $varName = 'test';
+		$_SESSION['testing'][$varName] = $value;
+	}
+	
+	/*
+	* Get content from the DB
+	*/
+	function getDatabaseContent($contentID,$forceLanguage='')
+	{
+		global $config, $dbinfo, $selectedLanguage, $db;
+		
+		if($forceLanguage) // A language has been passed - use it instead of anything
+			$selectedLanguage = $forceLanguage;
+		
+		if(is_numeric($contentID)) // Fetch by ID
+			$contentResult = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}content WHERE content_id = '{$contentID}' AND active = 1");
+		else // Fetch by content_code
+			$contentResult = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}content WHERE content_code = '{$contentID}' AND active = 1");
+			
+		$content = mysqli_fetch_assoc($contentResult);
+		$content['name'] = ($content['name_'.$selectedLanguage]) ? $content['name_'.$selectedLanguage] : $content['name'];		
+		$blankData = array('<br class="innova">','<p></p>'); // Check for data from the editors that should actually be considered a blank field
+		$content['body'] = ($content['content_'.$selectedLanguage] and !in_array($content['content_'.$selectedLanguage],$blankData)) ? $content['content_'.$selectedLanguage] : $content['content'];
+		if($content)
+			return $content;
+		else
+			return false;
+	}
+	
+	# GET CREATABLE FORMATS BASED ON IMAGE PROCESSOR SELECTION
+	function getCreatableFormats()
+	{
+		global $config;
+		// Allow ImageMagick formats
+		if(class_exists('Imagick') and $config['settings']['imageproc'] == 2)
+		{
+			$creatable = array('jpg','jpe','jpeg','png','gif','bmp','eps','psd','tif','tiff');
+		}
+		// Only allow GD formats
+		else
+		{
+			$creatable = array('jpg','jpe','jpeg','png','gif');
+		}
+		return $creatable;
+	}
+	
+	/*
+	* Save member permissions for an item
+	*/
+	function save_mem_permissions()
+	{
+		global $config, $db, $dbinfo, $saveid, $page, $perm;
+		# DELETE THE PERMISSIONS IN THE DATABASE FIRST
+		mysqli_query($db,"DELETE FROM {$dbinfo[pre]}perms WHERE item_id = '$saveid' AND perm_area = '$page'");
+		# PUT THE CORRECT PERMISSION INTO THE DB
+		if($perm and $perm != 'everyone'){
+			$permsplit = explode(",",$perm);					
+			# ADD EACH OF THE PERMISSIONS
+			foreach($permsplit as $value){
+				if($value){
+					mysqli_query($db,"INSERT INTO {$dbinfo[pre]}perms (perm_area,item_id,perm_value) VALUES ('$page','$saveid','$value')");
+				}	
+			}
+		}
+	}
+	
+	/*
+	* Turn a php.ini value into bytes
+	*/
+	function returnBytes($val)
+	{
+		$val = trim($val);
+		$last = strtolower($val[strlen($val)-1]);
+		switch($last)
+		{
+			// The 'G' modifier is available since PHP 5.1.0
+			case 'g':
+				$val *= 1024;
+			case 'm':
+				$val *= 1024;
+			case 'k':
+				$val *= 1024;
+		}	
+		return $val;
+	}
+	
+	/*
+	* Find max upload size and return it as bytes, kb or mb
+	*/
+	function maxUploadSize($returnAs='b')
+	{
+		if(ini_get("upload_max_filesize"))
+			$upload_max_filesize = returnBytes(ini_get("upload_max_filesize"));
+		else
+			$upload_max_filesize = 90000;
+			
+		$bytes = $upload_max_filesize;
+		
+		if(ini_get("post_max_size"))
+			$post_max_size = returnBytes(ini_get("post_max_size"));
+		else
+			$post_max_size = 90000;
+		
+		if($post_max_size < $bytes) // Check to see if post max size is smaller
+			$bytes = $post_max_size;
+		
+		$bytes-= 50; // Subtract 50 bytes just in case
+		
+		switch($returnAs)
+		{
+			default: 
+			case 'b':
+				$value = $bytes;
+			break;
+			case 'kb':
+				$value = round($bytes/1024);
+			break;
+			case 'mb':
+				$value = round(($bytes/1024)/1024);
+			break;
+		}
+		
+		return $value;
+	}
+	
+	/*
+	* Fix for strtotime issue
+	*/
+	if(function_exists('date_default_timezone_set'))
+	{
+		date_default_timezone_set(@date_default_timezone_get());
+	}
+	
+	/*
+	* Add slashes while protecting arrays
+	*/
+	function addSlashesMap($value)
+	{
+		if(is_array($value))
+			return $value = array_map("addSlashesMap",$value);
+		else
+			return addslashes($value);
+	}
+	
+	/*
+	* Return database info settings
+	*/
+	function getDBInfo()
+	{
+		global $dbinfo;
+		return $dbinfo;
+	}
+	
+	/*
+	* Clear cache items from the cache folder
+	*/
+	function clearCache($path='')
+	{
+		if(!$path) $path = BASE_PATH.'/assets/cache/*.jpg';
+		//if(!$skip) $skip = array();
+		//$skip[] = 'index.php';
+		
+		$files = glob($path);
+		
+		if($files)
+		{
+			foreach(glob($path) as $file)
+			{
+				@unlink($file);
+			}
+		}
+	}
+	
+	/*
+	* Clear smarty cache
+	*/
+	function clearSmartyCache($path='')
+	{
+		if(!$path) $path = BASE_PATH.'/assets/tmp/*.*';
+		
+		$files = glob($path);
+		
+		if($files)
+		{
+			foreach($files as $file)
+				@unlink($file);
+		}
+	}
+	
+	/*
+	* Return the MySQL version
+	*/
+	function find_SQL_Version()
+	{ 
+	   //$output = shell_exec('mysql -V'); 
+	   $output = mysql_get_client_info();
+	   preg_match('@[0-9]+\.[0-9]+\.[0-9]+@', $output, $version); 
+	   return $version[0]; 
+	} 
+	
+	/*
+	* Get returned rows of a query. Must use SQL_CALC_FOUND_ROWS in the query.
+	*/
+	function getRows()
+	{
+		global $db;
+		
+		$rows = mysqli_fetch_row(mysqli_query($db,"SELECT FOUND_ROWS()"));
+		return $rows[0];	
+	}
+	
+	/*
+	* Send email
+	*/
+	function kmail($toEmail,$toName,$fromEmail,$fromName,$subject,$body,$options=NULL)
+	{
+		global $config;		
+		require_once BASE_PATH.'/assets/classes/swiftmailer/swift_required.php';
+			
+		if($config['settings']['mailproc'] == 1)
+			$transport = Swift_MailTransport::newInstance(); //Create the Transport - PHP Mailer
+		else
+			$transport = Swift_SmtpTransport::newInstance($config['settings']['smtp_host'], $config['settings']['smtp_port'])->setUsername($config['settings']['smtp_username'])->setPassword($config['settings']['smtp_password']); //Create the Transport - SMTP
+		
+		//, 'ssl'
+		
+		if($options['replyName']) // Check for a reply name
+			$replyName = $options['replyName'];
+		else
+			$replyName = $fromName;
+		
+		if($options['replyEmail']) // Check for a reply email
+			$replyEmail = $options['replyEmail'];
+		else
+			$replyEmail = $fromEmail;
+		
+		$mailer = Swift_Mailer::newInstance($transport); //Create the Mailer using your created Transport
+		
+		if($config['emailNames']) // Use real names when sending emails
+		{
+			$message = Swift_Message::newInstance()// Create the message			
+			->setSubject($subject) //Give the message a subject			
+			->setFrom(array($fromEmail => $fromName)) //Set the From address with an associative array			
+			->setTo(array($toEmail => $toName)) //Set the To addresses with an associative array	
+			->setReplyTo(array($replyEmail => $replyName)) //Set the reply to addresses with an associative array	
+			->setBody($body, 'text/html'); //Give it a body
+		}
+		else
+		{
+			$message = Swift_Message::newInstance()// Create the message			
+			->setSubject($subject) //Give the message a subject			
+			->setFrom($fromEmail) //Set the From address with an associative array			
+			->setTo($toEmail) //Set the To addresses with an associative array	
+			->setReplyTo($replyEmail) //Set the reply to addresses with an associative array	
+			->setBody($body, 'text/html'); //Give it a body	
+		}
+		
+		$result = $mailer->send($message); //Send the message
+	}
+	
+	/*
+	* Debug email for testing
+	*/
+	function debugEmail($content)
+	{
+		kmail("info@ktools.net","PS4","info@ktools.net","PS4","PS4 Debug",$content); // Send a debug email to info@ktools.net
+	}
+	
+	/*
+	* Use an array of values to check strpos
+	*/
+	function strpos_arr($haystack, $needle)
+	{ 
+		if(!is_array($needle)) $needle = array($needle); 
+		foreach($needle as $what)
+			if(($pos = strpos($haystack, $what))!==false) return $pos; 
+		return false; 
+	}
+	
+	/*
+	* Find dtype of extension
+	*/
+	function getdTypeOfExtension($extension)
+	{
+		global $config;
+		
+		foreach($config['fileFormats'] as $fileFormats)
+		{	
+			if($fileFormats['ext'] == $extension)
+			{
+				return $fileFormats['dtype'];
+				break;
+			}
+		}
+	}
+	
+	/*
+	* Hex color to rgb color
+	*/
+	function html2rgb($color)
+	{
+		$color = (string)$color;
+		
+		if ($color[0] == '#')
+			$color = substr($color, 1);
+		
+		if (strlen($color) == 6)
+			list($r, $g, $b) = array($color[0].$color[1],$color[2].$color[3],$color[4].$color[5]);
+		elseif (strlen($color) == 3)
+			list($r, $g, $b) = array($color[0].$color[0], $color[1].$color[1], $color[2].$color[2]);
+		else
+			return false;
+		
+		$r = hexdec($r);
+		$g = hexdec($g);
+		$b = hexdec($b);
+		
+		return array('red' => $r, 'green' => $g, 'blue' => $b);
+	}
+	
+	/*
+	* Get all extensions based on a specific dtype as array
+	*/
+	function getLimiteddTypeExtensions($dtype)
+	{
+		global $config;
+		foreach($config['fileFormats'] as $fileFormats)
+		{
+			if($fileFormats['dtype'] == $dtype)
+				$ext[] = $fileFormats['ext'];
+				
+		}
+		return $ext;
+	}
+	
+	/*
+	* Get all extensions as array
+	*/
+	function getAlldTypeExtensions()
+	{
+		global $config;
+		foreach($config['fileFormats'] as $fileFormats)
+			$ext[] = $fileFormats['ext'];
+		return $ext;
+	}
+	
+	/*
+	* Build a support link
+	*/
+	function buildSupportLink($page=NULL,$vars=NULL)
+	{
+		global $config;
+		
+		if(strpos($page,'?'))
+			$page = $page.'&';
+		else
+			$page = $page.'?';
+		
+		$supportLink = "{$page}productCode={$config[product_code]}&productVersion={$config[product_version]}&productType={$config[product_type]}&productBuildDate={$config[product_build_date]}";
+		
+		if($vars)
+		{
+			foreach($vars as $key => $value)
+				$supportLink.="&{$key}={$value}";
+		}
+			
+		return $supportLink;
+		
+	}
+	
+	# GET MEMORY LIMIT
+	function getMemoryLimit()
+	{
+		global $config;
+		if(ini_get("memory_limit"))
+		{
+			if(strpos(ini_get("memory_limit"),'M') or strpos(ini_get("memory_limit"),'m'))
+				$memoryLimit = str_ireplace('M','',ini_get("memory_limit"));
+			elseif(strpos(ini_get("memory_limit"),'G') or strpos(ini_get("memory_limit"),'g'))
+			{
+				$memoryLimit = str_ireplace('G','',ini_get("memory_limit"))*1000;
+			}
+		}
+		else
+		{
+			$memoryLimit = $config['DefaultMemory'];
+		}
+		# IF IMAGEMAGICK ALLOW TWEAKED MEMORY LIMIT
+		if(class_exists('Imagick') and $config['settings']['imageproc'] == 2)
+		{
+			$memoryLimit = $config['DefaultMemory'];
+		}
+		return $memoryLimit;
+	}
+
+	# FIND THE FILENAME WITHOUT THE EXTENSION
+	function basefilename($filename)
+	{
+		# FIX THE EXTENSION
+		$basefilename = explode(".",$filename);
+		$basefilename_ext = array_pop($basefilename);
+		$basefilename_glued = implode(".",$basefilename);
+		return $basefilename_glued;
+	}
+	
+	# FIND FILENAME EXTENSION
+	function filenameExt($filename)
+	{
+		$basefilename = explode(".",$filename);
+		$basefilename_ext = strtolower(array_pop($basefilename));
+		return $basefilename_ext;
+	}
+	
+	# ZERO FILL
+	function zerofill($number,$length=2)
+	{
+		if(strlen($number) >= $length)
+		{
+			return $number;
+		}
+		else
+		{
+			$number_length = strlen($number);
+			for($x=$number_length; $x<$length; $x++)
+			{
+				$zeros.= "0";
+			}
+			$number =  $zeros . $number;
+			return $number;
+		}
+	}
+	
+	# GET MIME TYPE 
+	function getMimeType($filename)
+	{
+		$mime_types = array(
+			'txt' => 'text/plain',
+			'htm' => 'text/html',
+			'html' => 'text/html',
+			'php' => 'text/html',
+			'css' => 'text/css',
+			'js' => 'application/javascript',
+			'json' => 'application/json',
+			'xml' => 'application/xml',
+			'swf' => 'application/x-shockwave-flash',
+			'flv' => 'video/x-flv',
+			
+			// images
+			'png' => 'image/png',
+			'jpe' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'jpg' => 'image/jpeg',
+			'gif' => 'image/gif',
+			'bmp' => 'image/bmp',
+			'ico' => 'image/vnd.microsoft.icon',
+			'tiff' => 'image/tiff',
+			'tif' => 'image/tiff',
+			'svg' => 'image/svg+xml',
+			'svgz' => 'image/svg+xml',
+			
+			// archives
+			'zip' => 'application/zip',
+			'rar' => 'application/x-rar-compressed',
+			'exe' => 'application/x-msdownload',
+			'msi' => 'application/x-msdownload',
+			'cab' => 'application/vnd.ms-cab-compressed',
+			'tar' => 'application/x-tar',
+			
+			// audio/video
+			'mp3' => 'audio/mpeg',
+			'qt' => 'video/quicktime',
+			'mov' => 'video/quicktime',
+			'mpeg' => 'video/mpeg',
+			'mpg' => 'video/mpeg',
+			'mpe' => 'video/mpeg',
+			'wav' => 'audio/wav',
+			'aiff' => 'audio/aiff',
+			'aif' => 'audio/aiff',
+			'wmv' => 'video/x-ms-wmv',
+			
+			// adobe
+			'pdf' => 'application/pdf',
+			'psd' => 'image/vnd.adobe.photoshop',
+			'ai' => 'application/postscript',
+			'eps' => 'image/x-ept', // application/postscript
+			'ps' => 'application/postscript',
+			
+			// ms office
+			'doc' => 'application/msword',
+			'docx' => 'application/msword',
+			'rtf' => 'application/rtf',
+			'xls' => 'application/vnd.ms-excel',
+			'xlt' => 'application/vnd.ms-excel',
+			'xlm' => 'application/vnd.ms-excel',
+			'xld' => 'application/vnd.ms-excel',
+			'xla' => 'application/vnd.ms-excel',
+			'xlc' => 'application/vnd.ms-excel',
+			'xlw' => 'application/vnd.ms-excel',
+			'xll' => 'application/vnd.ms-excel',
+			'ppt' => 'application/vnd.ms-powerpoint',
+			
+			// open office
+			'odt' => 'application/vnd.oasis.opendocument.text',
+			'ods' => 'application/vnd.oasis.opendocument.spreadsheet'
+		);
+  
+		@$ext = strtolower(array_pop(explode('.',$filename)));
+		
+		if (function_exists('finfo_open'))
+		{
+			$finfo = finfo_open(FILEINFO_MIME);
+			@$mimetype = finfo_file($finfo, $filename);
+			$mimetype = explode(";",$mimetype); // Ktools Added
+			finfo_close($finfo);
+			return $mimetype[0];
+		}
+		elseif (array_key_exists($ext, $mime_types))
+		{
+			return $mime_types[$ext];
+		}
+		else
+		{
+			return 'application/octet-stream';
+		}
+	}
+
+	# CREATE AN ORDER NUMBER
+	function create_order_number($length=10)
+	{	
+		global $config, $db, $dbinfo;
+		$z = 0;
+		//$length = 10;		
+		while ($z <= 0)
+		{
+			$seedsfirst = '123456789';
+			$seeds = '0123456789';
+			$str = null;
+			$seeds_count = strlen ($seeds) - 1;
+			$i = 0;
+			while ($i < $length)
+			{
+				if ($i == 0)
+				{
+				  $str .= $seedsfirst[rand (0, $seeds_count - 1)];
+				}
+				else
+				{
+				  $str .= $seeds[rand (0, $seeds_count)];
+				}				
+				++$i;
+			}
+			
+			$result = mysqli_query($db,"SELECT order_id FROM {$dbinfo[pre]}orders WHERE order_number = '$str'");
+			$order_rows = mysqli_num_rows($result);
+			
+			if ($order_rows == '' or $order_rows == 0)
+			{
+			  $z = 1;
+			  continue;
+			}	
+			continue;
+		}
+		return $str;
+	}
+
+
+	/*
+	* Convert any string to a only numbers, letters and underscores
+	*/
+	function cleanString($input)
+	{
+		$newString = str_replace(" ","_",$input);
+		$newString = html_entity_decode($newString);
+		$newString = preg_replace("/[^A-Za-z0-9_-]/", "", $newString);
+		$newString = strtolower(substr($newString,0,30));
+		if(strlen($newString) < 1) // Make sure the string isn't going to end up blank
+			$newString = "blank";
+		return $newString;
+	}
+
+
+	# CREATE FOLDERNAME
+	function clean_filename($input)
+	{
+		# CONVERT THE HTML CHARACTERS BACK
+		$replace = array("&","'","\'");
+		$newname = str_replace($replace,"",$input);
+		$newname = str_replace(" ","_",$newname);
+		return $newname;
+	}
+
+	# SAVE ACTIVITY
+	function save_activity($member=0,$area=0,$manager=0,$details)
+	{
+		global $dbinfo, $db, $config;
+
+		# MAKE SURE IT ISN'T A SUPERADMIN OR DEMO LOGIN
+		if($config['settings']['member_activity'] && $manager == '0')
+		{
+			$record_act = 1;
+		}
+		if($config['settings']['admin_activity'] && $manager == '1')
+		{
+			$record_act = 1;
+		}
+		
+		if($member != "KSA" && $member != "DEMO" && $record_act == 1)
+		{		
+			# INSERT INFO INTO THE DATABASE
+			$sql = "INSERT INTO {$dbinfo[pre]}activity_log (
+						member_id,
+						manager,
+						area,
+						log_time,
+						details
+					) VALUES (
+						'$member',
+						'$manager',
+						'$area',
+						'" . gmt_date() . "',
+						'$details'
+					)";
+			$result = mysqli_query($db,$sql);
+		}
+	}
+
+////////////////////////////////////////////////////////////////////////////////////xxxx move to enc functions file
+	# ADDON WRITER - USED TO WRITE AN ADD-ON FILE
+	function write_addon($filename,$code,$dir,$required_version,$for_products)
+	{
+		global $config;
+		if($code == create_aa($filename))
+		{
+			# MAKE SURE THE ADD-ON IS FOR THE CORRECT VERSION
+			if($required_version > $config['product_version'])
+			{
+				$status = "This add-on is for a newer version of the software and cannot be installed.";
+				return $status;
+			}
+			# MAKE SURE THE ADD-ON WAS MADE FOR THIS PRODUCT
+			$workswith = explode(",",$for_products);
+			if(!in_array($config['product_code'],$workswith))
+			{
+				$status = "This add-on does not work with this product.";
+				return $status;
+			}			
+			# MAKE SURE THE ADDONS DIR IS WRITABLE FIRST
+			if(is_writable($dir))
+			{
+				# DATA TO WRITE TO ADD-ON FILE - UNBRANDED UPGRADE
+				if($filename == 'unbrand')
+				{
+					$string = '<?php' . "\n";
+					$string.= '$config[\'authorize\'] = \'' . create_aa($filename) . '\';' . "\n";
+					$string.= '$uba_unbrand 	= 1; // This upgrades the product to be unbranded | 1 = no branding, 0 = show branding' . "\n";
+					$string.= '$uba_ad_panels 	= 0; // This disables welcome page panels that refer to ktools.net | 1 = disable panels, 0 = allow all panels' . "\n";
+					$string.= '$uba_help 		= 0; // Disables help links to ktools.net support and forum | 1 = disable help links, 0 = show help links' . "\n";
+					$string.= '$uba_upgrades 	= 0; // Disables upgrades | 1 = disable upgrades, 0 = enable upgrades' . "\n";
+					$string.= '$uba_wizard 		= 1; // Allow access to the setup wizard | 1 = allow, 0 = disable' . "\n";
+					$string.= '$uba_about 		= 1; // Show about info under Settings & Config > Software Setup | 1 = show, 0 = hide' . "\n";
+					$string.= '?>';
+				# DATA TO WRITE TO ADD-ON FILE - ALL OTHER ADD-ONS
+				}
+				else
+				{ 
+					$string = '<?php $config[\'authorize\'] = \'' . create_aa($filename) . '\'; ?>';
+				}
+				$addonfilename = $dir . $filename . ".addon";
+			 	$filenamehandle = fopen($addonfilename, 'w') or die("can't open file for writing");
+				fwrite($filenamehandle, $string);
+		 		fclose($filenamehandle);				
+				$status = 1;
+			}
+			else
+			{
+				$status = "assets/addons/ not writable";
+			}
+		}
+		else
+		{
+			$status = "Codes didn't match";
+		}
+		return $status;		
+	}
+	
+	# CREATE ADD-ON AUTHORIZATION
+	function create_aa($addon)
+	{
+		global $config;
+		return strrev(strtoupper(md5($config['settings']['serial_number'] . $addon)));
+	}
+////////////////////////////////////////////////////////////////////////////////////////////
+
+	# CREATE RANDOM CODE - UPDATED
+	function create_unique()
+	{
+		return strtoupper(md5(uniqid(rand(),1)));
+	}
+	
+	# CREATE RANDOM CODE THAT CAN NEVER BE THE SAME
+	function create_unique2()
+	{
+		/* OLD
+		$pltime = microtime();
+		$pltime = explode(" ", $pltime);
+		$plstart = $pltime[1] + $pltime[0];
+		return strtoupper(md5($plstart));
+		*/
+		return strtoupper(md5(microtime()));		
+	}
+	
+	# CREATE RANDOM CODE THAT IS NUMBER ONLY
+	function create_unique3()
+	{
+		$pltime = microtime();
+		$pltime = explode(" ", $pltime);
+		$plstart = $pltime[1] + $pltime[0];
+		$plstart = str_replace(".","",$plstart);
+		return strtoupper(($plstart));
+		//return strtoupper(md5(date("U")));
+	}
+	
+	# CREATE GMT TIME
+	function gmt_date()
+	{
+		return gmdate("Y-m-d H:i:s");
+	}
+	
+	# CONVERT BYTES TO MEGABYTES
+	function convertFilesizeToMB($bytes)
+	{
+		$kilobytes = $bytes/1024;
+		$megabytes = round($kilobytes/1024,2);
+		return $megabytes;
+	}
+	
+	function convertFilesizeToKB($bytes)
+	{
+		$kilobytes = round($bytes/1024);
+		return $kilobytes;
+	}
+	
+	# ADD SLASHES TO ALL POST DATA IF NEEDED
+	function check_postdata($check)
+	{
+		if(!get_magic_quotes_gpc())
+		{
+			foreach($check as $key => $value)
+			{
+				if(is_array($value))
+				{
+					foreach($value as $key2 => $value2)
+					{
+						$_POST[$key][$key2] = addslashes($value2);
+					}	
+				}
+				else
+				{
+					$_POST[$key] = addslashes($value);
+				}
+			}
+			return $_POST;
+		}					
+	}
+	
+	# ADD SLASHES TO ALL GET DATA IF NEEDED
+	function check_getdata($check)
+	{
+		if(!get_magic_quotes_gpc())
+		{
+			foreach($check as $key => $value)
+			{
+				if(is_array($value))
+				{
+					foreach($value as $key2 => $value2)
+					{
+						$_GET[$key][$key2] = addslashes($value2);
+					}	
+				}
+				else
+				{
+					$_GET[$key] = addslashes($value);
+				}
+			}
+			return $_GET;
+		}					
+	}
+	
+	# SEND EMAIL
+	function html_email($to,$subject,$body,$from,$html=1,$wrapper=0)
+	{
+		$headers  = "MIME-Version: 1.0\n";
+		
+		if(!empty($html))
+		{
+			# SEND HTML EMAIL
+			$headers .= "Content-Type: text/html; charset=iso-8859-1\n";
+			$body = stripslashes($body);
+			$open_body = "<html><body>";
+			## ADD KTOOLS.NET DEFAULT WRAPPER
+			if(!empty($wrapper))
+			{
+				$body = "
+					<table width=\"100%\" style=\"border: 1px solid #333333; background-color: #E7EFFA;\">
+						<!--
+						<tr>
+							<td bgcolor=\"#0B51B0\"><img src=\"http://www.ktools.net/images/sales_email_header.jpg\" /></td>
+						</tr>
+						-->
+						<tr>
+							<td style=\"padding: 10px\"><font color=\"#333333\" face=\"verdana\" style=\"font-size: 12;\">$body</font></td>
+						</tr>
+					</table>
+				";
+			}
+			$close_body = "</body></html>";
+			$body = $open_body . $body . $close_body;
+		}
+		else
+		{
+			# SEND PLAIN TEXT EMAIL
+			$br_replace = array();
+			$br_replace[] = "<br />";
+			$br_replace[] = "<br>";		
+			$headers .= "Content-type: text/plain; charset=iso-8859-1\n";
+			$body = stripslashes(trim(strip_tags(str_replace($br_replace,"\n",$body))));		
+		}
+				
+		$headers .= "X-Priority: 3\n";
+		$headers .= "X-MSMail-Priority: Normal\n";
+		$headers .= "X-Mailer: php\n";
+		$headers .= "From: \"".$from."\" <".$from.">\n";
+		
+		if(mail($to, $subject, $body, $headers))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	# FORMAT DATE FROM LANG CALENDAR FILE
+	class kdate
+	{
+		var $distime = 0;
+		var $time_zone;
+		var $date_sep;
+		var $date_format;
+		var $date_display;
+		var $clock_format;
+		var $daylight_savings;
+		var $adjust_date = 1;
+		
+		function kdate($dateSettings='')
+		{
+			global $calendar, $config, $langset;
+			
+			if($dateSettings) // Force the settings when creating the object
+			{
+				if($dateSettings['time_zone']){ $this->time_zone = $dateSettings['time_zone']; }
+				if($dateSettings['date_sep']){ $this->date_sep = $dateSettings['date_sep']; }
+				if($dateSettings['date_format']){ $this->date_format = $dateSettings['date_format']; }
+				if($dateSettings['date_display']){ $this->date_display = $dateSettings['date_display']; }
+				if($dateSettings['clock_format']){ $this->clock_format = $dateSettings['clock_format']; }
+				if($dateSettings['daylight_savings']){ $this->daylight_savings = $dateSettings['daylight_savings']; }
+			}
+		}
+		
+		function setMemberSpecificDateInfo()
+		{
+			global $calendar, $config, $langset;
+			
+			if($_SESSION['member']['customized_date'] and $config['settings']['dt_member_override']) // Get the settings from the member
+			{
+				//echo "a";				
+				if($_SESSION['member']['time_zone']){ $this->time_zone = $_SESSION['member']['time_zone']; }
+				if($_SESSION['member']['daylight_savings']){ $this->daylight_savings = $_SESSION['member']['daylight_savings']; } else { $this->daylight_savings = 0; }
+				if($_SESSION['member']['date_format']){ $this->date_format = $_SESSION['member']['date_format']; }
+				if($_SESSION['member']['date_display']){ $this->date_display = $_SESSION['member']['date_display']; }
+				if($_SESSION['member']['clock_format']){ $this->clock_format = $_SESSION['member']['clock_format']; }
+				if($_SESSION['member']['number_date_sep']){ $this->date_sep = $_SESSION['member']['number_date_sep']; }
+				
+				//echo "this timezone: {$this->daylight_savings}"; // Testing
+			}
+			
+			if(!$_SESSION['member']['customized_date'] and $config['settings']['dt_lang_override']) // Get settings from language file
+			{
+				//echo "b";				
+				//if($langset['time_zome']){ $this->time_zone = $langset['time_zome']; }
+				//if($langset['daylight_savings']){ $this->daylight_savings = $langset['daylight_savings']; }
+				if($langset['date_format']){ $this->date_format = $langset['date_format']; }
+				if($langset['date_display']){ $this->date_display = $langset['date_display']; }
+				if($langset['clock_format']){ $this->clock_format = $langset['clock_format']; }
+				if($langset['number_date_sep']){ $this->date_sep = $langset['number_date_sep']; }
+			}	
+		}
+		
+		function set_detaults()
+		{
+			global $calendar, $config, $langset, $calendar;
+			// SEE IF A SEPARATOR IS BEING PASSED OR USE THE ONE FROM THE DATABASE
+			if(!$this->date_sep){ $this->date_sep = $config['settings']['date_sep']; }
+			// SEE IF A TIME ZONE IS BEING PASSED OR USE THE ONE FROM THE DATABASE
+			if(!$this->time_zone){ $this->time_zone = $config['settings']['time_zone']; }
+			// SEE IF DAYLIGHT SAVINGS IS BEING PASSED OR USE THE ONE FROM THE DATABASE
+			if(!isset($this->daylight_savings)){ $this->daylight_savings = $config['settings']['daylight_savings']; }
+		}
+		
+		function showdate($pdate,$time=0)
+		{								
+			// INCLUDE GLOBALS
+			global $calendar, $config, $langset, $calendar;
+			$this->pdate = $pdate;
+			
+			if($time) $this->distime = 1;
+			
+			// SET THE DEFAULTS
+			$this->set_detaults();
+			
+			//return $this->daylight_savings; exit; // JSUT FOR TESTING
+			
+			// ADJUST DATE IF NEEDED
+			$this->adjust_date();
+
+			// SLICE DATE
+			$this->cutdate();							
+			
+			if(!$this->clock_format){ $this->clock_format = $config['settings']['clock_format']; }
+			
+			// CORRECT THE CLOCK BASED ON USER ADJUSTMENTS
+			if($this->clock_format == 12 && $this->distime == 1)
+			{
+				if($this->hour >= 12)
+				{
+					if($this->hour > 12) $this->hour = 12 - (24 - $this->hour);
+					$this->tid = "PM";
+				} 
+				else
+				{
+					$this->tid = "AM";
+				}
+				if($this->hour == 0) $this->hour = 12;		
+			}
+			
+			// MAKE THE DATE
+			$this->makekdate();
+			
+			// RETURN THE CORRECT DATE AND FORMAT
+			return $this->cdate;
+		}
+		
+		// ADJUST THE DATE TO THE CORRECT TIMEZONE
+		function adjust_date()
+		{
+			// ADJUSTMENT			
+			if($this->adjust_date)
+			{
+				$adjusted = explode(".",$this->time_zone);				
+				//$adj_hours = ($this->daylight_savings and gmdate("I")) ? $adjusted[0]+1  : $adjusted[0]; // WITH AUTOMATIC DAYLIGHT SAVINGS DETECTION
+				$adj_hours = ($this->daylight_savings) ? $adjusted[0]+1  : $adjusted[0];
+				$adj_minutes = ($adjusted[1] == "5") ? "30" : "0";
+				
+				if($adj_minutes > 0)
+					$adjMinStr = "{$adj_minutes} minutes";
+				
+				if($adj_hours >= 0)
+					$adjHoursStr = "+{$adj_hours}";
+				else
+					$adjHoursStr = "{$adj_hours}"; // - already added because it is negative
+							
+				$this->pdate = date("Y-m-d H:i:s",strtotime("{$this->pdate} {$adjHoursStr} hours {$adjMinStr}"));
+			}
+		}
+		
+		// ADJUST THE DATE TO THE CORRECT TIMEZONE
+		function adjust_date_reverse()
+		{
+			// ADJUSTMENT			
+			if($this->adjust_date)
+			{
+				$adjusted = explode(".",$this->time_zone);	
+				
+				$adjusted[0] = $adjusted[0]*-1;
+				
+				$adj_hours = ($this->daylight_savings) ? $adjusted[0]-1  : $adjusted[0];
+				$adj_minutes = ($adjusted[1] == "5") ? "30" : "0";
+				
+				$adj_minutes = $adj_minutes*-1;
+				
+				if($adj_minutes > 0)
+					$adjMinStr = "{$adj_minutes} minutes";
+					
+				if($adj_hours >= 0)
+					$adjHoursStr = "+{$adj_hours}";
+				else
+					$adjHoursStr = "{$adj_hours}"; // - already added because it is negative
+				
+				//echo "{$this->pdate} {$adjHoursStr} hours {$adjMinStr}"; exit; // Testing
+				
+				$this->pdate = date("Y-m-d H:i:s",strtotime("{$this->pdate} {$adjHoursStr} hours {$adjMinStr}"));
+			}
+		}
+		
+		// SPLIT THE DATE UP
+		function cutdate()
+		{
+			$this->year = substr($this->pdate,0,4);
+			$this->month = round(substr($this->pdate,5,2));
+			$this->day = round(substr($this->pdate,8,2));
+			$this->hour = round(substr($this->pdate,11,2));
+			$this->minutes = substr($this->pdate,14,2);
+		}
+		
+		// PREP THE DATE FOR FORM USAGE
+		function date_to_form($pdate,$adjust=1)
+		{
+			$this->pdate = $pdate;
+			
+			// SET THE DEFAULTS
+			$this->set_detaults();
+			
+			if($adjust)
+			{
+				// ADJUST DATE IF NEEDED
+				$this->adjust_date();
+			}
+			
+			$split_date_time = explode(" ",$this->pdate);
+			$split_date = explode("-",$split_date_time[0]);
+			$split_time = explode(":",$split_date_time[1]);
+			$form_date['year'] = $split_date[0];
+			$form_date['month'] = $split_date[1];
+			$form_date['day'] = $split_date[2];			
+			$form_date['hour'] = $split_time[0];
+			$form_date['minute'] = $split_time[1];
+			$form_date['second'] = $split_time[2];
+			
+			return $form_date;
+		}
+		
+		// CONVERT A FORM DATE BACK TO GMT
+		function formdate_to_gmt($pdate)
+		{
+			$this->pdate = $pdate;
+			
+			// SET THE DEFAULTS
+			$this->set_detaults();
+			
+			// ADJUST DATE IF NEEDED
+			$this->adjust_date_reverse();
+			
+			return $this->pdate;
+		}
+		
+		function setDateDisplayType($disType='NUM')
+		{
+			$this->date_display = $disType;
+		}
+		
+		function setDateFormat($dateFormat='INT')
+		{
+			$this->date_format = $dateFormat;
+		}
+		
+		function setDateSeperator($dateSep='-')
+		{
+			$this->date_sep = $dateSep;
+		}
+		
+		function makekdate()
+		{
+			global $calendar, $config, $langset, $calendar;
+			
+			if(!$this->date_format){ $this->date_format = $config['settings']['date_format']; }
+			if(!$this->date_display){ $this->date_display = $config['settings']['date_display']; }
+			
+			switch($this->date_format)
+			{
+				default:
+				case "US":
+					# DISPLAY MONTHS IN WORDS
+					if($this->date_display == "long" or $this->date_display == "short")
+					{
+						$this->cdate = $calendar[$this->date_display . "_month"][$this->month] . " " . $this->day . ", " . $this->year;
+					}
+					else
+					{
+					# DISPLAY MONTHS IN NUMBERS
+						$this->cdate = $this->month . $this->date_sep . $this->day . $this->date_sep . $this->year;					
+					}
+					# DISPLAY TIME
+					if(!empty($this->distime))
+					{
+						$this->cdate.=  " $this->hour:$this->minutes" . $this->tid;
+					}				
+				break;
+				case "EURO":
+					# DISPLAY MONTHS IN WORDS
+					if($this->date_display == "long" or $this->date_display == "short")
+					{
+						$this->cdate = round($this->day) . " " . $calendar[$this->date_display . "_month"][$this->month] . ", " . $this->year;
+					}
+					else
+					{
+					# DISPLAY MONTHS IN NUMBERS
+						$this->cdate = $this->day . $this->date_sep . $this->month . $this->date_sep . $this->year;					
+					}
+					# DISPLAY TIME
+					if(!empty($this->distime))
+					{
+						$this->cdate.=  " $this->hour:$this->minutes" . $this->tid;
+					}
+				break;				
+				case "INT":
+					# DISPLAY MONTHS IN WORDS
+					if($this->date_display == "long" or $this->date_display == "short")
+					{
+						$this->cdate = $calendar[$this->date_display . "_month"][$this->month] . " " . $this->day . ", " . $this->year;
+					}
+					else
+					{
+					# DISPLAY MONTHS IN NUMBERS
+						$this->cdate = $this->year . $this->date_sep . $this->month . $this->date_sep . $this->day;					
+					}
+					# DISPLAY TIME
+					if(!empty($this->distime))
+					{
+						$this->cdate.=  " $this->hour:$this->minutes" . $this->tid;
+					}
+				break;
+				
+				/* Suggested by ktools member
+				 case "CZ":
+                    # DISPLAY MONTHS IN WORDS
+                    if($this->date_display == "long")
+                    {
+                        $this->cdate = round($this->day) . ". " . $calendar[$this->date_display . "_month"][$this->month] . " " . $this->year;
+                    }
+                    elseif($this->date_display == "short") 
+                    {
+                        $this->cdate = round($this->day) . ". " . $calendar[$this->date_display . "_month"][$this->month] . " " . $this->year;
+                    }
+                    else
+                    {
+                    # DISPLAY MONTHS IN NUMBERS
+                        $this->cdate = $this->day . $this->date_sep . $this->month . $this->date_sep . $this->year;                    
+                    }
+                    # DISPLAY TIME
+                    if(!empty($this->distime))
+                    {
+                        $this->cdate.=  " $this->hour:$this->minutes" . $this->tid;
+                    }
+                break;				
+				*/
+				
+				
+				# NO FORMATTING - JUST GIVE THE NUMBERS ADJUSTED
+				case "NONE":
+				case "none":
+					return $this->cdate = $this->pdate;
+				break;
+			}
+		
+		}
+	}
+
+	# FORMAT CONTENT FOR THE EDITOR
+	function encodeHTML($sHTML)
+	{
+		$sHTML=ereg_replace("&","&amp;",$sHTML);
+		$sHTML=ereg_replace("<","&lt;",$sHTML);
+		$sHTML=ereg_replace(">","&gt;",$sHTML);
+		echo $sHTML;
+	}
+	
+	# GENERATE A RANDOM PASSWORD OR CODE
+	class genrandom
+	{
+		var $chars = 40; // NUMBER OF CHARACTERS IN LENGTH
+		var $seedtype = "alphanum";
+		var $type = "quick"; // quick/spec
+		var $seeds; // WHAT THE PASSWORD SHOULD BE SEEDED WITH
+		var $caset = "upper"; // UPPER/LOWER/BOTH
+		var $i = 0;
+		var $password;
+		var $char;
+		var $override = 0; // OVERRIDE TWEAK SETTINGS
+		
+		function setdefaults()
+		{
+			global $config;			
+			if(!$this->override and $this->type != "quick")
+			{			
+				switch($config['PasswordStrength'])
+				{
+					default:
+					case 1:
+					case 2:
+					case 3:
+						$this->chars 	= ($config['PasswordStrength']*2)+2;
+						$this->seedtype = "num";
+						$this->caset 	= "upper";
+					break;
+					case 4:
+					case 5:
+					case 6:
+						$this->chars = ($config['PasswordStrength']) + 2;
+						$this->seedtype = "alphanum";
+						$this->caset 	= "upper";
+					break;
+					case 7:
+					case 8:
+					case 9:
+						$this->chars = $config['PasswordStrength']*1;
+						$this->seedtype = "alphanumchar";
+						$this->caset 	= "upper";
+					break;
+					case 10:
+						$this->chars = $config['PasswordStrength']*1;
+						$this->seedtype = "alphanumchar";
+						$this->caset 	= "both";
+					break;				
+				}
+			}
+		}
+		
+		function generate()
+		{
+			if($this->type == "quick")
+			{
+				$this->chopran(strtoupper(md5(uniqid(rand(),1))));
+			}
+			else
+			{
+				$this->setdefaults();				
+				switch($this->seedtype)
+				{
+					default:
+					case "alphanum":
+						$this->cases();						
+						$this->seeds.= "0123456789";
+					break;
+					case "alpha":
+						$this->cases();
+					break;
+					case "num":
+						$this->seeds = "0123456789";
+					break;
+					case "alphanumchar":
+						$this->cases();
+						$this->seeds.= "0123456789";
+						$this->seeds.= "!@#$%^&*";
+					break;
+				}
+				
+				// GENERATE THE CODE WITH THE SEED
+				while ($this->i < $this->chars)
+				{
+					// pick a random character from the possible ones
+					$this->char = substr($this->seeds, mt_rand(0, strlen($this->seeds)-1), 1);					
+					// we don't want this character if it's already in the password
+					//if (!strstr($this->password, $this->char)) { 
+				  		$this->password .= $this->char;			  		
+					//}
+					$this->i++;
+			  	}
+				$this->radomcode = $this->password;
+			}
+			return $this->radomcode;
+		}
+		
+		function chopran($generated)
+		{
+			$this->radomcode = substr($generated,0,$this->chars);
+		}
+		
+		function cases()
+		{
+			$this->seeds = "abcdefghijklmnopqrstuvwxyz";
+			switch($this->caset)
+			{
+				default:
+				break;
+				case "upper";
+					$this->seeds = strtoupper($this->seeds);
+				break;
+				case "both":
+					$this->seeds.= strtoupper($this->seeds);				
+				break;
+			}
+		}
+		
+	}
+	
+	# STRIP BAD CHARACTERS
+	function stripbadchar($input)
+	{
+		//$stripbadchar = array("'",","," ","?","*","$","@","_","`","\"");	
+		//$input = str_replace($stripbadchar,"",$input);	
+		
+		$input = preg_replace("/[^0-9a-z -#]/i","",$input); // Only alphanumeric
+		$input = str_replace(" ","",$input); // Replace Spaces
+		
+		return $input;
+	}
+	
+	# ATTEMPT TO CALCULATE MEMORY NEEDED TO DO SOMETHING
+	function figure_memory_needed($filename)
+	{
+	   global $config;
+	   if(class_exists('Imagick') and $config['settings']['imageproc'] == 2)
+	   {   
+			// image = new Imagick($filename); // Converted to ImageMagick CLI
+image_file = $filename;
+image_temp_files = array();
+			//$imageInfo[0] = $image->getImageWidth();
+			//$imageInfo[1] = $image->getImageHeight();
+			
+			$memoryNeeded = $image->getImageWidth() * $image->getImageHeight() * 4;
+			$memoryNeeded = round($memoryNeeded/1048576);
+			
+			return $memoryNeeded;
+	   }
+	   else
+	   {
+			$imageInfo = getimagesize($filename); 
+			//$imageInfo = getimagesize($filename);
+			$MB = 1048576;  // number of bytes in 1M
+			$K64 = 65536;    // number of bytes in 64K
+			$TWEAKFACTOR = 2.0;  // Or whatever works for you (1.5)
+			
+			// FIX FOR PNG FILES - CAN'T FIND CHANNELS
+			if($imageInfo['channels'])
+			{
+				$channels = $imageInfo['channels'];
+			}
+			else
+			{
+				$channels = 3;
+			}
+		   
+			$memoryNeeded = round( ( $imageInfo[0] * $imageInfo[1]
+												   * $imageInfo['bits']
+												   * $channels / 8
+									 + $K64
+								   ) * $TWEAKFACTOR
+								 );
+			$memoryNeeded = round($memoryNeeded/$MB);
+		   
+			return $memoryNeeded;		
+			// Memory_Get_Usage() or Get_CFG_Var('memory_limit') to find the memory limit
+	   }
+	}
+	
+	# CLEAN GET AND POST DATA
+	function quote_smart($value)
+	{
+		global $db;
+		// Stripslashes if magic quotes is on
+		if(get_magic_quotes_gpc())
+		{
+		   @$value = trim(stripslashes($value));
+		}
+		// Quote if not a number or a numeric string
+		if (!is_numeric($value))
+		{
+		   @$value = trim(mysqli_real_escape_string($db,$value));
+		}
+		return $value;
+	}
+	
+	# strips slashes, and converts special characters to HTML equivalents for string defined in $var
+	function fixchars($var,$nl2br = false)
+	{
+		$chars = array(			
+			128 => '&#8364;',
+			130 => '&#8218;',
+			131 => '&#402;',
+			132 => '&#8222;',
+			133 => '&#8230;',
+			134 => '&#8224;',
+			135 => '&#8225;',
+			136 => '&#710;',
+			137 => '&#8240;',
+			138 => '&#352;',
+			139 => '&#8249;',
+			140 => '&#338;',
+			142 => '&eacute;',
+			145 => '&#8216;',
+			146 => '&iacute;',
+			147 => '&#8220;',
+			148 => '&#8221;',
+			149 => '&#8226;',
+			150 => '&#8211;',
+			151 => '&#8212;',
+			152 => '&#732;',
+			153 => '&#8482;',
+			154 => '&#353;',
+			155 => '&#8250;',
+			156 => '&#339;',
+			158 => '&#382;',
+			159 => '&#376;');
+		$var = str_replace(array_map('chr', array_keys($chars)), $chars, htmlentities(stripslashes($var)));
+		if($nl2br)
+		{
+			return nl2br($var);
+		}
+		else
+		{
+			return $var;
+		}
+	}
+	
+	# NUMBER AND CURRENCY FORMATTING
+	class number_formatting
+	{
+		# FOR CURRENCY
+		var $cur_hide_denotation = 0;
+		var $cur_currency_id = 0;
+		var $cur_name = "United States Dollars";
+		var $cur_code = "USD";
+		var $cur_denotation = "\$";
+		var $cur_exchange_rate = 1;		
+		var $cur_decimal_separator = ".";
+		var $cur_decimal_places = 2;
+		var $cur_thousands_separator = ",";
+		var $cur_pos_num_format = 1;
+		var $cur_neg_num_format = 7;		
+		var $cur_strip_ezeros = 0;
+		
+		# FOR NUMBERS
+		var $decimal_separator = ".";
+		var $decimal_places = 2;
+		var $thousands_separator = ",";
+		var $pos_num_format = 1;
+		var $neg_num_format = 1;
+		var $neg_cur_format = 7;		
+		var $value;
+		var $strip_ezeros = 0;
+		
+		# SET DEFAULTS FROM MANAGER CONFIG
+		function set_num_defaults()
+		{
+			global $config;
+			$this->decimal_separator = $config['settings']['decimal_separator'];
+			$this->decimal_places = $config['settings']['decimal_places'];
+			$this->thousands_separator = $config['settings']['thousands_separator'];
+			$this->neg_num_format = $config['settings']['neg_num_format'];
+		}
+		
+		# SET DEFAULTS FROM DEFAULT CURRENCY
+		function set_cur_defaults()
+		{
+			global $config;
+			$this->cur_currency_id = $config['settings']['cur_currency_id'];
+			$this->cur_code = $config['settings']['cur_code'];
+			$this->cur_name = $config['settings']['cur_name'];
+			$this->cur_denotation = $config['settings']['cur_denotation'];
+			$this->cur_denotation_reset = $config['settings']['cur_denotation'];
+			//$this->cur_hide_denotation = 0;
+			$this->cur_decimal_places = $config['settings']['cur_decimal_places'];
+			$this->cur_decimal_separator = $config['settings']['cur_decimal_separator'];
+			$this->cur_neg_num_format = $config['settings']['cur_neg_num_format'];
+			$this->cur_pos_num_format = $config['settings']['cur_pos_num_format'];
+			
+			if($config['settings']['cur_thousands_separator'] == 'sp')			
+				$this->cur_thousands_separator = ' ';
+			elseif($config['settings']['cur_thousands_separator'] == 'no')
+				$this->cur_thousands_separator = '';
+			else
+				$this->cur_thousands_separator = $config['settings']['cur_thousands_separator'];
+		}
+		
+		# SET DEFAULTS FROM DATABASE CURRENCY VALUES
+		function set_custom_cur_defaults($currencyID)
+		{
+			global $config, $dbinfo, $db;
+			
+			$result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}currencies WHERE currency_id = '{$currencyID}'");
+			$currencyRows = mysqli_num_rows($result);
+			$currency = mysqli_fetch_array($result);
+			
+			if(!$currencyRows)
+				die('No currency selected');
+				
+			// xxxx Select currency details from the database
+			$this->cur_currency_id = $currency['currency_id'];
+			$this->cur_code = $currency['code'];
+			$this->cur_name = $currency['name'];
+			$this->cur_denotation = $currency['denotation'];
+			$this->cur_denotation_reset = $currency['denotation'];
+			$this->cur_decimal_places = $currency['decimal_places'];
+			$this->cur_decimal_separator = $currency['decimal_separator'];
+			
+			if($currency['thousands_separator'] == 'sp')			
+				$this->cur_thousands_separator = ' ';
+			elseif($currency['thousands_separator'] == 'no')
+				$this->cur_thousands_separator = '';
+			else
+				$this->cur_thousands_separator = $currency['thousands_separator'];
+			
+			//$this->cur_thousands_separator = $currency['thousands_separator'];
+			
+			
+			$this->cur_neg_num_format = $currency['neg_num_format'];
+			$this->cur_pos_num_format = $currency['pos_num_format'];
+		}
+		
+		# EXAMPLE NUMBER SPAN
+		function example_number_text($num,$num2='')
+		{
+			echo "<span style='margin-left: 2px; font-size: 11px; color: #fff' class='mtag_dgrey'><!--xxx-->example: ";
+			echo $this->number_display($num,'','');
+			if($num2)
+			{
+				echo " or " . $this->number_display($num2,'','');
+			}
+			echo "</span>";
+		}
+		
+		# EXAMPLE NUMBER SPAN
+		function example_currency_text($num,$num2='')
+		{
+			echo "<div style='display: inline; margin-left: 0px; font-size: 11px; color: #fff; white-space: nowrap; padding: 6px; background-color: #999'><!--xxx-->Example: <strong>";
+			echo $this->currency_display($num2,0);
+			/*
+			if($num2)
+			{
+				echo " or " . $this->currency_display($num2,0);
+			}
+			*/
+			echo "</strong></div>";
+		}
+		
+		# REMOVE ANY EXTRA ZEROS THAT MAY BE PUT AT THE END
+		function strip_end_zeros($inputnum)
+		{
+			//$inputnum = (float)$inputnum * 1;
+			$len = strlen($inputnum);
+			$last_char = substr($inputnum,$len-1,$len);
+			if($last_char == "0")
+			{
+				$inputnum = substr($inputnum,0,$len-1);
+				$inputnum = $this->strip_end_zeros($inputnum);
+			}
+			# MAKE SURE LAST CHARACTER ISN'T DECIMAL
+			if($last_char == $this->decimal_separator)
+			{
+				$inputnum = substr($inputnum,0,$len-1);
+			}
+			return $inputnum;
+		}
+		
+		# CONVERT NUMBER FOR DB
+		function number_clean($inputnum)
+		{
+			# FIRST TRIM AND STRIP ANY CURRENCY SYMBOLS
+			$this->value = $this->strip_currency_symbol(trim($inputnum));
+			//$separator = array(".",",");
+			$exploded_value = explode($this->decimal_separator,$this->value);
+			# CHECK AND SEE IF THERE IS A DECIMAL PLEASE
+			if(count($exploded_value) > 1)
+			{
+				# LAST VALUE - DECIMAL VALUE
+				//$decimal = $exploded_value[count($exploded_value)-1];
+				$decimal = $this->strip_nonnumbers(array_pop($exploded_value));
+				# NUMBER PUT BACK TOGETHER
+				$fullnum = $this->strip_nonnumbers(implode("",$exploded_value));
+				# NUMBER WITH DECIMAL 
+				$this->value = $fullnum . "." . $decimal;
+			}
+			# NO DECIMAL
+			else
+			{
+				$this->value = $this->strip_nonnumbers($this->value);
+			}
+			
+			return $this->value;
+		}
+		
+		# CONVERT CURRENCY FOR DB
+		function currency_clean($inputnum)
+		{
+			# FIRST TRIM AND STRIP ANY CURRENCY SYMBOLS
+			$this->value = $this->strip_currency_symbol(trim($inputnum));
+			//$separator = array(".",",");
+			$exploded_value = explode($this->cur_decimal_separator,$this->value);
+			# CHECK AND SEE IF THERE IS A DECIMAL PLEASE
+			if(count($exploded_value) > 1)
+			{
+				# LAST VALUE - DECIMAL VALUE
+				//$decimal = $exploded_value[count($exploded_value)-1];
+				$decimal = $this->strip_nonnumbers(array_pop($exploded_value));
+				# NUMBER PUT BACK TOGETHER
+				$fullnum = $this->strip_nonnumbers(implode("",$exploded_value));
+				# NUMBER WITH DECIMAL 
+				$this->value = $fullnum . "." . $decimal;
+			}
+			# NO DECIMAL
+			else
+			{
+				$this->value = $this->strip_nonnumbers($this->value);
+			}
+			
+			return $this->value;
+		}
+		
+		# STRIP CURRENCY SYMBOL
+		function strip_currency_symbol($inputnum)
+		{ 
+			$cleanup_chars = array("$","£","¥","€","₪"); 
+			$inputnum = str_replace($cleanup_chars, "", $inputnum);
+			return $inputnum; 
+		}
+		
+		# REMOVE ALL BUT NUMBERS
+		function strip_nonnumbers($inputnum)
+		{
+			$inputnum = preg_replace("/[^0-9]/", "", $inputnum);
+			return $inputnum;
+		}
+		
+		# SET THE VALUE OF THE CURRENCY HIDE DENOTATION VARIALBE
+		//function set_cur_hide_denotation($value=0)
+		//{
+		//	$this->cur_hide_denotation = $value;
+		//}
+		
+		# DISPLAY CURRENCY
+		function currency_display($inputnum,$show_denotation=0)
+		{
+			# MAKE SURE A NUMBER IS ENTERED
+			//if($inputnum)
+			//{
+				/*
+				# RESET DEFAULTS IF VALUES ARE PASSED 
+				if($decimal_places !== '')
+				{
+					$this->cur_decimal_places = $decimal_places;
+				}			
+				if($strip_ezeros !== '')
+				{
+					$this->cur_strip_ezeros = $strip_ezeros;
+					//echo "test"; exit;
+				}
+				//echo $strip_ezeros; exit;
+				*/
+				# NUMBER FORMAT FUNCTION: http://us.php.net/manual/en/function.number-format.php //number_format($number, dec_places, dec_sep, thou_sep);			
+				$clean_number = $this->strip_currency_symbol(trim($inputnum));
+				$clean_number = round($clean_number,$this->cur_decimal_places);
+				if($clean_number < 0)
+				{
+					$negative_number = 1;
+					$clean_number = $clean_number * -1;
+				}
+				
+				$this->value = number_format($clean_number, $this->cur_decimal_places, $this->cur_decimal_separator, $this->cur_thousands_separator);
+				
+				# STRIP ZEROS IF IT IS SET
+				if($this->cur_strip_ezeros)
+				{
+					$this->value = $this->strip_end_zeros($this->value);
+					# MAKE SURE THE LAST CHARACTER ISN'T OUR DECIMAL
+				}
+				
+				# DONT INCLUDE CURRENCY SYMBOL OR RESET IT IF NEEDED
+				if($show_denotation == 0)
+				{
+					$this->cur_denotation = '';
+				}
+				else
+				{
+					$this->cur_denotation = $this->cur_denotation_reset;
+				}
+
+				# NEGATIVE NUMBER
+				if($negative_number)
+				{
+					# FIX FOR NEGATIVE DISPLAY
+					
+					switch($this->cur_neg_num_format)
+					{
+						case "1":
+							$this->value = "(" . $this->cur_denotation . $this->value . ")";
+						break;
+						case "2":
+							$this->value = "(" . $this->cur_denotation . " " . $this->value . ")";
+						break;
+						case "3":
+							$this->value = "(" . $this->value . $this->cur_denotation . ")";
+						break;
+						case "4":
+							$this->value = "(" . $this->value . " " . $this->cur_denotation . ")";
+						break;
+						case "5":
+							$this->value = $this->cur_denotation . "-" . $this->value;
+						break;
+						case "6":
+							$this->value = $this->cur_denotation . " -" . $this->value;
+						break;
+						case "7":
+							$this->value = "-" . $this->cur_denotation . $this->value;
+						break;
+						case "8":
+							$this->value = "- " . $this->cur_denotation . $this->value;
+						break;
+						case "9":
+							$this->value = "-" . $this->cur_denotation . " " . $this->value;
+						break;
+						case "10":
+							$this->value = "- " . $this->cur_denotation . " " . $this->value;
+						break;
+						case "11":
+							$this->value = "-" . $this->value . $this->cur_denotation;
+						break;
+						case "12":
+							$this->value = "- " . $this->value . $this->cur_denotation;
+						break;
+						case "13":
+							$this->value = "-" . $this->value . " " . $this->cur_denotation;
+						break;
+						case "14":
+							$this->value = "- " . $this->value . " " . $this->cur_denotation;
+						break;
+					}
+				}
+				# POSITIVE NUMBER
+				else
+				{
+					switch($this->cur_pos_num_format)
+					{
+						case "1":
+							$this->value = $this->cur_denotation . $this->value;
+						break;
+						case "2":
+							$this->value = $this->cur_denotation . " " . $this->value;
+						break;
+						case "3":
+							$this->value = $this->value . $this->cur_denotation;
+						break;
+						case "4":
+							$this->value = $this->value . " " . $this->cur_denotation;
+						break;
+					}
+				}							
+				return $this->value;			
+			//}
+		}
+		
+		# DISPLAY NUMBER
+		function number_display($inputnum=0,$decimal_places='',$strip_ezeros='')
+		{
+			# MAKE SURE A NUMBER IS ENTERED
+			if($inputnum)
+			{
+				# RESET DEFAULTS IF VALUES ARE PASSED 
+				if($decimal_places !== '')
+				{
+					$this->decimal_places = $decimal_places;
+				}			
+				if($strip_ezeros !== '')
+				{
+					$this->strip_ezeros = $strip_ezeros;
+					//echo "test"; exit;
+				}
+				//echo $strip_ezeros; exit;
+				
+				# NUMBER FORMAT FUNCTION: http://us.php.net/manual/en/function.number-format.php //number_format($number, dec_places, dec_sep, thou_sep);			
+				$clean_number = $this->strip_currency_symbol(trim($inputnum));
+				$clean_number = round($clean_number,$this->decimal_places);
+				if($clean_number < 0)
+				{
+					$negative_number = 1;
+					$clean_number = $clean_number * -1;
+				}
+				
+				$this->value = number_format($clean_number, $this->decimal_places, $this->decimal_separator, $this->thousands_separator);
+				
+				# STRIP ZEROS IF IT IS SET
+				if($this->strip_ezeros)
+				{
+					$this->value = $this->strip_end_zeros($this->value);
+					# MAKE SURE THE LAST CHARACTER ISN'T OUR DECIMAL
+				}
+				//echo $this->value; exit;
+				
+				# FORMAT FOR CURRENCY
+				if($this->format_as_currency)
+				{
+					# NEGATIVE NUMBER
+					if($negative_number)
+					{
+						# FIX FOR NEGATIVE DISPLAY
+						
+						switch($this->neg_num_format)
+						{
+							case "1":
+								$this->value = "(" . $this->denotation . $this->value . ")";
+							break;
+							case "2":
+								$this->value = "( " . $this->denotation . $this->value . ")";
+							break;
+							case "3":
+								$this->value = "(" . $this->value . $this->denotation . ")";
+							break;
+							case "4":
+								$this->value = "(" . $this->value . " " . $this->denotation . ")";
+							break;
+							case "5":
+								$this->value = $this->denotation . "-" . $this->value;
+							break;
+							case "6":
+								$this->value = $this->denotation . " -" . $this->value;
+							break;
+							case "7":
+								$this->value = "-" . $this->denotation . $this->value;
+							break;
+							case "8":
+								$this->value = "- " . $this->denotation . $this->value;
+							break;
+							case "9":
+								$this->value = "-" . $this->denotation . " " . $this->value;
+							break;
+							case "10":
+								$this->value = "- " . $this->denotation . " " . $this->value;
+							break;
+							case "11":
+								$this->value = "-" . $this->value . $this->denotation;
+							break;
+							case "12":
+								$this->value = "- " . $this->value . $this->denotation;
+							break;
+							case "13":
+								$this->value = "-" . $this->value . " " . $this->denotation;
+							break;
+							case "14":
+								$this->value = "- " . $this->value . " " . $this->denotation;
+							break;
+						}
+					}
+					# POSITIVE NUMBER
+					else
+					{
+						switch($this->pos_num_format)
+						{
+							case "1":
+								$this->value = $this->denotation . $this->value;
+							break;
+							case "2":
+								$this->value = " " . $this->denotation . $this->value;
+							break;
+							case "3":
+								$this->value = $this->value . $this->denotation;
+							break;
+							case "4":
+								$this->value = $this->value . " " . $this->denotation;
+							break;
+						}
+					}				
+				}
+				# FORMAT FOR NUMBER ONLY
+				else
+				{
+					# NEGATIVE NUMBER
+					if($negative_number)
+					{
+						switch($this->neg_num_format)
+						{
+							case "1":
+								$this->value = "-" . $this->value;
+							break;
+							case "2":
+								$this->value = "- " . $this->value;
+							break;
+							case "3":
+								$this->value = "(" . $this->value . ")";
+							break;
+							case "4":
+								$this->value = $this->value . "-";
+							break;
+							case "5":
+								$this->value = $this->value . " -";
+							break;
+						}
+					}
+				}			
+				return $this->value;			
+			}
+		}
+	}
+
+?>

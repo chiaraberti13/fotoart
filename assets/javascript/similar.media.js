@@ -1,0 +1,5 @@
+$(function()
+{
+	registerHoverFunction();
+	registerFollowCursor();
+});

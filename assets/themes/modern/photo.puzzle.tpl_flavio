@@ -1,0 +1,192 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	{include file='head.tpl'}
+	<link href="assets/css/jquery.Jcrop.min.css" type="text/css" rel="stylesheet">
+</head>
+<body>
+	{include file='overlays.tpl'}
+	<div id="container">
+		{include file='header.tpl'}
+		{*include file='header2.tpl'*}		
+		<!--<div class="container_24">-->
+		<div class="container">
+		{if $noAccess}
+				<div class="row">
+					<div class="col-md-12">
+						<p class="notice">{$lang.fotopuzzleErr}</p>
+					</div>
+				</div>
+		{else}				
+			<!-- FP -->
+			<div class="row">
+				<!--<div class="col-md-12">-->
+				<div class="row">
+					<div class="col-xs-5 trattino"></div><div class="col-xs-2"><H3 style="padding: 0 0 0 0 !important; margin: 0 0 0 0 !important; text-align: center;">{$lang.TEXT_PP_TESTATA}</H2></div><div class="col-xs-5 trattino"></div>
+				</div>
+				<!--</div>-->
+			</div>
+			
+			<div class="row">
+				<div id="left-box" class="col-md-8">
+					<div id="menu-left" class="ppmenu">
+						{if $file}
+							<div id="labels" style="cursor: pointer;">{$lang.TEXT_PP_SCEGLI}
+								<span id="landscape" class="label label-info">{$lang.TEXT_PP_TAGLIA_O}</span>
+								<span id="portrait" "label label-default" style="margin-right: 15px;">{$lang.TEXT_PP_TAGLIA_V}</span>
+								<span id="quality"></span></center>
+							</div>
+
+							<div id="img-container">
+								<img id="img" class="img-responsive" style="display: block; margin-left: auto; margin-right: auto;" src="{$file}">
+							</div>
+						{else}
+							<div id="labels" style="display: none; cursor: pointer;">{$lang.TEXT_PP_SCEGLI}
+								<span id="landscape" class="label label-info">{$lang.TEXT_PP_TAGLIA_O}</span>
+								<span id="portrait" "label label-default" style="margin-right: 15px;">{$lang.TEXT_PP_TAGLIA_V}</span>
+								<span id="quality"></span></center>
+							</div>
+							
+							<div id="steps" style="font-size: 15px;">
+								<dl class="dl-horizontal">
+									{$lang.TEXT_PP_4PUNTI}
+								</dl>
+							</div>
+							
+							<div id="progress-bar-container" style="display: none;">
+							<h4>{$lang.TEXT_PP_INVIO_IMM}</h4>
+								<div class="progress" >
+									<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100" style=""></div>
+								</div>
+							</div>
+							<div id="img-container" style="display: none;"></div>
+						{/if}
+												
+						<div id="img-box-container" style="text-align: center; display: none;"></div>
+						
+						<div id="banner-container" style="margin-top: 10px; display: none;"></div>
+						{if $file}
+							<ul id="navButtons" class="pager foot">
+								<li id="navNext" class="next" style="display: none;"><a href="#">{$lang.TEXT_PP_AVANTI}</a></li>
+							</ul>
+						{else}
+							<ul id="navButtons" class="pager foot" style="display: none;">
+								<li id="navPrev" class="previous"><a href="#">{$lang.TEXT_PP_CAMBIA_FOTO}</a></li>
+								<li id="navNext" class="next" style="display: none;"><a href="#">{$lang.TEXT_PP_AVANTI}</a></li>
+								<!--<li id="navNextBox" class="next" style="display: none;"><a href="#">{$lang.TEXT_PP_RIEPILOGO} <span class="glyphicon glyphicon-shopping-cart"></span></a></li>-->
+							</ul>
+							<!--
+							<ul id="navButtonsBox" class="pager foot">
+								<li id="navPrevBox" class="previous"><a href="#">{$lang.TEXT_PP_CAMBIA_FORM}</a></li>
+								<li id="navNextBox" class="next" style="display: none;"><a href="#">{$lang.TEXT_PP_RIEPILOGO} <span class="glyphicon glyphicon-shopping-cart"></span></a></li>
+							</ul>
+							-->
+						{/if}
+						
+							<ul id="navButtonsBox" class="pager foot" style="display: none;">
+								<li id="navPrevBox" class="previous"><a href="#">{$lang.TEXT_PP_CAMBIA_FORM}</a></li>
+								<li id="navNextBox" class="next" style="display: none;"><a href="#">{$lang.TEXT_PP_RIEPILOGO} <span class="glyphicon glyphicon-shopping-cart"></span></a></li>
+							</ul>
+					</div> <!-- /menu-left -->
+				</div> <!-- /col-md -->
+		
+				<div id="right-box" class="col-md-4">
+					<div id="menu-right" class="ppmenu">
+						{if $file}
+							<div id="puzzlesList">	
+								<table class="table table-hover">
+									<thead><tr><th>{$lang.TEXT_PP_PEZZI}</th><th>{$lang.TEXT_PP_FORMATO}</th><th>{$lang.TEXT_PP_PREZZO}</th></tr></thead>
+									<tbody>
+									{foreach $aPuzzles as $aPuzzle}
+										{if $aPuzzle.shape eq false} <tr style="cursor: pointer" id="{$aPuzzle.id}" data="{$aPuzzle.initSelectArea|escape:html}" shape="null"><td>{$aPuzzle.pezzi}</td><td>{$aPuzzle.dimensioni}</td><td><strong>€{$aPuzzle.prezzo}</strong></td> 
+										{else} <tr style="cursor: pointer" id="{$aPuzzle.id}" data="{$aPuzzle.initSelectArea|escape:html}" shape="$aPuzzle.shape|lower"><td>{$aPuzzle.pezzi}</td><td>{$aPuzzle.dimensioni} - {$aPuzzle.shape}</td><td><strong>€{$aPuzzle.prezzo}</strong></td>
+										{/if}
+										<!--{$aPuzzle.initSelectArea|@var_dump}-->
+									{/foreach}
+									</tbody>
+									</table>
+							</div>
+							<div id="boxsList" style="display: none;"></div>
+						{else}
+							<div id="upload">
+								<h2>{$lang.TEXT_PP_CARICA}</h2>
+								<h6>{$lang.TEXT_PP_DESC_CARICA}<strong><span id="maxFileSize"></span>{$lang.TEXT_PP_MEGABYTE}</strong></h6>
+
+								<div id="drop-area-div" style="text-align: center;">
+									<button type="button" class="btn btn-default" id="buttonFile"><span class="glyphicon glyphicon-upload"></span>{$lang.TEXT_PP_SELEZIONA}</button>
+									<input type="file" name="file" id="inputFile" style="display: none;"> 
+								</div>
+							</div>
+							
+							<div id="uploaded" style="display: none; margin-top: 20px; text-align: center; background-color: #eee; padding: 15px;"></div>
+							<div id="puzzlesList" style="display: none;"></div>
+							<div id="boxsList" style="display: none;"></div>
+							<div id="boxProgressContainer" style="display: none; position: absolute; bottom: 15px; left: 50%">
+								<div id="boxProgressBanner" style="position: relative; left: -50%; width: 500px;"></div>
+							</div>
+							
+						{/if}
+						
+					</div><!-- /menu-right -->
+				</div><!-- /col-md -->
+					
+			</div> <!-- /row -->
+			<!-- /FP -->
+		{/if} <!-- fine esle -->
+		</div><!-- /container-->
+		
+		<!-- modal opzione scatola o preassemblato -->
+		<div class="modal fade" id="modalOpzione">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+						<h4 class="modal-title">{$lang.TEXT_PP_SCELTA_OPZIONE}</h4>
+					</div>
+					<div class="modal-body"></div>
+		    		<div class="modal-footer" style="text-align: center;">
+		    			<span class="text-info" id="modalOpzioneFootNote">{$lang.TEXT_PP_SCELTA_OPZIONE_FOOT}</span>
+		    			<span class="text-warning" id="modalOpzioneFootWaitMsg" style="display: none;">{$lang.TEXT_PP_SCELTA_OPZIONE_FOOT_WAIT}</span>
+					</div>
+		    	</div><!-- /.modal-content -->
+		  	</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		
+		<div class="modal fade" id="orderConf">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+						<h4 class="modal-title">{$lang.TEXT_PP_RIEPILOGO_ORDINE}</h4>
+						<span id="orderConfBoxedHeader">
+							<br/>
+							{$lang.TEXT_PP_CONTROLLO}
+							<br/><br/>
+							{$lang.TEXT_PP_VERIFICA}
+							<br/>
+							{$lang.TEXT_PP_VERIFICA_SCATOLA}
+						</span>
+					</div>
+					<div class="modal-body"></div>
+			    	<div style="padding: 15px; border-top: 1px solid #e5e5e5;">
+		    			<input id="consenso" type="checkbox">  
+		      				<small>{$lang.TEXT_PP_CONSENSO}</small><p>{$lang.TEXT_PP_CONSENSO_CONFERMA}</p>
+					</div>	        
+		    		<div class="modal-footer">
+		    			<span id="modal-warning" style="display: none;"><p class="text-danger">{$lang.TEXT_PP_ACCETTA_COND}</p></span>
+		    			<div id="modalForm"></div>
+					</div>
+		    	</div><!-- /.modal-content -->
+		  	</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		
+		
+		{* Debug Area *}
+		{if $debugMode}
+			{debugOutput value=$media title='media'}
+		{/if}
+		
+		{include file='footer.tpl'}
+    </div>
+</body>
+</html>

@@ -1,0 +1,136 @@
+=== SCANSIONE IMAGICK 2025-08-30 17:48:33 ===
+Directory scansionata: /var/www/vhosts/fotoartpuzzle.it/httpdocs
+File trovati: 16
+
+FILE #1: ./assets/classes/imagetools.php
+Pattern: new Imagick
+  Riga 269: // image = new Imagick($src); // Converted to ImageMagick CLI
+  Riga 455: // imwatermark = new Imagick(BASE_PATH."/assets/watermarks/" . $this->watermark); // Converted to ImageMagick CLI
+
+FILE #2: ./assets/includes/photo.puzzle.func.php
+Pattern: new Imagick
+  Riga 164: // im = new Imagick($newPath.$img); // Converted to ImageMagick CLI
+  Riga 380: // im = new Imagick(); // Converted to ImageMagick CLI
+  Riga 390: // mask = new Imagick(); // Converted to ImageMagick CLI
+  Riga 674: // im = new Imagick($img); // Converted to ImageMagick CLI
+  Riga 770: // im = new Imagick(); // Converted to ImageMagick CLI
+  Riga 780: // mask = new Imagick(); // Converted to ImageMagick CLI
+  Riga 885: // im = new Imagick($puzzleFile); // Converted to ImageMagick CLI
+  Riga 1165: // im = new Imagick($model); // Converted to ImageMagick CLI
+  Riga 1210: // mpc = new Imagick(); // Converted to ImageMagick CLI
+  Riga 1276: // im = new Imagick(); // Converted to ImageMagick CLI
+  Riga 1393: // im = new Imagick($model); // Converted to ImageMagick CLI
+  Riga 1472: // im = new Imagick($img); // Converted to ImageMagick CLI
+  Riga 1486: // im = new Imagick($srcImg); // Converted to ImageMagick CLI
+  Riga 1663: // mpc = new Imagick(); // Converted to ImageMagick CLI
+  Riga 1747: // im = new Imagick(); // Converted to ImageMagick CLI
+
+FILE #3: ./assets/includes/photo.puzzle.inc.php
+Pattern: new Imagick
+  Riga 199: // im = new Imagick($_FILES["file"]["tmp_name"]); // Converted to ImageMagick CLI
+  Riga 390: // im = new Imagick($originalFile); // Converted to ImageMagick CLI
+
+FILE #4: ./assets/includes/shared.functions.php
+Pattern: new Imagick
+  Riga 1532: // image = new Imagick($filename); // Converted to ImageMagick CLI
+
+FILE #5: ./assets/tcpdf/examples/example_015.php
+Pattern: annotation
+  Riga 138: $pdf->Annotation(20, 50, 5, 5, 'TXT file', array('Subtype'=>'FileAttachment', 'Name' => 'PushPin', 'FS' => 'data/utf8test.txt'));
+  Riga 141: $pdf->Annotation(50, 50, 5, 5, 'PDF file', array('Subtype'=>'FileAttachment', 'Name' => 'PushPin', 'FS' => 'example_012.pdf'));
+
+FILE #6: ./assets/tcpdf/examples/example_036.php
+Pattern: annotation
+  Riga 80: $pdf->Annotation(83, 27, 10, 10, "Text annotation example\naccented letters test: àèéìòù", array('Subtype'=>'Text', 'Name' => 'Comment', 'T' => 'title example', 'Subj' => 'example', 'C' => array(255, 255, 0)));
+
+FILE #7: ./assets/tcpdf/examples/example_041.php
+Pattern: annotation
+  Riga 81: $pdf->Annotation(85, 27, 5, 5, 'text file', array('Subtype'=>'FileAttachment', 'Name' => 'PushPin', 'FS' => 'data/utf8test.txt'));
+
+FILE #8: ./assets/tcpdf/tcpdf.php
+Pattern: new Imagick, annotation, setImageFormat
+  Riga 7056: $img = new Imagick();
+  Riga 7253: $img = new Imagick();
+  Riga 4729: $this->Annotation($x, $y, $w, $h, $link, array('Subtype'=>'Link'), $spaces);
+  Riga 12733: $this->Annotation($x, $y, $w, $h, $name, $opt, 0);
+  Riga 12836: $this->Annotation($x, $y, $w, $w, $name, $opt, 0);
+  Riga 12922: $this->Annotation($x, $y, $w, $h, $name, $opt, 0);
+  Riga 13009: $this->Annotation($x, $y, $w, $h, $name, $opt, 0);
+  Riga 13088: $this->Annotation($x, $y, $w, $w, $name, $opt, 0);
+  Riga 13262: $this->Annotation($x, $y, $w, $h, $name, $opt, 0);
+  Riga 22407: $this->Annotation($ax, $ay, $aw, $ah, $annot['text'], $annot['opt'], $annot['spaces']);
+  Riga 7104: $img->setImageFormat('jpeg');
+  Riga 7264: $img->setImageFormat('png');
+  Riga 7272: $imga->setImageFormat('png');
+
+FILE #9: ./assets/tcpdf/tcpdf_barcodes_1d.php
+Pattern: new Imagick, ImagickDraw, newImage, drawImage
+  Riga 207: $png = new Imagick();
+  Riga 209: $bar = new imagickdraw();
+  Riga 208: $png->newImage($width, $height, 'none', 'png');
+  Riga 231: $png->drawimage($bar);
+
+FILE #10: ./assets/tcpdf/tcpdf_barcodes_2d.php
+Pattern: new Imagick, ImagickDraw, newImage, drawImage
+  Riga 208: $png = new Imagick();
+  Riga 210: $bar = new imagickdraw();
+  Riga 209: $png->newImage($width, $height, 'none', 'png');
+  Riga 235: $png->drawimage($bar);
+
+FILE #11: ./debug.php
+Pattern: new Imagick, ImagickDraw, newImage, drawImage, annotation, annotateImage, setImageFormat, getImageBlob
+  Riga 382: $imagick = new Imagick();
+  Riga 409: $test_img = new Imagick();
+  Riga 485: $test_img = new Imagick();
+  Riga 564: $test_img = new Imagick();
+  Riga 491: $draw = new ImagickDraw();
+  Riga 499: $draw = new ImagickDraw();
+  Riga 508: $draw = new ImagickDraw();
+  Riga 515: $draw_simple = new ImagickDraw();
+  Riga 567: $draw = new ImagickDraw();
+  Riga 410: $test_img->newImage(100, 100, 'white');
+  Riga 486: $test_img->newImage(200, 100, 'white');
+  Riga 565: $test_img->newImage(200, 100, 'white');
+  Riga 495: $test_img->drawImage($draw);
+  Riga 504: $test_img->drawImage($draw);
+  Riga 572: $test_img->drawImage($draw);
+  Riga 494: $draw->annotation(10, 30, 'Test');
+  Riga 503: $draw->annotation(10, 30, 'Test');
+  Riga 571: $draw->annotation(10, 30, 'Test TTF');
+  Riga 511: $test_img->annotateImage($draw, 10, 30, 0, 'Test');
+  Riga 518: $test_img->annotateImage($draw_simple, 10, 30, 0, 'Test');
+  Riga 487: $test_img->setImageFormat('png');
+  Riga 524: if (file_put_contents($test_file, $test_img->getImageBlob()) !== false) {
+  Riga 575: if (file_put_contents($test_file, $test_img->getImageBlob()) !== false) {
+
+FILE #12: ./find_imagick.php
+Pattern: new Imagick, newImage, annotation, getImageBlob
+  Riga 209: echo '$imagick = new Imagick();<br>';
+  Riga 216: echo '$imagick->newImage(250, 180, \'white\');<br>';
+  Riga 223: echo '$draw->annotation(10, 30, \'testo\');<br>';
+  Riga 230: echo 'file_put_contents($file, $imagick->getImageBlob());<br>';
+
+FILE #13: ./manager/mgr.functions.bu-w-imagetools.php
+Pattern: new Imagick
+  Riga 2207: // image = new Imagick($src); // Converted to ImageMagick CLI
+
+FILE #14: ./manager/mgr.image.preview.php
+Pattern: new Imagick
+  Riga 140: // image = new Imagick($src); // Converted to ImageMagick CLI
+  Riga 158: // imwatermark = new Imagick($basePath."/assets/watermarks/" . $watermark); // Converted to ImageMagick CLI
+
+FILE #15: ./manager/mgr.orders.edit.php
+Pattern: new Imagick
+  Riga 2054: // im = new Imagick($model); // Converted to ImageMagick CLI
+
+FILE #16: ./resolve.php
+Pattern: new Imagick
+  Riga 188: // 1. new Imagick() -> setup variabili
+  Riga 191: 'replacement' => '// $1 = new Imagick($2); // Converted to ImageMagick CLI
+  Riga 306: 'search' => '$im = new Imagick($newPath.$img);
+  Riga 310: 'replace' => '// $im = new Imagick($newPath.$img); // Converted to ImageMagick CLI
+  Riga 323: 'search' => '$im = new Imagick($_FILES["file"]["tmp_name"]);',
+  Riga 324: 'replace' => '// $im = new Imagick($_FILES["file"]["tmp_name"]); // Converted to ImageMagick CLI
+  Riga 331: 'search' => '$image = new Imagick($src);
+  Riga 334: 'replace' => '// $image = new Imagick($src); // Converted to ImageMagick CLI
+

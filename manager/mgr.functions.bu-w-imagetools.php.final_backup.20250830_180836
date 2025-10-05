@@ -1,0 +1,2475 @@
+<?php
+	
+/**
+ * FUNZIONI IMAGEMAGICK COMMAND LINE - Auto-generate da risolve.php
+ */
+
+function im_get_image_geometry($file_path) {
+    $cmd = "identify -format '%wx%h' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        list($width, $height) = explode('x', $output[0]);
+        return array('width' => (int)$width, 'height' => (int)$height);
+    }
+    return false;
+}
+
+function im_get_image_format($file_path) {
+    $cmd = "identify -format '%m' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        return trim($output[0]);
+    }
+    return false;
+}
+
+function im_scale_image($input_file, $output_file, $width, $height = 0, $format = null) {
+    $size_param = $height > 0 ? $width . "x" . $height : $width . "x";
+    $cmd = "convert " . escapeshellarg($input_file) . " -resize " . escapeshellarg($size_param) . " ";
+    
+    if ($format) {
+        $cmd .= "-format " . escapeshellarg(strtolower($format)) . " ";
+    }
+    
+    $cmd .= escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_crop_image($input_file, $output_file, $width, $height, $x, $y) {
+    $crop_param = $width . "x" . $height . "+" . $x . "+" . $y;
+    $cmd = "convert " . escapeshellarg($input_file) . " -crop " . escapeshellarg($crop_param) . " +repage " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_composite_image($base_file, $overlay_file, $output_file, $x = 0, $y = 0, $compose = "over") {
+    $cmd = "composite -compose " . escapeshellarg($compose) . " -geometry +" . $x . "+" . $y . " " . 
+           escapeshellarg($overlay_file) . " " . escapeshellarg($base_file) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_set_image_format($input_file, $output_file, $format) {
+    $cmd = "convert " . escapeshellarg($input_file) . " -format " . escapeshellarg(strtolower($format)) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_new_image($width, $height, $color, $output_file, $format = "png") {
+    $size_param = $width . "x" . $height;
+    $cmd = "convert -size " . escapeshellarg($size_param) . " xc:" . escapeshellarg($color) . " -format " . escapeshellarg($format) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_read_image($file_path) {
+    // Per command line, "leggere" significa solo verificare che esista
+    return file_exists($file_path);
+}
+
+function im_write_image($temp_file, $output_file) {
+    if (file_exists($temp_file)) {
+        return copy($temp_file, $output_file);
+    }
+    return false;
+}
+
+function im_clean_temp_files($pattern) {
+    $files = glob($pattern);
+    if ($files) {
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+
+###################################################################
+	####	MANAGER FUNCTIONS                                      ####
+	####	Copyright 2010 Ktools.net LLC - All Rights Reserved	   ####
+	####	http://www.ktools.net                                  ####
+	####	Created: 5-4-2006                                      ####
+	####	Modified: 12-22-2009                                   #### 
+	###################################################################
+	
+	# OUTPUT WHAT EXTERNAL STORAGES ARE SUPPORTED
+	function externalStorageSupport()
+	{
+		$supported = array();
+		// CHECK FOR FTP
+		if(function_exists('ftp_connect')){
+			$supported[] = 'ftp';
+		}
+		// CHECK FOR CLOUDFILES
+		if(phpversion() > 5 and function_exists('curl_version') and function_exists('mb_check_encoding'))
+		{
+			$supported[] = 'cloudfiles';
+		}
+		// CHECK FOR AMAZON S3
+		if(phpversion() > 5 and function_exists('curl_version'))
+		{
+			//extension_loaded('curl') and !@dl(PHP_SHLIB_SUFFIX == 'so' ? 'curl.so' : 'php_curl.dll')) or (phpversion() < '5')
+			$supported[] = 'amazon_s3';
+		}
+		return $supported;
+	}
+
+	function definegatewayfield($gateway, $setting, $value)
+	{
+		global $dbinfo, $db, $config;
+		
+		$gateway_setting_result = mysqli_query($db,"SELECT gateway FROM {$dbinfo[pre]}paymentgateways WHERE gateway = '$gateway' AND setting = '$setting'");
+		$gateway_setting_rows = mysqli_num_rows($gateway_setting_result);
+		$gateway_setting = mysqli_fetch_object($gateway_setting_result);
+		
+		if(!$gateway_setting_rows or $gateway_setting_rows <= '0')
+		{
+			# INSERT INFO INTO THE DATABASE
+			$sql = "INSERT INTO {$dbinfo[pre]}paymentgateways(
+						gateway,
+						setting,
+						value
+					) VALUES (
+						'$gateway',
+						'$setting',
+						'$value'
+					)";
+			$result = mysqli_query($db,$sql);
+		}
+	}
+	
+	# GET CREATABLE FORMATS BASED ON IMAGE PROCESSOR SELECTION
+	function getCreatableFormats()
+	{
+		global $config;
+		// Allow ImageMagick formats
+		if(class_exists('Imagick') and $config['settings']['imageproc'] == 2)
+		{
+			$creatable = array('jpg','jpe','jpeg','png','gif','bmp','eps','psd','tif','tiff');
+		}
+		// Only allow GD formats
+		else
+		{
+			$creatable = array('jpg','jpe','jpeg','png','gif');
+		}
+		return $creatable;
+	}
+	
+	# RESET MENU BUILD
+	function menuBuild($status=0)
+	{
+		global $dbinfo, $db, $config;
+		
+		if($config['settings']['gallery_count'])
+		{
+			$sql = "UPDATE {$dbinfo[pre]}settings SET menubuild='$status' WHERE settings_id  = '1'";
+			$_SESSION['menubuildalert'] = $status;
+		}
+	}
+
+	function gateway_input($fieldname,$value,$displayname,$displaydesc,$inputtype='textbox',$required=0)
+	{
+		$code = "<div class='fs_row_on'>";
+		if($required)
+		{
+			$code.= "<img src='images/mgr.ast.gif' class='ast' />";
+		}
+		else
+		{
+			$code.= "<img src='images/mgr.ast.off.gif' class='ast' />";
+		}
+		$code.= "<p>$displayname:<br /><span>$displaydesc</span></p>";					
+		
+		switch($inputtype)
+		{
+			case "textbox":
+				$code.= "<input type='text' name='$fieldname' value='$value' style='width: 200px' />";
+			break;
+			case "checkbox":
+				$code.= "<input type='checkbox' name='$fieldname' value='1'";
+				if($value == 1){ $code.= "checked='checked'"; }
+				$code.=" />";
+			break;
+			case "textarea":
+				$code.= "<textarea name='$fieldname' style='width: 200px; height: 70px;'>$value</textarea>";
+			break;
+		}
+		$code.= "</div>".PHP_EOL;
+		
+		return $code;
+	}
+	
+	# CHECK TO SEE IF THE SERVER IS A WINDOWS MACHINE
+	function is_windows()
+	{
+		$os = getenv("SERVER_SOFTWARE");
+		if(strstr($os, "Win"))
+		{
+			return TRUE;
+			//Print("It's a windows machine");
+		}
+		else
+		{
+			return FALSE;
+			//Print("It's something else");
+		}
+	}
+	
+	# CONVERT DATE BACK TO LOCAL
+	function convert_date_to_local($date)
+	{
+		global $config;
+		$adjusted = explode(".",($config['settings']['time_zone']*-1));				
+		$adj_hours = ($config['settings']['time_zone']) ? $adjusted[0]-1  : $adjusted[0];
+		$adj_minutes = ($adjusted[1] == "5") ? "30" : "0";
+		return date("Y-m-d H:i:s",strtotime("$date +$adj_hours hours $adj_minutes minutes"));
+	}
+			
+	# SAVE THE MEMBER PERMISSIONS FOR AN ITEM
+	function save_mem_permissions()
+	{
+		global $config, $db, $dbinfo, $saveid, $page, $perm;
+		# DELETE THE PERMISSIONS IN THE DATABASE FIRST
+		mysqli_query($db,"DELETE FROM {$dbinfo[pre]}perms WHERE item_id = '$saveid' AND perm_area = '$page'");
+		# PUT THE CORRECT PERMISSION INTO THE DB
+		if($perm and $perm != 'everyone'){
+			$permsplit = explode(",",$perm);					
+			# ADD EACH OF THE PERMISSIONS
+			foreach($permsplit as $value){
+				if($value){
+					mysqli_query($db,"INSERT INTO {$dbinfo[pre]}perms (perm_area,item_id,perm_value) VALUES ('$page','$saveid','$value')");
+				}	
+			}
+		}
+	}
+	
+	# CONVERT CURRENCY SYMBOL TO HTML
+	function currency_symbol_to_html($symbol)
+	{
+		//$html = htmlentities($symbol);
+		$html = htmlentities($symbol,ENT_COMPAT,'UTF-8');
+			
+		switch($html)
+		{
+			case "€":
+				$html = "&euro;";
+			break;
+			case "£":
+				$html = "&pound;";
+			break;
+			case "¥":
+				$html = "&yen;";
+			break;
+			case "₪":
+				$html = "&#8362;";
+			break;
+		}
+		
+		return $html;
+	}
+	
+	# CONVERT CURRENCY HTML TO SYMBOL
+	function currency_html_to_symbol($html)
+	{
+		//$symbol = html_entity_decode($html);
+		$symbol = html_entity_decode($html,ENT_COMPAT,'UTF-8');
+		return $symbol;
+	}
+	
+	# TWO DIGIT DATE
+	function convert_to_2digit($date)
+	{
+		if(strlen($date) == 1)
+		{
+			$date = "0" . $date;
+		}
+		return $date;
+	}
+	
+	# CHECK FTP STATUS
+	function get_ftp_status($ip, $port, $username, $password, $timeout, $path)
+	{
+		$ftpip = gethostbyname($ip);
+		$ftp_connect = @ftp_connect($ftpip, $port, $timeout);
+		if(!$ftp_connect)
+		{
+			// COULD NOT CONNECT - HOST OR PORT IS INCORRECT
+			$ftp_status = '2';
+		}
+		else
+		{
+			if(@ftp_login($ftp_connect, $username, $password))
+			{
+				if(!ftp_chdir($ftp_connect,$path))
+				{
+					// COULD NOT CONNECT - PATH INCORRECT
+					$ftp_status = '4';
+				}
+				else
+				{
+					$ftp_status = '1';
+				}
+			}
+			else
+			{
+				// COULD NOT CONNECT - USERNAME/PASSWORD INCORRECT
+				$ftp_status = '3';
+			}
+			ftp_close($ftp_connect);
+		}
+		return $ftp_status;
+	}
+	
+	# DUPLICATE MYSQL RECORD
+	function DuplicateMySQLRecord ($table, $id_field, $id, $newname='', $uniqueid='') 
+	{
+		global $db, $config, $mgrlang;
+		// load the original record into an array
+		$result = mysqli_query($db,"SELECT * FROM {$table} WHERE {$id_field}={$id}");
+		$original_record = mysqli_fetch_assoc($result);
+		
+		// insert the new record and get the new auto_increment id
+		mysqli_query($db,"INSERT INTO {$table} (`{$id_field}`) VALUES (NULL)");
+		$newid = mysqli_insert_id($db);
+		
+		// generate the query to update the new record with the previous values
+		$query = "UPDATE {$table} SET ";
+		foreach ($original_record as $key => $value) 
+		{
+			if($key != $id_field)
+			{
+				# ASSIGN A NEW NAME
+				if($key == $newname)
+				{
+					$query .= $key."='".str_replace('"','\"',mysqli_real_escape_string($db,$value . " ($mgrlang[gen_copy])"))."', ";
+				}
+				# ASSIGN A UNIQUE KEY
+				else if($key == $uniqueid)
+				{
+					$query .= $key."='".str_replace('"','\"',mysqli_real_escape_string($db,create_unique2()))."', ";
+				}
+				else
+				{
+					$query .= $key."='".str_replace('"','\"',mysqli_real_escape_string($db,$value))."', ";
+				}
+			}
+		} 
+		$query = substr($query,0,strlen($query)-2); # lop off the extra trailing comma
+		$query .= " WHERE {$id_field}='{$newid}'";
+		mysqli_query($db,$query);
+		return $newid;
+	}
+	
+	# DUPLICATE MYSQL RECORD
+	function DuplicateSettings ($table, $id_field, $id, $name='') 
+	{
+		global $db, $config;
+		// load the original record into an array
+		$result = mysqli_query($db,"SELECT * FROM {$table} WHERE {$id_field}={$id}");
+		$original_record = mysqli_fetch_assoc($result);
+		
+		// insert the new record and get the new auto_increment id
+		mysqli_query($db,"INSERT INTO {$table} (`{$id_field}`) VALUES (NULL)");
+		$newid = mysqli_insert_id($db);
+		
+		// generate the query to update the new record with the previous values
+		$query = "UPDATE {$table} SET ";
+		foreach ($original_record as $key => $value) 
+		{
+			if ($key != $id_field)
+			{
+				//$value = str_replace('{\}','{\\}',$value);
+				$query .= $key."='".str_replace('"','\"',mysqli_real_escape_string($db,$value))."', ";
+			}
+		} 
+		$query = substr($query,0,strlen($query)-2); # lop off the extra trailing comma
+		$query .= ",rec_backup='".gmt_date()."',rec_version='$config[productVersion]',rec_prod='$config[productCode]',rec_name='$name'";
+		$query .= " WHERE {$id_field}='{$newid}'";
+		
+		mysqli_query($db,$query);
+		//return $query;
+		// return the new id
+		//echo $query; exit;
+		return $newid;
+	}
+	
+	# DUPLICATE MYSQL RECORD
+	function RestoreMySQLRecord ($table, $id_field, $id)
+	{
+		global $db;
+		// load the original record into an array
+		$result = mysqli_query($db,"SELECT * FROM {$table} WHERE {$id_field}={$id}");
+		$original_record = mysqli_fetch_assoc($result);
+		
+		// insert the new record and get the new auto_increment id
+		//mysqli_query($db,"INSERT INTO {$table} (`{$id_field}`) VALUES (NULL)");
+		//$newid = mysqli_insert_id($db);
+		
+		// generate the query to update the new record with the previous values
+		$query = "UPDATE {$table} SET ";
+		foreach ($original_record as $key => $value)
+		{
+			if ($key != $id_field)
+			{
+				//$value = str_replace('{\}','{\\}',$value);
+				$query .= $key."='".str_replace('"','\"',mysqli_real_escape_string($db,$value))."', ";
+			}
+		} 
+		$query = substr($query,0,strlen($query)-2); # lop off the extra trailing comma
+		$query .= " WHERE {$id_field}='1'";
+		
+		mysqli_query($db,$query);
+		//return $query;
+		// return the new id
+		//return $newid;
+	}
+	
+	# COPY ALL FILES
+	function copy_all_files($source,$destination)
+	{
+		global $mgrlang, $config;
+	
+		# CHECK FOR CURRENT PATH
+		if(!file_exists($source))
+		{
+			//output_error_message($mgrlang['galleries_mes_06'] . $curpath,1);
+			return false;
+		}
+		else
+		{
+			$source = realpath($source);
+		}
+		
+		# CHECK FOR NEW PATH
+		if(!file_exists($destination))
+		{
+			//output_error_message($mgrlang['galleries_mes_06'] . $newpath,1);
+			return false;
+		}
+		else
+		{
+			$destination = realpath($destination);
+		}
+		
+		# COPY THE FILES 1 BY 1
+		if(file_exists($source))
+		{
+			$dir = opendir($source);
+			# LOOP THROUGH THE DIRECTORY
+			while($file = readdir($dir))
+			{
+				if($file != ".." && $file != ".")
+				{
+					# CHECK TO SEE IF FILE IS A DIRECTORY OR FILE
+					if(is_dir($source . DIRECTORY_SEPARATOR .  $file))
+					{
+						@mkdir($destination . DIRECTORY_SEPARATOR . $file,$config['SetFilePermissions']);
+						//echo "d: ". $source . DIRECTORY_SEPARATOR . $file . "," . $destination . DIRECTORY_SEPARATOR . $file . "<br />";
+						copy_all_files($source . DIRECTORY_SEPARATOR . $file,$destination . DIRECTORY_SEPARATOR . $file);
+					}
+					else
+					{
+						//echo "f: ". $source . DIRECTORY_SEPARATOR . $file . "," . $destination . DIRECTORY_SEPARATOR . $file . "<br />";
+						@copy($source . DIRECTORY_SEPARATOR . $file,$destination . DIRECTORY_SEPARATOR . $file);
+					}
+				}
+			}
+			closedir($dir);
+		}
+		return true;
+	}
+	
+	# SAVE GROUPS
+	function save_groups($page,$table,$itemid)
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+		# TURN ITEMS INTO ARRAY
+		$assignitems = explode(",",$_POST['selected_items']);
+		
+		//$assignitems = $_POST['items'];
+		//echo $assignitems; exit;
+		
+		# ASSIGN ITEMS TO GROUPS
+		if($_POST['amode'] == 'assign')
+		{
+			# SEE IF PREVIOUS INFO SHOULD BE CLEARED FIRST
+			if($_POST['clear_prev'])
+			{
+				if($_POST['assign_to'] == 'selitems')
+				{
+					foreach($assignitems as $value)
+					{
+						mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '$value' AND mgrarea = '$page'");
+						//mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id IN ($_POST[selected_items]) AND mgrarea = '$page'");						
+					}
+				}
+				else
+				{
+					mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE mgrarea = '$page'");
+				}
+			}
+			# IF ONLY SELECTED ITEMS
+			if($_POST['assign_to'] == 'selitems')
+			{						
+				# GO THROUGH ALL SELECTED ITEMS					
+				foreach($assignitems as $value)
+				{
+					# GO THROUGH ALL GROUPS
+					foreach($_POST['assigngroups'] as $value2)
+					{
+						$group_rows = mysqli_result_patch(mysqli_query($db,"SELECT COUNT(item_id) FROM {$dbinfo[pre]}groupids WHERE item_id = '$value' AND mgrarea = '$page' AND group_id = '$value2'"));
+						if(empty($group_rows))
+						{
+							# DOESN'T EXIST - ADD TO DATABASE
+							mysqli_query($db,"INSERT INTO {$dbinfo[pre]}groupids (item_id,mgrarea,group_id) VALUES ('$value','$page','$value2')");
+						}
+					}
+				}
+			# ALL ITEMS
+			}
+			else
+			{						
+				if($_POST['assigngroups'])
+				{
+					$item_result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}$table");
+					while($item = mysqli_fetch_object($item_result))
+					{
+						if($item->deleted == 0)
+						{
+							foreach($_POST['assigngroups'] as $value2)
+							{
+								$group_rows = mysqli_result_patch(mysqli_query($db,"SELECT COUNT(item_id) FROM {$dbinfo[pre]}groupids WHERE item_id = '" . $item->{$itemid} . "' AND mgrarea = '$page' AND group_id = '$value2'"));
+								if(empty($group_rows))
+								{
+									# DOESN'T EXIST - ADD TO DATABASE
+									mysqli_query($db,"INSERT INTO {$dbinfo[pre]}groupids (item_id,mgrarea,group_id) VALUES ('" . $item->{$itemid} . "','$page','$value2')");
+								}
+							}
+						}
+					}
+				}							
+			}
+		# UNASSIGN ITEMS FROM GROUPS
+		}
+		else
+		{
+			# ONLY SELECTED ITEMS
+			if($_POST['assign_to'] == 'selitems')
+			{	
+				# GO THROUGH ALL SELECTED ITEMS					
+				foreach($assignitems as $value)
+				{
+					# GO THROUGH ALL GROUPS
+					foreach($_POST['assigngroups'] as $value2)
+					{
+						mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '$value' AND group_id = '$value2' AND mgrarea = '$page'");
+						//mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '$value' AND group_id IN ($_POST[selected_items]) AND mgrarea = '$page'");
+					}
+				}
+			# ALL ITEMS
+			}
+			else
+			{
+				if($_POST['assigngroups'])
+				{
+					$item_result = mysqli_query($db,"SELECT $itemid FROM {$dbinfo[pre]}$table");
+					while($item = mysqli_fetch_object($item_result))
+					{
+						foreach($_POST['assigngroups'] as $value2)
+						{
+							mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '" . $item->{$itemid} . "' AND group_id = '$value2' AND mgrarea = '$page'");
+						}
+					}
+				}
+			}
+		}
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_togroups']);
+		
+		$vmessage = $mgrlang['gen_mes_changesave'];
+	}
+	
+	# SAVE REGIONS
+	function save_regions($page,$table,$itemid)
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+		# TURN ITEMS INTO ARRAY
+		$assignitems = explode(",",$_POST['selected_items']);
+		# ASSIGN ITEMS TO REGIONS
+		if($_POST['amode'] == 'assign')
+		{
+			# SEE IF PREVIOUS INFO SHOULD BE CLEARED FIRST
+			if($_POST['clear_prev'])
+			{
+				if($_POST['assign_to'] == 'selitems')
+				{
+					foreach($assignitems as $value)
+					{
+						mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE item_id = '$value' AND mgrarea = '$page'");					
+					}
+				}
+				else
+				{
+					mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE mgrarea = '$page'");
+				}
+			}
+			# IF ONLY SELECTED ITEMS
+			if($_POST['assign_to'] == 'selitems')
+			{	
+				# GO THROUGH ALL SELECTED ITEMS					
+				foreach($assignitems as $value)
+				{
+					# EVERYWHERE
+					if($_POST['region'] == '1')
+					{
+						//echo "everywhere"; exit;
+						
+						# SET THE REGION SETTING TO 1
+						$sql = "UPDATE {$dbinfo[pre]}$table SET region='1' WHERE $itemid = '$value'";
+						$result = mysqli_query($db,$sql);
+						
+						# DELETE REGIONS
+						@mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE mgrarea='$page' AND item_id = '$value'");
+					}
+					# SELECT REGIONS
+					else
+					{
+						# GO THROUGH ALL REGIONS
+						foreach($_POST['region_list'] as $value2)
+						{
+							$reg = explode("-",$value2);
+							
+							# SET THE REGION SETTING TO 2
+							$sql = "UPDATE {$dbinfo[pre]}$table SET region='2' WHERE $itemid = '$value'";
+							$result = mysqli_query($db,$sql);
+							
+							$region_rows = mysqli_result_patch(mysqli_query($db,"SELECT COUNT(item_id) FROM {$dbinfo[pre]}regionids WHERE item_id = '$value' AND reg_type='$reg[0]' AND mgrarea = '$page' AND reg_id = '$reg[1]'"));
+							if(empty($region_rows))
+							{
+								# DOESN'T EXIST - ADD TO DATABASE
+								mysqli_query($db,"INSERT INTO {$dbinfo[pre]}regionids (item_id,mgrarea,reg_id,reg_type) VALUES ('$value','$page','$reg[1]','$reg[0]')");
+							}
+						}
+					}
+				}
+			# ALL ITEMS
+			}
+			else
+			{						
+				# EVERYWHERE
+				if($_POST['region'] == '1')
+				{					
+					# SET THE REGION SETTING TO 1
+					$sql = "UPDATE {$dbinfo[pre]}$table SET region='1' WHERE $itemid > '0'";
+					$result = mysqli_query($db,$sql);
+					
+					# DELETE REGIONS
+					@mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE mgrarea='$page'");
+				}
+				# SELECT REGIONS
+				else if($_POST['region_list'])
+				{
+					$item_result = mysqli_query($db,"SELECT $itemid FROM {$dbinfo[pre]}$table");
+					while($item = mysqli_fetch_object($item_result))
+					{
+						# SET THE REGION SETTING TO 2
+						$getid = $item->{$itemid};
+						$sql = "UPDATE {$dbinfo[pre]}$table SET region='2' WHERE $itemid = '$getid'";
+						$result = mysqli_query($db,$sql);
+						
+						foreach($_POST['region_list'] as $value2)
+						{
+							$reg = explode("-",$value2);
+							
+							$region_rows = mysqli_result_patch(mysqli_query($db,"SELECT COUNT(item_id) FROM {$dbinfo[pre]}regionids WHERE item_id = '" . $item->{$itemid} . "' AND mgrarea = '$page' AND reg_type='$reg[0]' AND reg_id = '$reg[1]'"));
+							if(empty($region_rows))
+							{
+								# DOESN'T EXIST - ADD TO DATABASE
+								mysqli_query($db,"INSERT INTO {$dbinfo[pre]}regionids (item_id,mgrarea,reg_id,reg_type) VALUES ('" . $item->{$itemid} . "','$page','$reg[1]','$reg[0]')");
+							}
+						}
+					}
+				}
+			}
+		# UNASSIGN ITEMS FROM REGIONS
+		}
+		else
+		{
+			# ONLY SELECTED ITEMS
+			if($_POST['assign_to'] == 'selitems')
+			{	
+				# GO THROUGH ALL SELECTED ITEMS					
+				foreach($assignitems as $value)
+				{
+					# EVERYWHERE
+					if($_POST['region'] == '1')
+					{
+						echo "everywhere"; exit;
+					}
+					# SELECT REGIONS
+					else
+					{
+						# GO THROUGH ALL REGIONS
+						foreach($_POST['region_list'] as $value2)
+						{
+							$reg = explode("-",$value2);
+							
+							mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE item_id = '$value' AND reg_id = '$reg[1]' AND reg_type = '$reg[0]' AND mgrarea = '$page'");
+							//mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '$value' AND group_id IN ($_POST[selected_items]) AND mgrarea = '$page'");
+						}
+					}
+				}
+			# ALL ITEMS
+			}
+			else
+			{
+				# SELECT REGIONS
+				if($_POST['region_list'])
+				{
+					$item_result = mysqli_query($db,"SELECT $itemid FROM {$dbinfo[pre]}$table");
+					while($item = mysqli_fetch_object($item_result))
+					{											
+						foreach($_POST['region_list'] as $value2)
+						{
+							$reg = explode("-",$value2);
+							
+							mysqli_query($db,"DELETE FROM {$dbinfo[pre]}regionids WHERE item_id = '" . $item->{$itemid} . "' AND reg_id = '$reg[1]' AND reg_type = '$reg[0]' AND mgrarea = '$page'");
+						}						
+					}
+				}
+			}
+		}
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_toregions']);
+		
+		$vmessage = $mgrlang['gen_mes_changesave'];
+	}
+	
+	# SAVE STATUS
+	function save_status($page,$table,$itemid)
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+
+		if($_POST['set_to'] == 'selitems')
+		{				
+			# TURN ITEMS INTO ARRAY
+			//$items = explode(",",$_POST['selected_items']);
+			//$update_array = implode(",",$items);
+			//echo $update_array; exit;
+			
+			$trimto = strlen($_POST['selected_items']) - 1;
+			$update_string = substr($_POST['selected_items'],0,$trimto);
+			//echo $update_string; exit;
+			# UPDATE THE DATABASE
+			$sql = "UPDATE {$dbinfo[pre]}$table SET active='$_POST[status]' WHERE $itemid IN ($update_string)";
+			$result = mysqli_query($db,$sql);				
+		}
+		else
+		{
+			$sql = "UPDATE {$dbinfo[pre]}$table SET active='$_POST[status]'";
+			$result = mysqli_query($db,$sql);	
+		}
+		
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_tostatus']);
+		
+		$vmessage = $mgrlang['gen_mes_changesave'];
+	}
+	
+	# SAVE APPROVED/UNAPPROVED STATUS
+	function save_approved_status($page,$table,$itemid,$update_field='approved')
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+
+		if($_POST['set_to'] == 'selitems')
+		{				
+			# TURN ITEMS INTO ARRAY
+			//$items = explode(",",$_POST['selected_items']);
+			//$update_array = implode(",",$items);
+			//echo $update_array; exit;
+			
+			$trimto = strlen($_POST['selected_items']) - 1;
+			$update_string = substr($_POST['selected_items'],0,$trimto);
+			//echo $update_string; exit;
+			# UPDATE THE DATABASE
+			$sql = "UPDATE {$dbinfo[pre]}$table SET $update_field='$_POST[status]' WHERE $itemid IN ($update_string)";
+			$result = mysqli_query($db,$sql);				
+		}
+		else
+		{
+			$sql = "UPDATE {$dbinfo[pre]}$table SET $update_field='$_POST[status]'";
+			$result = mysqli_query($db,$sql);	
+		}
+		
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_toapproved']);
+		
+		$vmessage = $mgrlang['gen_mes_changesave'];
+	}
+	
+	# SAVE SORT
+	function save_sort($table,$id)
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+		if($_POST['sort_list_vals'])
+		{
+			$sortids = explode("sortlist[]=",str_replace("&","",$_POST['sort_list_vals']));
+			//print_r($sortids);					
+			for($i = 0; $i < count($sortids); $i++)
+			{
+				# SQL Query:
+				mysqli_query($db,"UPDATE {$dbinfo[pre]}$table SET sortorder = $i WHERE $id = $sortids[$i]");
+			}
+		}
+		
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_sort']);
+		
+		$vmessage = $mgrlang['gen_mes_changesave'];				
+	}
+	
+	# SAVE SORT
+	function clear_sort($table)
+	{
+		global $_POST, $db, $dbinfo, $vmessage, $mgrlang, $page;
+		mysqli_query($db,"UPDATE {$dbinfo[pre]}$table SET sortorder = '0' WHERE sortorder != '0'");
+		
+		# SAVE ACTIVITY LOG
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_' . $page],1,$mgrlang['gen_b_clear_sort']);
+		
+		$vmessage = $mgrlang['gen_mes_sortclear'];				
+	}
+	
+	# CONVERT ACTIVATION CODE
+	function convert_ac()
+	{
+		global $config;
+		return strrev(strtoupper(md5($config['settings']['serial_number'])));
+	}
+	
+	# FIND THE CORRECT LOADER FOR IC
+	function find_ic_loader()
+	{
+		$_u = php_uname();
+		$_os = substr($_u,0,strpos($_u,' '));
+		$_os_key = strtolower(substr($_u,0,3));
+		$_php_version = phpversion();
+		$_php_family = substr($_php_version,0,3);
+		$_loader_sfix = (($_os_key == 'win') ? '.dll' : '.so');
+		$_ln_new="ioncube_loader_${_os_key}_${_php_family}${_loader_sfix}";
+		return $_ln_new;
+	}
+	
+	# GENERATE THE EXTRA FIELDS FOR ADDITIONAL LANGUAGES
+	function create_lang_fields($langs)
+	{
+		global $dbinfo, $db;
+		
+		# CHECK TO SEE IF THE LANGS VARIABLE IS AN ARRAY
+		if(!is_array($langs))
+		{
+			$langs = array($langs);
+		}
+		
+		# ADD NEW NEWS TITLE, SHORT, ARTICLE
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}news ADD `title_$value` VARCHAR(255) NOT NULL, ADD `short_$value` TEXT NOT NULL, ADD `article_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD NEW GALLERY NAME, DESCRIPTION
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}galleries ADD `name_$value` VARCHAR(255) NOT NULL, ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD NEW REGIONS TITLE
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}regions ADD `title_$value` VARCHAR(250) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD NEW DIGITAL PS - NOT NEEDED
+		//foreach($langs as $value){
+		//	$sql = "ALTER TABLE {$dbinfo[pre]}digital_ps ADD `name_$value` VARCHAR(255) NOT NULL";
+		//	$results = mysqli_query($db,$sql);
+		//}	
+		# ADD NEW DIGITAL SIZE
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}digital_sizes ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD NEW PRODUCT NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}products ADD `item_name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}products ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}	
+		# ADD NEW PRINT NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}prints ADD `item_name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}prints ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}	
+		# ADD NEW PRINT OPTION GROUP NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}option_grp ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD NEW PRINT OPTION NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}options ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD PACKAGES NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}packages ADD `item_name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}packages ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD COLLECTIONS NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}collections ADD `item_name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}collections ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD SUBSCRIPTIONS NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}subscriptions ADD `item_name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}subscriptions ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD CREDITS NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}credits ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}credits ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD MEMBERSHIP NAME & DESCRIPTION
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}memberships ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}memberships ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}		
+		# ADD SHIPPING TITLES
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}shipping ADD `title_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}shipping ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}		
+		# ADD SETTINGS
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `site_title_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `meta_desc_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `meta_keywords_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `weight_tag_$value` VARCHAR(50) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `compay_other_$value` VARCHAR(50) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD COUNTRY NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}countries ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD STATE NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}states ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD TAXES
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `taxa_name_$value` VARCHAR(200) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `taxb_name_$value` VARCHAR(200) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `taxc_name_$value` VARCHAR(200) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}settings ADD `tax_stm_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD CURRENCY NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}currencies ADD `name_$value` VARCHAR(200) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD MEDIA TYPE NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}media_types ADD `name_$value` VARCHAR(200) NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD PROMOTION NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}promotions ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}promotions ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD CONTENT NAME
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}content ADD `name_$value` VARCHAR(255) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}content ADD `content_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+		# ADD MEDIA TITLE AND DESCRIPTION
+		foreach($langs as $value)
+		{
+			$sql = "ALTER TABLE {$dbinfo[pre]}media ADD `title_$value` VARCHAR(250) NOT NULL";
+			$results = mysqli_query($db,$sql);
+			$sql = "ALTER TABLE {$dbinfo[pre]}media ADD `description_$value` TEXT NOT NULL";
+			$results = mysqli_query($db,$sql);
+		}
+	}
+	
+	# OUTPUT A NICELY FORMATTED ERROR
+	function output_error_message($error,$stopscript=0)
+	{
+		global $mgrlang , $admin_user;
+		# RECORD THE ERROR
+		save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_galleries'],1,"<span style=\"font-family: verdana; font-size: 11px; color: #ff0000; font-weight: bold;\">" . $mgrlang['gen_error_reported'] . "</span>" . $error);
+		echo "<span style=\"font-family: verdana; font-size: 11px; color: #ff0000; font-weight: bold;\">$error</span>";
+		if($stopscript){ exit; }
+	}
+	
+	# SEND ERROR BACK THROUGH AJAX TO FORM
+	function send_error_back($front,$message,$div,$focus="")
+	{
+		echo "<script language='javascript'  type='text/javascript'>\n";
+			//echo "alert('test');"; 
+			echo "bringtofront('$front');\n";
+			echo "simple_message_box(\"$message\",\"$focus\");\n";
+			echo "\$('$div').className='fs_row_error';\n";
+			//echo "Event.stop(sf);\n";
+			//echo "return false;\n";	
+		echo "</script>\n";
+	}
+	
+	# CHECK FIELD TO MAKE SURE IT ISN'T EMPTY
+	function js_validate_field($fieldname,$langname,$tofront,$message=0)
+	{
+		global $mgrlang;
+		echo "if(\$F('".$fieldname."') == '' || \$F('".$fieldname."') == null){\n";
+		//echo "alert('test');";
+		if($message)
+		{
+			echo "simple_message_box(\"" . $message . ".\",\"$fieldname\");\n";
+		}
+		else
+		{
+			echo "simple_message_box(\"" . $mgrlang['gen_pleaseenter'] . " <span style='color: #971111;'>" . $mgrlang[$langname] . "</span> " . $mgrlang['gen_beforesave'] . ".\",\"$fieldname\");\n";
+		}
+		echo "$('".$fieldname."_div').className='fs_row_error';\n";
+		if($tofront)
+		{
+			echo "bringtofront('$tofront');\n";
+		}
+		//echo "Event.stop(sf);\n";
+		echo "return false;\n";	
+		echo "}\n\n";					
+	}
+	
+	# CHECK SELECT DROPDOWN TO MAKE SURE IT ISN'T EMPTY
+	function js_validate_select($fieldname,$langname,$tofront,$message=0)
+	{
+		global $mgrlang;
+		echo "var v_" .$fieldname. " = \$('".$fieldname."').options[\$('".$fieldname."').selectedIndex].value;";
+		echo "if(v_" .$fieldname. " == '#'){\n";
+		//echo "alert('test');";
+		if($message)
+		{
+			echo "simple_message_box(\"" . $message . ".\",\"$fieldname\");\n";
+		}
+		else
+		{
+			echo "simple_message_box(\"" . $mgrlang['gen_pleaseselect'] . " <span style='color: #971111;'>" . $mgrlang[$langname] . "</span> " . $mgrlang['gen_beforesave'] . ".\",\"$fieldname\");\n";
+		}
+		echo "$('".$fieldname."_div').className='fs_row_error';\n";
+		echo "bringtofront('$tofront');\n";
+		//echo "Event.stop(sf);\n";
+		echo "return false;\n";	
+		echo "}\n\n";					
+	}
+	
+	# SEE IF A GALLERY IN THE UPLINE IS PASSWORD PROTECTED BASED ON THE FOLDER ARRAY
+	function pass_protected_up($start)
+	{
+		global $folders;
+		//echo $start . ",";
+		if($folders['parent_id'][$start] != 0)
+		{
+			if($folders['pass_protected'][$start] == 1)
+			{
+				echo ".locked";
+				//exit;
+			}
+			else
+			{
+				pass_protected_up($folders['parent_id'][$start]);
+			}
+			//echo $folders['parent_id'][$start] . ",";
+		}													
+	}
+		
+	# ENCRYPT FOLDER AND ASSETS
+	function folder_encrypt()
+	{
+		
+	}
+	# DECRYPT FOLDER AND ASSETS
+	function folder_decrypt()
+	{
+		
+	}
+	
+	class gallery_builder_old
+	{
+		var $path;
+		
+		# CREATE DIRECTORIES IN ALL STORAGE LOCATIONS
+		function create_directories()
+		{
+			global $db, $dbinfo, $config, $mgrlang, $create_gal_folders;
+			# LOOP THROUGH STORAGE DIRECTORIES FIRST
+			$sp_result = mysqli_query($db,"SELECT full_path FROM {$dbinfo[pre]}storage_paths");
+			while($sp = mysqli_fetch_object($sp_result))
+			{				
+				# MAKE SURE THE STORAGE PATH IS WRITABLE
+				if(is_writable($sp->full_path))
+				{
+					# CREATE DIRECTORIES - WHILE CHECKING FOR ERRORS					
+					if(!file_exists($sp->full_path . $this->path))
+					{
+						if(!@mkdir($sp->full_path . $this->path,$config['SetFilePermissions']))
+						{ 
+							output_error_message($mgrlang['galleries_mes_03'] . $sp->full_path . $this->path,1);
+							chmod($sp->full_path . $this->path,$config['SetFilePermissions']);
+						}
+					}
+					# CREATE DIRECTORIES - WHILE CHECKING FOR ERRORS
+					foreach($create_gal_folders as $value)
+					{
+						if(!file_exists($sp->full_path . $this->path . "$value"))
+						{
+							if(!@mkdir($sp->full_path . $this->path . "$value",$config['SetFilePermissions']))
+							{
+								output_error_message($mgrlang['galleries_mes_03'] . $sp->full_path . $this->path . "$value",1);
+								chmod($sp->full_path . $this->path . "$value",$config['SetFilePermissions']);
+							}
+						}
+					}
+				}
+				else
+				{
+					# NOT WRITABLE - OUTPUT A MESSAGE
+					output_error_message($mgrlang['gen_error_02'] . $sp->full_path,1);
+				}
+			}
+		}		
+	}
+	
+	# GALLERY BUILDER CLASS
+	class build_galleries 
+	{
+		var $options;
+		var $disable_down = 1;
+		var $options_name = "parent_gal";
+		var $alt_colorA = "ffffff";
+		var $alt_colorB = "ffffff";
+		var $scroll_offset = 0;
+		var $scroll_offset_id = "";
+		var $trimname = 30;
+		var $edit_link = 0;
+		var $ref_name = 'gallery_items';
+		var $selected_gals = array();
+		var $override_input;
+		var $gotolink = 'mgr.galleries.edit.php?edit=';
+		function output_struc_array($id,$level=0)
+		{
+			global $folders, $files, $countarray,$levelgraphic, $gallery_current, $gallery_parent, $disable_checkbox, $set_level;
+			
+			foreach($folders['name'] as $x => $value)
+			{
+				
+				# SET THE ROW COLOR
+				@$row_color++;
+				if ($row_color%2 == 0) 
+				{
+					$rcolor = $this->alt_colorA;
+				}
+				else
+				{
+					$rcolor = $this->alt_colorB;
+				}
+				
+				if($folders['parent_id'][$x] == $id)
+				{
+					//echo print_r($folders['name']); exit;
+					//if(!$levelgraphic[$level]){ 											
+						if($folders['folder_rows'][$x] > 1 and in_array($folders['folder_id'][$x],$folders['parent_id']))
+						{
+							$levelgraphic[$level] = "a";
+						}
+						else
+						{
+							$levelgraphic[$level] = "b";
+						}
+					//}
+					
+					echo "<div style=\"clear: both; padding: 0 10px 0 0; margin: 0; display: block; white-space: nowrap; background-color: #$rcolor; overflow: auto;";
+							//if($folders['parent_id'][$x] != 0){
+								//echo "display: none; ";
+							//}
+					echo "\" id='galid_" . $folders['folder_id'][$x] . "' nowrap>\n";
+
+						
+						//echo "<input type=\"checkbox\" name=\"fbox\" checked /> ";
+						//echo "<img src=\"images/mgr.gallery.dots.blank.gif\" align=\"absmiddle\" />";
+						
+						echo "<div style='float: left; overflow: auto'>\n";
+						for($z=0;$z<$level;$z++)
+						{
+							if($z == ($level-1))
+							{
+								$rev_array = array_reverse($folders['parent_id'],true);
+								$lastshown = array_search($folders['parent_id'][$x],$rev_array);
+								
+								if($x == $lastshown)
+								{
+									echo "<img src=\"images/mgr.gallery.dots.end2.gif\" align=\"absmiddle\" />";
+									$levelgraphic[$level] = "b";
+								}
+								else
+								{
+									echo "<img src=\"images/mgr.gallery.dots.con2.gif\" align=\"absmiddle\" />";
+								}
+							}
+							else
+							{
+								//if($z == 0){
+									//echo "<img src=\"images/mgr.gallery.dots.blank.gif\" align=\"absmiddle\" alt='$z' />";
+								//} else {
+									if($levelgraphic[$z+1] == "a")
+									{																	
+										echo "<img src=\"images/mgr.gallery.dots2.gif\" align=\"absmiddle\" alt='$z' />";
+									}
+									else
+									{
+										echo "<img src=\"images/mgr.gallery.dots.blank2.gif\" align=\"absmiddle\" alt='$z' />";
+									}
+								//}
+							}
+						}
+						echo "</div>\n";
+						
+						echo "<div style='float: left; margin-top: 6px;'>\n";						
+						//echo "<img src=\"images/mgr.button.small.assets";
+						//$pass_protected = pass_protected_up($x);
+						//echo ".gif\" align=\"absmiddle\" /> ";
+						
+						
+						# INCLUDE RADIO OR CHECKBOXES
+						if($this->options)
+						{
+							$override = ($this->override_input != '') ? "onclick=\"$('$this->override_input').setValue('".$folders['folder_id'][$x]."');\"" : '';
+							echo "<input type='" . $this->options . "' name='" . $this->options_name . "' $override value='".$folders['folder_id'][$x]."' id='".$folders['folder_id'][$x]."' class='" . $this->options . "' style='margin: -4px 0 0 4px; padding: 0; vertical-align: middle' ".$this->ref_name."='1'";
+							# DISABLE THE CHECKBOX IF IT IS IN THE DOWNLINE
+							if($this->disable_down)
+							{
+								if($folders['folder_id'][$x] == $gallery_current)
+								{
+									$disable_checkbox = 1;
+									$set_level = $level;
+								}
+								else
+								{
+									if($level <= $set_level)
+									{
+										$disable_checkbox = 0;
+									}
+								}
+								if($disable_checkbox){ echo " disabled"; }
+							}
+							//if($folders['folder_id'][$x] == $gallery_parent){ echo " checked"; }
+							if(in_array($folders['folder_id'][$x],$this->selected_gals)){ echo " checked"; }
+							echo " />";
+						}
+						
+						# CHECK TO SEE IF THE NAME SHOULD BE TRIMMED
+						$foldername = substr($folders['name'][$x],0,$this->trimname);
+						if(strlen($folders['name'][$x]) > $this->trimname)
+						{
+							$foldername.="...";
+						}
+						
+						if($this->edit_link == 1)
+						{	
+							echo "&nbsp;<a href='{$this->gotolink}".$folders['folder_id'][$x]."' class='editlink' id='gallink_".$folders['folder_id'][$x]."' onmouseover=\"";
+						}
+						else
+						{
+							
+							echo "&nbsp;<label for='".$folders['folder_id'][$x]."' class='gallery_label' onmouseover=\"";
+						}
+						
+						# USE A SCROLL OFFSET TO CORRECT POSITIONING
+						if($this->scroll_offset > 0)
+						{
+							echo "set_scrolloffset('galdet_".$folders['folder_id'][$x]."','".$this->scroll_offset_id."','".$this->scroll_offset."');";
+						}
+						
+						echo "show_details_win('galdet_".$folders['folder_id'][$x]."','mgr.galleries.details.php?id=".$folders['folder_id'][$x]."');\" onMouseOut=\"hide_gdetails('galdet_".$folders['folder_id'][$x]."');\">";
+						if($folders['password'][$x]) echo "<img src='images/mgr.icon.padlock.gif' style='vertical-align: middle' />&nbsp;";
+						echo $foldername;
+						if($this->edit_link == 1){ echo "</a>"; } else { echo "</label>"; }
+						echo "<div id='fadeup_".$folders['folder_id'][$x]."' style='margin: -5px 0px 0px 10px; position: absolute; z-index: 75; display: none; background-color: #eeeeee; width: 200px; height: 200px;'>Loading Details</div><!--(fid:" . $folders['folder_id'][$x] . " | pid:" . $folders['parent_id'][$x] .  ") | level:$level | rows:" . $folders['folder_rows'][$x] .  " | pass:" . $folders['password'][$x] .  " | lgraph: " . $levelgraphic[$level] . ")-->";
+						echo "</div>\n";
+						
+						echo "<div style='float: left; overflow: visible;";
+						echo " margin-top: -3px;";
+						echo "'>\n";
+							echo "<div id='galdet_".$folders['folder_id'][$x]."' class='galdet_win' style='display: none;'>Loading Details</div>\n";
+						echo "</div>\n";
+						
+					echo "</div>\n";
+					$this->output_struc_array($folders['folder_id'][$x],$level+1);																																				
+				}					
+			}
+		}	
+	}
+	
+	# CLEAN A FIELD AND REMOVE ANYTHING BUT LETTERS AND NUMBERS
+	function fullclean($input)
+	{
+		$clean = str_replace(" ","",$input);
+		$clean = html_entity_decode($clean);
+		$clean = preg_replace("/[^A-Za-z0-9_-]/", "", $clean);
+		return $clean;
+	}
+	
+	# CREATE FOLDERNAME
+	function clean_foldername($input)
+	{
+		# CONVERT THE HTML CHARACTERS BACK
+		//$replace = array("&quot;",);
+		$folder_name = str_replace(" ","_",$input);
+		$folder_name = html_entity_decode($folder_name);
+		$folder_name = preg_replace("/[^A-Za-z0-9_-]/", "", $folder_name);
+		$folder_name = strtolower(substr($folder_name,0,30));
+		if(strlen($folder_name) < 1)
+		{
+			$folder_name = "unnamed";
+		}
+		return $folder_name;
+	}
+	
+	# CREATE FOLDERNAME
+	function clean_for_seo($input)
+	{
+		# CONVERT THE HTML CHARACTERS BACK
+		//$replace = array("&quot;",);
+		$seo_name = str_replace(" ","_",$input);
+		$seo_name = html_entity_decode($seo_name);
+		$seo_name = preg_replace("/[^A-Za-z0-9_-]/", "", $seo_name);
+		$seo_name = strtolower(substr($seo_name,0,100));
+		return $seo_name;
+	}
+	
+	# GET THE PATH TO ANY GALLERY - SUPPLY THE ID OF THE GALLERY AS THE ID
+	function get_gallery_path($id)
+	{
+		global $dbinfo, $folder_path, $db;				
+		$gal_result = mysqli_query($db,"SELECT folder_name,parent_gal FROM {$dbinfo[pre]}galleries WHERE gallery_id = '$id'");
+		$gal = mysqli_fetch_object($gal_result);					
+		$folder_path = $gal->folder_name . "/" . $folder_path;
+		
+		if($gal->parent_gal != 0)
+		{
+			return get_gallery_path($gal->parent_gal);
+		}
+		else
+		{
+			return $folder_path;
+		}
+	}
+	# FIND THE GALLERY UPLINE - NOT COMPLETED - NOT IN USE
+	function get_gallery_upline($id)
+	{
+		global $dbinfo, $folder_path, $db;				
+		$gal_result = mysqli_query($db,"SELECT folder_name,parent_gal FROM {$dbinfo[pre]}galleries WHERE gallery_id = '$id'");
+		$gal = mysqli_fetch_object($gal_result);					
+		$folder_path = $gal->folder_name . "/" . $folder_path;
+		
+		if($gal->parent_gal != 0)
+		{
+			return get_gallery_path($gal->parent_gal);
+		}
+		else
+		{
+			return $folder_path;
+		}
+	}
+	# FIND THE GALLERY DOWNLINE
+	function get_gallery_downline($id)
+	{
+		global $dbinfo, $affected, $db;				
+		$gal_result = mysqli_query($db,"SELECT parent_gal,gallery_id FROM {$dbinfo[pre]}galleries WHERE parent_gal = '$id'");
+		//$gal_rows = mysqli_num_rows($gal_result);
+		while($gal = mysqli_fetch_object($gal_result))
+		{
+			$affected[] = $gal->gallery_id;
+			get_gallery_downline($gal->gallery_id);
+		}
+		return $affected;
+	}
+	# CHECK TO MAKE SURE FOLDER NAME (DIRECTORY) DOES NOT ALREADY EXIST - IF SO THEN ADD A NUMBER TO THE END				
+	# NEED TO DEFINE THE FOLDER_PATH FIRST
+	function check_dir_name($folder_name)
+	{
+		global $config, $countx, $folder_path, $cur_storage_path;				
+		//echo $config['settings']['galleries_path'] . $folder_path . $folder_name . $countx; exit;
+		if(is_dir($cur_storage_path . $folder_path . $folder_name . $countx))
+		{
+			$countx++;
+			return check_dir_name($folder_name);
+		}
+		else
+		{
+			return $folder_name . $countx;
+		}					
+	}
+
+	# READ NAV FUNCTION
+	function read_nav()
+	{
+		global $comp, $mgrlang;
+		# READ IN ALL NAV.* FILES
+		$real_dir = realpath("nav/");
+		$dir = opendir($real_dir);
+		$i = 0;
+		# LOOP THROUGH THE NAV DIRECTORY
+		while($file = readdir($dir))
+		{
+			// MAKE SURE IT IS A VALID FILE
+			$isphp = explode(".", $file);
+			if($file != ".." && $file != "." && is_file("nav/" . $file) && @$isphp[count($isphp) - 1] == "php")
+			{
+				$i++;
+				include("nav/" . $file);
+			}
+			unset($isphp);
+		}
+		closedir($dir);
+	}
+	
+	# CLEAN DIRECORY
+	function clean_directory($dirpath)
+	{
+		$real_dir = realpath($dirpath);
+		if(file_exists($real_dir) and is_dir($real_dir))
+		{
+			$dir = opendir($real_dir);
+			# LOOP THROUGH THE NAV DIRECTORY
+			while($file = readdir($dir))
+			{
+				if($file != ".." && $file != ".")
+				{
+					if(is_writable($real_dir . DIRECTORY_SEPARATOR . $file))
+					{
+						if(is_dir($real_dir . DIRECTORY_SEPARATOR . $file))
+						{
+							clean_directory($real_dir . DIRECTORY_SEPARATOR . $file);
+							rmdir($real_dir . DIRECTORY_SEPARATOR . $file);
+						}
+						else
+						{
+							unlink($real_dir . DIRECTORY_SEPARATOR . $file);
+						}
+					}
+				}
+			}
+			closedir($dir);
+		}
+		return TRUE;
+	}
+	
+	# MOVE ALL FILES IN A DIRECORY TO A NEW DIRECTORY
+	function move_all_files($curpath,$newpath)
+	{
+		global $mgrlang, $config, $create_gal_folders;
+	
+		# CHECK FOR CURRENT PATH
+		if(!file_exists($curpath))
+		{
+			output_error_message($mgrlang['galleries_mes_06'] . $curpath,1);
+		}
+		else
+		{
+			$curpath = realpath($curpath);
+		}
+		
+		# CHECK FOR NEW PATH
+		if(!file_exists($newpath))
+		{
+			output_error_message($mgrlang['galleries_mes_06'] . $newpath,1);
+		}
+		else
+		{
+			$newpath = realpath($newpath);
+		}
+		
+		# MOVE THE FILES 1 BY 1
+		if(file_exists($curpath))
+		{
+			$dir = opendir($curpath);
+			# LOOP THROUGH THE NAV DIRECTORY
+			while($file = readdir($dir))
+			{
+				if($file != ".." && $file != ".")
+				{
+					@rename($curpath . DIRECTORY_SEPARATOR . $file,$newpath . DIRECTORY_SEPARATOR . $file);
+				}
+			}
+			closedir($dir);
+		}
+		return TRUE;		
+	}
+	
+	# GET DISK SPACE FOR A DIRECTORY
+	function dir_space_used($dirname)
+	{
+		if (!is_dir($dirname) || !is_readable($dirname))
+		{
+			return false;
+		}
+	
+		$dirname_stack[] = $dirname;
+		$size = 0;
+	
+		do
+		{
+			$dirname = array_shift($dirname_stack);
+			$handle = opendir($dirname);
+			while (false !== ($file = readdir($handle)))
+			{
+				if ($file != '.' && $file != '..' && is_readable($dirname . DIRECTORY_SEPARATOR . $file))
+				{
+					if (is_dir($dirname . DIRECTORY_SEPARATOR . $file))
+					{
+						$dirname_stack[] = $dirname . DIRECTORY_SEPARATOR . $file;
+					}
+					$size += filesize($dirname . DIRECTORY_SEPARATOR . $file);
+				}
+			}
+			closedir($handle);
+		}
+		while (count($dirname_stack) > 0);
+	
+		return $size;
+	}
+	
+	# GET DISK SPACE FOR A GALLERY
+	function gal_space_used($gid)
+	{
+		
+	}
+	
+	# READ GALLERY STRUCTURE FROM DB
+	function read_gal_structure($folder_id=0,$orderby="name",$ordertype="",$owner=0)
+	{
+		global $folders, $dbinfo, $galls, $config;
+		
+		$gal_result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}galleries WHERE parent_gal = '$folder_id' AND owner='$owner' ORDER BY $orderby $ordertype");
+		$gal_rows = mysqli_num_rows($gal_result);
+		// CHECK TO SEE IF THERE ARE ANY GALLERIES AT ALL
+		if($folder_id==0)
+		{
+			$galls = $gal_rows;
+		}
+		while($gallery = mysqli_fetch_object($gal_result))
+		{
+			# CHECK FOR OTHER LANGUAGES
+			if($gallery->{"name_" . $config['settings']['lang_file_mgr']})
+			{
+				$name = $gallery->{"name_" . $config['settings']['lang_file_mgr']};
+			}
+			else
+			{
+				$name = $gallery->name;
+			}
+			
+			$folders['name'][$gallery->gallery_id] = $name;
+			// FOLDER ID
+			$folders['folder_id'][$gallery->gallery_id] = $gallery->gallery_id;
+			// PARENT ID
+			$folders['parent_id'][$gallery->gallery_id] = $folder_id;
+			// HOW MANY ROWS IN CURRENT GALLERY
+			$folders['folder_rows'][$gallery->gallery_id] = $gal_rows;
+			// PASSWORD PROTECTED
+			$folders['password'][$gallery->gallery_id] = $gallery->password;
+			// STATUS
+			$folders['active'][$gallery->gallery_id] = $gallery->active;
+			// ACTIVE TYPE
+			$folders['active_type'][$gallery->gallery_id] = $gallery->active_type;
+			// ACTIVE DATE
+			$folders['active_date'][$gallery->gallery_id] = $gallery->active_date;
+			// EXPIRE TYPE
+			$folders['expire_type'][$gallery->gallery_id] = $gallery->expire_type;
+			// EXPIRE DATE
+			$folders['expire_date'][$gallery->gallery_id] = $gallery->expire_date;
+			
+			$limit++;
+			read_gal_structure($gallery->gallery_id,$orderby,$ordertype,$owner);
+		}																		
+	}	
+	
+	# FIND FILE EXTENSION
+	function findexts($filename)
+	{ 
+		$filename = strtolower($filename) ; 
+		$exts = split("[/\\.]", $filename) ; 
+		$n = count($exts)-1; 
+		$exts = $exts[$n]; 
+		return $exts; 
+	} 
+	
+	# TRY TO CALCULATE THE MAX IMAGE SIZE THAT CAN BE PROCESSED BY THE SERVER
+	function calc_image_maxsize()
+	{
+		if(ini_get("memory_limit"))
+		{
+			$memory_limit = ini_get("memory_limit");
+		}
+		else
+		{
+			$memory_limit = 256;
+		}
+		// TAKE AWAY A LITTLE IF THE MAX EXECUTION TIME IS 30 OR LESS
+		if(ini_get("max_execution_time") <= 30)
+		{
+			$mult = .8;
+		}
+		else
+		{
+			$mult = 1;
+		}		
+		$calc = round(($memory_limit/20)*$mult,2);		
+		return $calc;
+	}
+
+	# INCLUDE THE MANAGER AREA FUNCTIONS
+	function include_lang()
+	{
+		global $config, $mgrlang, $langset, $calendar, $regmgrfiles, $active_langs, $lang;
+		foreach($regmgrfiles as $value)
+		{
+			if(file_exists("../assets/languages/" . $config['settings']['lang_file_mgr'] . "/" . $value))
+			{
+				include("../assets/languages/" . $config['settings']['lang_file_mgr'] . "/" . $value);
+			}
+			else
+			{
+				include("../assets/languages/english/" . $value);
+			}			
+		}
+		# SET ACTIVE LANGUAGES
+		$active_langs = explode(",",$config['settings']['lang_file_pub']);
+		$active_langs[] = $config['settings']['lang_file_mgr'];
+		$active_langs = array_unique($active_langs);
+		
+		# REMOVE THE LANGUAGE THAT THE MANAGER IS SET TO BECAUSE THIS WILL BECOME THE DEFAULT
+		foreach($active_langs as $key => $value)
+		{
+			if($value == $config['settings']['lang_file_mgr'])
+			{
+				unset($active_langs[$key]);
+			}
+		}
+		
+		//return $active_langs;
+	}
+	
+	# CHECK TO SEE IF A URL EXISTS
+	function url_exists($url)
+	{
+		$handle = @fopen($url, "r");
+		if ($handle === false)
+			return false;
+			fclose($handle);
+	 		return true;
+	}
+
+	# CREATE LOGIN COOKIE TO REMEBER MANAGER USER
+	function create_admin_login_cookie($username,$password)
+	{
+		global $config;
+		setcookie("psmgr_login", $username . "|" . $password, time()+60*60*24*30, "/", $config['server_url']);
+	}
+
+	# CREATE PERMISSIONS ARRAY FOR MANAGER
+	function create_admin_permissions($admin_type,$perm=0)
+	{
+		global $comp;
+		read_nav();
+		
+		$permissions_array = array();
+		
+		if(!empty($perm))
+		{
+			$perm_array = explode(",",$perm);			
+		}
+		else
+		{
+			$perm_array[] = 0;
+		}
+		
+		# LOOP THRU THE NAV AND SUBNAV ARRAY
+		foreach($comp as $key => $value)
+		{			
+			if(empty($admin_type))
+			{
+				if(in_array($value['nav_id'],$perm_array))
+				{
+					$permissions_array[] =  $value['nav_id'];
+				}
+			}
+			else
+			{
+				$permissions_array[] =  $value['nav_id'];
+			}		
+			# MAKE SURE THE SUBNAV IS AN ARRAY FIRST
+			if(is_array($value['subnav']))
+			{
+				foreach($value['subnav'] as $key2 => $value2)
+				{					
+					if(empty($admin_type))
+					{
+						if(in_array($value2['nav_id'],$perm_array))
+						{
+							$permissions_array[] = $value2['nav_id'];
+						}
+					}
+					else
+					{
+						$permissions_array[] = $value2['nav_id'];
+					}					
+				}
+			}
+		}	
+		return $permissions_array;
+	}
+	
+	# CREATE AN INFO BUTTON
+	function create_info_button($id=0)
+	{
+		global $mgrlang;	
+		echo "<img src=\"images/mgr.button.info.gif\" align=\"absmiddle\" style=\"cursor: pointer;";
+		if($id == 7){ echo "margin-top: -3px;"; } // MOVE IT UP 3PX FOR THE SEARCH BOX
+		echo "\" border=\"0\" alt=\"$mgrlang[gen_info]\" onclick=\"support_popup($id);\" />";
+	}
+	
+	# CREATE A NOTICE
+	function notice_dark($content)
+	{		
+		echo "
+			<div style=\"height: 1px; background-color: #646464;\"></div>
+				<div align=\"center\" style=\"padding-top: 30px;\">
+					<div style=\"border-bottom: 1px solid #646464; border-right: 3px solid #646464; width: 60%;\"><div style=\"background-color: #747373; line-height: .1; border: 1px solid #EEEEEE; color: #FFFFFF; padding: 25px;\"><img src=\"images/mgr.notice.icon.white.gif\" border=\"0\" align=\"absmiddle\" /> &nbsp; $content</div>
+				</div>
+			</div>
+			";
+	}
+	
+	# CREATE A NOTICE
+	function notice($content)
+	{		
+		echo "
+			<div id='outputnotice'>
+				<div><img src=\"images/mgr.notice.icon.png\" border=\"0\" align=\"absmiddle\" /> &nbsp; $content</div>
+			</div>
+			";
+	}
+	
+	# DEMO MODE MESSAGE
+	function demo_message($is_demo)
+	{
+		global $mgrlang;
+		if($is_demo == "DEMO")
+		{			
+			//background-image: url(images/mgr.demo.bg.gif);
+			echo "<script language=\"javascript\">setTimeout(\"hide_div_fade('demo_bar')\",'5500');</script>";
+			echo "<div id='demo_bar'><img src='images/mgr.notice.icon.small.gif' align='absmiddle' />&nbsp;$mgrlang[gen_demo_mode]</div>";
+		}
+	}
+	
+	# ACTION VERIFICATION MESSAGE
+	function verify_message($vmessage)
+	{
+		if(!empty($vmessage))
+		{
+			echo "<script language=\"javascript\">setTimeout(\"hide_timer('vmessage')\",'5500');</script>";
+			echo "<div id=\"vmessage\"><img src='images/mgr.notice.icon.small.gif' align='absmiddle' /> &nbsp; $vmessage</div>";
+		}
+	}
+	
+	
+	# FIND COMPONENT NUMBER
+	function get_component_number($component)
+	{
+		global $comp_array;
+		$i = 0;
+		foreach($comp_array as $key => $value)
+		{
+			if($value['comp_name'] == $component)
+			{
+				return $i;
+			}
+			$i++;
+		}		
+	}
+	
+	# CREATE HEADERS FOR THE MANAGER FIELDSET AREAS
+	function fieldset_header($label,$control="",$arrow_status=1)
+	{
+		echo "<div class=\"fieldset_header\" onclick=\"displaybool('$control','','','','" . $control . "_arrow');\"><div style=\"float: left\"><img src=\"images/mgr.fieldset.left.$arrow_status.gif\" id=\"" . $control . "_arrow\" /></div><div style=\"float: left; padding: 6px 0px 0px 5px; \">$label</div><div style=\"float: right\"><img src=\"images/mgr.fieldset.right.gif\" /></div></div>";
+	}
+	
+	# FIELDSET ROW COLOR
+	function fs_row_color()
+	{
+		global $row_color;
+		if($row_color%2 == 0){ echo "fs_row_off"; } else { echo "fs_row_on"; } $row_color++;
+	}
+	
+	# INCLUDE EDITOR JS
+	function include_editor_js()
+	{
+		global $config;
+		switch($config['settings']['content_editor'])
+		{
+			case "1":
+				echo "<!-- INNOVA EDITOR -->\n<script type='text/javascript' src='../assets/javascript/innovaeditor/scripts/innovaeditor.js'></script>\n";
+			break;
+			case "2":
+				echo "<!-- TINY MCE EDITOR -->\n<script type='text/javascript' src='../assets/javascript/tinymce/tiny_mce.js'></script>\n";
+			break;
+			case "0":
+			default:				
+			break;
+		}
+	}
+	
+	
+	# SHOW MANAGER TEXTAREA EDITOR	
+	function show_editor($width,$height,$content_in,$txtarea_name = "article",$ie_name = "oEdit1")
+	{
+		global $config;
+		
+		switch($config['settings']['content_editor'])
+		{
+			case "1":
+				//if(!eregi("safari", $_SERVER['HTTP_USER_AGENT'])){
+				echo "<textarea class=\"textarea\" name=\"$txtarea_name\" id=\"$txtarea_name\" style=\"width: $width; height: $height;\">";
+					//encodeHTML($content_in);
+					echo $content_in;
+				echo "</textarea>";
+				echo "
+						<script>
+							var $ie_name = new InnovaEditor(\"$ie_name\");
+							$ie_name.width=\"$width\";
+							$ie_name.height=\"$height\";
+							$ie_name.REPLACE(\"$txtarea_name\");
+						</script>";
+				
+			break;
+			case "2":
+				echo "<textarea class=\"textarea\" name=\"$txtarea_name\" id=\"$txtarea_name\" style=\"width: $width; height: $height;\">";
+						//encodeHTML($content_in);
+						echo $content_in;
+				echo "</textarea>";
+			?>
+            	<script language="javascript" type="text/javascript">
+					tinyMCE.init({
+						theme : "advanced",
+						mode: "exact",
+						remove_script_host : false, 
+                        document_base_url : "<?PHP echo $config['settings']['site_url']; ?>",
+						elements : "<?PHP echo $txtarea_name; ?>",						
+						plugins : "safari,pagebreak,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,inlinepopups,insertdatetime,preview,media,searchreplace,print,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras,template,imagemanager,filemanager",
+						theme_advanced_buttons1 : "save,newdocument,|,bold,italic,underline,strikethrough,|,justifyleft,justifycenter,justifyright,justifyfull,|,styleselect,formatselect,fontselect,fontsizeselect",
+						theme_advanced_buttons2 : "cut,copy,paste,pastetext,pasteword,|,search,replace,|,bullist,numlist,|,outdent,indent,blockquote,|,undo,redo,|,link,unlink,anchor,image,cleanup,help,code,|,insertdate,inserttime,preview,|,forecolor,backcolor",
+						theme_advanced_buttons3 : "tablecontrols,|,hr,removeformat,visualaid,|,sub,sup,|,charmap,emotions,iespell,media,advhr,|,print,|,ltr,rtl,|,fullscreen",
+						theme_advanced_buttons4 : "insertlayer,moveforward,movebackward,absolute,|,styleprops,|,cite,abbr,acronym,del,ins,attribs,|,visualchars,nonbreaking,template,blockquote,pagebreak,|,insertfile,insertimage",
+						theme_advanced_toolbar_location : "top",
+						theme_advanced_toolbar_align : "left",
+						theme_advanced_statusbar_location : "bottom",
+						theme_advanced_resizing : true, 
+						force_br_newlines : true,
+						//content_css : "../styles/<?PHP echo $setting->style; ?>",
+						
+						// Drop lists for link/image/media/template dialogs
+						//template_external_list_url : "js/template_list.js",
+						//external_link_list_url : "js/link_list.js",
+						//external_image_list_url : "js/image_list.js",
+						//media_external_list_url : "js/media_list.js",
+						
+					});
+				</script>
+            <?php
+			break;
+			case "0":
+			default:
+				echo "<textarea class=\"textarea\" name=\"$txtarea_name\" id=\"$txtarea_name\" style=\"width: $width; height: $height;\">$content_in</textarea>";
+			break;
+		}
+	}
+	
+	# JAVASCRIPT FOR SAVING EDITOR VALUES
+	function js_editor($filedname="article")
+	{
+		global $active_langs, $config;
+		switch($config['settings']['content_editor'])
+		{
+			case "1":
+				echo "$('".$filedname."').value=editor.getHTMLBody();\n";
+				foreach(array_unique($active_langs) as $value){
+					echo "\$('".$filedname."_".$value."').value=editor_$value.getHTMLBody();\n";
+				}
+			break;
+			case "2":
+			break;
+			case "0":
+			default:
+			break;
+		}
+	}
+	
+	# GRAB REMOVE CONTENT
+	function getRemoteFile ($host, $method, $path, $data) 
+	{
+	
+		$method = strtoupper($method);        
+		
+		if ($method == "GET") 
+		{
+			$path.= '?'.$data;
+		}    
+		
+		$filePointer = @fsockopen($host, 80, $errorNumber, $errorString, 5);
+		
+		if (!$filePointer) 
+		{
+			//logEvent('debug', 'Failed opening http socket connection: '.$errorString.' ('.$errorNumber.')<br/>\n');
+			return false;
+		}
+		
+		$requestHeader = $method." ".$path."  HTTP/1.1\r\n";
+		$requestHeader.= "Host: ".$host."\r\n";
+		$requestHeader.= "User-Agent:      Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1) Gecko/20061010 Firefox/2.0\r\n";
+		$requestHeader.= "Content-Type: application/x-www-form-urlencoded\r\n";
+		
+		if ($method == "POST")
+		{
+			$requestHeader.= "Content-Length: ".strlen($data)."\r\n";
+		}
+		
+		$requestHeader.= "Connection: close\r\n\r\n";
+		
+		if ($method == "POST")
+		{
+			$requestHeader.= $data;
+		}            
+		
+		fwrite($filePointer, $requestHeader);
+		
+		$responseHeader = '';
+		$responseContent = '';
+		
+		do 
+		{
+			$responseHeader.= fread($filePointer, 1); 
+		}
+		while (!preg_match('/\\r\\n\\r\\n$/', $responseHeader));
+		
+		
+		if (!strstr($responseHeader, "Transfer-Encoding: chunked"))
+		{
+			while (!feof($filePointer))
+			{
+			   $responseContent.= fgets($filePointer, 128);
+			}
+		}
+		else 
+		{		
+			while ($chunk_length = hexdec(fgets($filePointer))) 
+			{
+			   $responseContentChunk = '';
+			
+			  
+			   $read_length = 0;
+			   
+			   while ($read_length < $chunk_length) 
+			   {
+				   $responseContentChunk .= fread($filePointer, $chunk_length - $read_length);
+				   $read_length = strlen($responseContentChunk);
+			   }
+			
+			   $responseContent.= $responseContentChunk;
+			   
+			   fgets($filePointer);
+			   
+			}
+		
+		}
+		
+		return chop($responseContent);
+		
+	}
+
+	/**
+	* CREATE IMAGES
+	* $image = new imagetools('C:\UniServer\www\assets\incoming\Waterfall.jpg');
+	* $image->createImage(1,'C:\UniServer\www\assets\incoming\1_Waterfall.jpg');
+	* [todo] need to remove this and put relink management areas to class file
+	*/
+	class imagetools
+	{	
+		public $quality;
+		public $size;
+		public $source;
+		public $path;
+		public $prefix;
+		public $filename;
+		public $extension;
+		public $filename_wo_ext;
+		public $type;
+		public $cleanfilename;
+		public $config;
+		public $crop=NULL;
+		public $watermark=NULL;
+		public $sharpen=NULL;
+		
+		public function __construct($source)
+		{
+			global $config;						
+			$this->quality = $this->setQuality($config['settings']['thumb_quality']);
+			$this->size = 150;
+			$this->source = $source;
+			$this->path = dirname($source);
+			$this->prefix = 'icon_';
+			$this->filename = basename($source);
+			$this->extension = $this->getExtension($this->filename);
+			$this->filename_wo_ext = $this->getFilenameWithoutExt($this->filename);
+			$this->type = 'jpg';
+			$this->cleanfilename = clean_filename($this->filename_wo_ext) . "." . $this->extension;
+			$this->config = $config;
+			
+			$this->getImageProcessor();
+		}
+		
+		/*
+		* Get the imjage processor that should be used
+		*/
+		private function getImageProcessor()
+		{
+			if(class_exists('Imagick') and $this->config['settings']['imageproc'] == 2)
+			{
+				$this->imageProcessor = 'im';
+			}
+			else
+			{
+				$this->imageProcessor = 'gd';
+			}
+		}
+		
+		/**
+		* Set quality
+		*/
+		public function setQuality($quality=90)
+		{
+			return $this->quality = $quality;			
+		}
+		
+		/**
+		* Set size
+		*/
+		public function setSize($size=100)
+		{
+			return $this->size = $size;
+		}
+		
+		/**
+		* Set cropping - pass height;
+		*/
+		public function setCrop($crop=100)
+		{
+			return $this->crop = $crop;
+		}
+		
+		/**
+		* Set watermark
+		*/
+		public function setWatermark($watermark=NULL)
+		{
+			$this->watermark = $watermark;
+		}
+		
+		/**
+		* Set sharpen
+		*/
+		public function setSharpen($sharpen=NULL)
+		{
+			$this->sharpen = $sharpen;
+		}
+		
+		/**
+		* Find the extension of the file
+		*/
+		public function getExtension($filename)
+		{
+			$filename_array = explode(".",$filename);
+			return array_pop($filename_array);
+		}
+		
+		/**
+		* Get the filename without the extension
+		*/
+		public function getFilenameWithoutExt($filename)
+		{
+			$filename_array = explode(".",$filename);
+			array_pop($filename_array);
+			return implode($filename_array);
+		}
+		
+		/**
+		* Create the image
+		*/
+		public function createImage($display,$saveas)
+		{	
+			$icon_width = $this->size;							
+			$src = $this->source;
+			
+			if($this->imageProcessor == 'gd')
+			{
+				$size = getimagesize($src);	
+			}
+			else
+			{
+				// image = // new Imagick(); // FIXED: Converted to ImageMagick CLI; // Converted to ImageMagick CLI
+image_file = $src;
+image_temp_files = array();
+				$size[0] = $image->getImageWidth();
+				$size[1] = $image->getImageHeight();
+			}
+		
+			# Find the scale ratios	
+			if($size[0] >= $size[1]){
+				if($size[0] > $icon_width){
+					$width = $icon_width;
+				} else {
+					$width = $size[0];
+				}
+				$ratio = $width/$size[0];
+				$height = $size[1] * $ratio;				
+			} else {
+				if($size[1] > $icon_width){
+					$height = $icon_width;	
+				} else {
+					$height = $size[1];	
+				}
+				$ratio = $height/$size[1];
+				$width = $size[0] * $ratio;
+			}
+			
+			# Create using GD library
+			if($this->imageProcessor == 'gd')
+			{
+				switch($size['mime'])
+				{
+					default;
+					case "image/jpeg":
+						$src_img = imagecreatefromjpeg($src);
+					break;
+					case "image/png":
+						$src_img = imagecreatefrompng($src);
+					break;
+					case "image/gif":
+						$src_img = imagecreatefromgif($src);
+					break;
+					case "image/x-ms-bmp":
+					case "image/bmp":
+						$src_img = imagecreatefromwbmp($src);
+					break;
+				}
+				
+				$dst_img = imagecreatetruecolor($width, $height);
+				
+				imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $width, $height, imagesx($src_img), imagesy($src_img));
+				
+				if($this->sharpen)
+				{
+					$sharpen_matrix = array(array(-1,-1,-1,),array(-1, 16,-1,),array(-1,-1,-1));
+					$divisor = 8;
+					$offset = 0;
+					imageconvolution($dst_img, $sharpen_matrix, $divisor, $offset);
+				}
+				
+				# Output and destroy				
+				if($saveas)
+				{
+					imagejpeg($dst_img,$saveas, $this->quality); // Save this one
+				}
+				if($display)
+				{
+					header("Content-type: image/jpeg");
+					imagejpeg($dst_img,'', $this->quality); // Display this one
+				}
+				imagedestroy($src_img); 
+				imagedestroy($dst_img);
+			}
+			# Create using imagemagick
+			else
+			{
+				$image->setImageCompression(imagick::COMPRESSION_JPEG); 
+				$image->setImageCompressionQuality($this->quality);
+				$image->stripImage();
+				$image->thumbnailImage($width, $height);
+				image_format = "jpg";
+				
+				if($this->sharpen)
+				{
+					$image->sharpenImage(1,1);
+				}
+				
+				if($saveas)
+				{
+					$image->writeImages($saveas, true); // Save this one
+				}
+				if($display)
+				{
+					header("Content-type: image/jpeg");
+					echo $image; // Display this one
+				}
+				// image->destroy(); // Cleanup gestito automaticamente
+if (isset(image_temp_files)) {
+    foreach (image_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(image_temp_files);
+}
+			}
+		}
+	}
+
+	# DELETE ORPHANED ITEM PHOTOS (PRODUCT SHOTS)
+	function delete_orphaned_item_photos($mgrarea)
+	{
+		global $dbinfo, $config, $db;
+		
+		# FIND ANY ITEM PHOTOS THAT MAY HAVE NOT BEEN ASSIGNED BEFORE
+		$ip_result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}item_photos WHERE item_id = 0 AND mgrarea = '$mgrarea'");
+		$ip_rows = mysqli_num_rows($ip_result);
+		while($ip = mysqli_fetch_object($ip_result))
+		{
+			# DELETE ORPHANED ITEM PHOTOS
+			mysqli_query($db,"DELETE FROM {$dbinfo[pre]}item_photos WHERE ip_id = '$ip->ip_id'");
+
+			$ipidzf = zerofill($ip->ip_id,4);
+			
+			# DELETE SMALL, MED, ORG ITEM PHOTOS
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_org.jpg"))
+			{
+				unlink("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_org.jpg");
+			}
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_med.jpg"))
+			{
+				unlink("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_med.jpg");
+			}
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_small.jpg"))
+			{
+				unlink("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_small.jpg");
+			}
+		}
+	}
+	
+	# DELETE ORPHANED OPTIONS
+	function delete_orphaned_optiongroups()
+	{
+		global $dbinfo, $config, $db;
+		# DELETE ORPHANED OPTION GROUPS
+		mysqli_query($db,"DELETE FROM {$dbinfo[pre]}option_grp WHERE parent_id = '0'");
+	}
+	
+	# DELETE ORPHANED DISCOUNTS
+	function delete_orphaned_discounts()
+	{
+		global $dbinfo, $config, $db;
+		# DELETE ORPHANED OPTION GROUPS
+		mysqli_query($db,"DELETE FROM {$dbinfo[pre]}discount_ranges WHERE item_id = '0'");
+	}
+	
+	
+	function save_new_item_photos($mgrarea,$saveid)
+	{
+		global $dbinfo, $config, $db;
+		
+		# FIND ANY ITEM PHOTOS THAT BELONG TO THIS PRODUCT
+		$ip_result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}item_photos WHERE item_id = 0 AND mgrarea = '$mgrarea'");
+		$ip_rows = mysqli_num_rows($ip_result);
+		while($ip = mysqli_fetch_object($ip_result))
+		{
+			# RENAME FILES
+			$ipidzf = zerofill($ip->ip_id,4);
+			$prodzf = zerofill($saveid,4);
+			
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_org.jpg"))
+			{
+				rename("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_org.jpg","../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_org.jpg");
+			}
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_med.jpg"))
+			{
+				rename("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_med.jpg","../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_med.jpg");
+			}
+			if(file_exists("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_small.jpg"))
+			{
+				rename("../assets/item_photos/".$mgrarea."0000_ip".$ipidzf."_small.jpg","../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_small.jpg");
+			}
+			
+			# UPDATE DB ENTRIES
+			# UPDATE THE DATABASE
+			$sql = "UPDATE {$dbinfo[pre]}item_photos SET item_id='$saveid' where ip_id  = '$ip->ip_id'";
+			$result = mysqli_query($db,$sql);
+		}
+	}
+	
+	# DELETE A SINGLE ITEM PHOTO
+	function delete_item_photo($mgrarea,$prod,$ip_id)
+	{
+		global $dbinfo, $config, $db;
+		
+		$prodzf = zerofill($prod,4);
+		$ipidzf = zerofill($ip_id,4);
+		
+		# DELETE ORPHANED ITEM PHOTOS
+		mysqli_query($db,"DELETE FROM {$dbinfo[pre]}item_photos WHERE ip_id = '$ip_id'");
+		
+		# DELETE SMALL, MED, ORG ITEM PHOTOS
+		if(file_exists("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_org.jpg"))
+		{
+			unlink("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_org.jpg");
+		}
+		if(file_exists("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_med.jpg"))
+		{
+			unlink("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_med.jpg");
+		}
+		if(file_exists("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_small.jpg"))
+		{
+			unlink("../assets/item_photos/".$mgrarea.$prodzf."_ip".$ipidzf."_small.jpg");
+		}	
+	}
+	
+	# GET THE NEW SIZE OF SOMETHING TO BE SCALED RETURNS ARRAY / USAGE $newsize = get_scaled_size(150,$src); echo $newsize[0];
+	function get_scaled_size($scalesize,$src)
+	{
+		$size = getimagesize($src);
+		
+		//FIND THE SCALE RATIOS		
+		if($size[0] >= $size[1]){
+			if($size[0] > $scalesize){
+				$width = $scalesize;
+			} else {
+				$width = $size[0];
+			}
+			$ratio = $width/$size[0];
+			$height = $size[1] * $ratio;				
+		} else {
+			if($size[1] > $scalesize){
+				$height = $scalesize;	
+			} else {
+				$height = $size[1];	
+			}
+			$ratio = $height/$size[1];
+			$width = $size[0] * $ratio;
+		}
+		
+		return array($width,$height);
+	}
+	
+	# GET THE NEW SIZE OF SOMETHING WITHOUT USING A SOURCE FILE
+	function get_scaled_size_nosource($inwidth,$inheight,$scalesize,$crop=0)
+	{
+		$size[0] = $inwidth;
+		$size[1] = $inheight;
+		
+		//FIND THE SCALE RATIOS		
+		if($size[0] >= $size[1]){
+			if($size[0] > $scalesize){
+				$width = $scalesize;
+			} else {
+				$width = $size[0];
+			}
+			$ratio = $width/$size[0];
+			$height = $size[1] * $ratio;				
+		} else {
+			if($size[1] > $scalesize){
+				$height = $scalesize;	
+			} else {
+				$height = $size[1];	
+			}
+			$ratio = $height/$size[1];
+			$width = $size[0] * $ratio;
+		}
+		
+		return array(round($width),round($height));
+	}
+	
+?>

@@ -1,0 +1,552 @@
+<?php
+
+
+/**
+ * FUNZIONI IMAGEMAGICK COMMAND LINE - Auto-generate da risolve.php
+ */
+
+function im_get_image_geometry($file_path) {
+    $cmd = "identify -format '%wx%h' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        list($width, $height) = explode('x', $output[0]);
+        return array('width' => (int)$width, 'height' => (int)$height);
+    }
+    return false;
+}
+
+function im_get_image_format($file_path) {
+    $cmd = "identify -format '%m' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        return trim($output[0]);
+    }
+    return false;
+}
+
+function im_scale_image($input_file, $output_file, $width, $height = 0, $format = null) {
+    $size_param = $height > 0 ? $width . "x" . $height : $width . "x";
+    $cmd = "convert " . escapeshellarg($input_file) . " -resize " . escapeshellarg($size_param) . " ";
+    
+    if ($format) {
+        $cmd .= "-format " . escapeshellarg(strtolower($format)) . " ";
+    }
+    
+    $cmd .= escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_crop_image($input_file, $output_file, $width, $height, $x, $y) {
+    $crop_param = $width . "x" . $height . "+" . $x . "+" . $y;
+    $cmd = "convert " . escapeshellarg($input_file) . " -crop " . escapeshellarg($crop_param) . " +repage " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_composite_image($base_file, $overlay_file, $output_file, $x = 0, $y = 0, $compose = "over") {
+    $cmd = "composite -compose " . escapeshellarg($compose) . " -geometry +" . $x . "+" . $y . " " . 
+           escapeshellarg($overlay_file) . " " . escapeshellarg($base_file) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_set_image_format($input_file, $output_file, $format) {
+    $cmd = "convert " . escapeshellarg($input_file) . " -format " . escapeshellarg(strtolower($format)) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_new_image($width, $height, $color, $output_file, $format = "png") {
+    $size_param = $width . "x" . $height;
+    $cmd = "convert -size " . escapeshellarg($size_param) . " xc:" . escapeshellarg($color) . " -format " . escapeshellarg($format) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_read_image($file_path) {
+    // Per command line, "leggere" significa solo verificare che esista
+    return file_exists($file_path);
+}
+
+function im_write_image($temp_file, $output_file) {
+    if (file_exists($temp_file)) {
+        return copy($temp_file, $output_file);
+    }
+    return false;
+}
+
+function im_clean_temp_files($pattern) {
+    $files = glob($pattern);
+    if ($files) {
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+
+if (isset($_POST['f'])) {
+
+	define('BASE_PATH',dirname(dirname(dirname(__FILE__))));
+	require_once BASE_PATH.'/assets/includes/session.php';
+	require_once BASE_PATH.'/assets/includes/initialize.php';
+	
+	require_once BASE_PATH.'/assets/includes/commands.php';
+	require_once BASE_PATH.'/assets/includes/init.member.php';
+	//require_once BASE_PATH.'/assets/includes/security.inc.php';
+	require_once BASE_PATH.'/assets/includes/language.inc.php';
+	
+	require_once BASE_PATH.'/assets/includes/config.php';
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.db.php'; 
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.func.php'; 
+	
+	require_once BASE_PATH.'/assets/tcpdf/tcpdf.php';
+	require_once BASE_PATH.'/assets/fpdi/fpdi.php';
+	
+	switch ($_POST['f']) {
+					
+		case 'manageSession':
+			echo manageSession();
+			break;
+			
+		case 'getLimits':
+			echo getLimits();
+			break;
+		
+		case 'getRestore':
+			echo getRestore($_POST['data']);
+			break;
+			
+		case 'getQuality':
+			echo getQuality($_POST['data']['pW'], $_POST['data']['pH'], $_POST['data']['sW'], $_POST['data']['sH'], $_POST['data']['oR'], $_POST['data']['c'], FALSE, $_POST['data']['s']);
+			break;
+			
+		case 'getPuzzles':
+			echo getPuzzlesList($_POST['type']);
+			break;
+			
+		case 'getBoxesList':
+			echo getBoxesList();
+			break;
+			
+		case 'getBoxes':
+			echo getBoxes($_POST['boxId'], $_POST['indice'], $_POST['redraw']);
+			break;
+			
+		case 'submitForm':
+			submitForm($_POST['form'], $_POST['data']);
+			break;
+			
+		case 'getOrderDesc':
+			echo getOrderDesc((bool)$_POST['boxed'], $_POST['optionId'], $_POST['optionIdValue']);
+			break;
+			
+		case 'updateSession':
+			updateSession($_POST['data']);
+			break;
+		
+		case 'getOpzioniProdotto':
+			echo getOpzioniProdotto();
+			break;
+		
+		case 'gestisciOpzioniBox':
+			gestisciOpzioniBox($_POST['data']);
+			break;
+			
+		case 'mgrGetBoxes':
+			echo mgrGetBoxes($_POST['groupId']);
+			break;
+			
+		case 'mgrGetBoxesList':
+			echo mgrGetBoxesList();
+			break;
+		
+		case 'mgrDrawBox':
+			echo mgrDrawBox($_POST['filename'], $_POST['obj'], $_POST['bFoto'], $_POST['pezzi'], $_POST['dimensioni']);
+			break;
+	}
+
+} elseif (isset($_FILES['file'])) {
+
+	define('BASE_PATH',dirname(dirname(dirname(__FILE__))));
+	require_once BASE_PATH.'/assets/includes/session.php';
+	require_once BASE_PATH.'/assets/includes/initialize.php';
+	require_once BASE_PATH.'/assets/includes/config.php';
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.db.php'; 
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.func.php'; 
+	
+	if($_FILES['file']['error'] == 0) {
+		try {
+			// im = // new Imagick(); // FIXED: Converted to ImageMagick CLI; // Converted to ImageMagick CLI
+im_file = $_FILES["file"]["tmp_name"];
+im_temp_files = array();
+			format = im_get_image_format(im_file);
+			if($format == 'PDF') {echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: al momento i pdf non sono supportati')); return;};
+			if($im->valid()) {
+	
+				aPixelSize = im_get_image_geometry(im_file);
+				$imageWidth = $aPixelSize['width'];
+				$imageHeight = $aPixelSize['height'];
+				$printable = FALSE;
+				if($imageWidth > $imageHeight || $imageWidth == $imageHeight) $orientamento = 'landscape';
+				else $orientamento = 'portrait';
+				
+				$aData = db_get_puzzles_list();
+				foreach ($aData as $k => $aPuzzle) {
+					$aDimensioni = array('larg' => $aPuzzle['larg'], 'alt' => $aPuzzle['alt']);
+					$printQuality = getQuality($aDimensioni['larg'], $aDimensioni['alt'], $imageWidth, $imageHeight, $orientamento, false, false, strtolower($aPuzzle['shape']));
+					if($printQuality == TRUE && $printable == FALSE) $printable = TRUE;
+					$aPuzzles[] = array(	'id' => $aPuzzle['products_id'],
+											'modello' => $aPuzzle['products_model'],
+											'prezzo' => $aPuzzle['prezzo'],
+											'pezzi' => $aPuzzle['pezzi'],
+											'dimensioni' => $aPuzzle['dimensioni'],
+											'shape' => $aPuzzle['shape'],
+											'larg' => $aDimensioni['larg'],
+											'alt' => $aDimensioni['alt'],
+											'initSelectArea' => setCoordinates($imageWidth, $imageHeight, $aDimensioni['larg'], $aDimensioni['alt'], $orientamento, strtolower($aPuzzle['shape'])),
+											'quality' => $printQuality
+					);
+					
+				}
+				if(!$printable) {echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: la qualità della foto inviata non è idonea alla stampa')); return;}
+				else {
+					// preparo versioni più leggere dell'immagine
+					$preview = clone $im;
+					$thumb = clone $im;
+					if($orientamento == 'landscape') {
+						preview_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+preview_temp_files[] = preview_temp_file;
+if (im_scale_image(preview_file, preview_temp_file, PREVIEW_WIDTH, 0)) {
+    preview_file = preview_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+						thumb_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+thumb_temp_files[] = thumb_temp_file;
+if (im_scale_image(thumb_file, thumb_temp_file, 0, THUMB_HEIGHT)) {
+    thumb_file = thumb_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+					}
+					else {
+						preview_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+preview_temp_files[] = preview_temp_file;
+if (im_scale_image(preview_file, preview_temp_file, 0, PREVIEW_HEIGHT)) {
+    preview_file = preview_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+						thumb_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+thumb_temp_files[] = thumb_temp_file;
+if (im_scale_image(thumb_file, thumb_temp_file, 0, THUMB_HEIGHT)) {
+    thumb_file = thumb_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+					}
+
+					$sesskey = tep_session_id();
+					$puzzleId = db_add_puzzle($uploaded = TRUE);
+					switch ($format) {
+						case 'JPEG':
+							$estensione = '.jpg';
+							break;
+						case 'PNG':
+							$estensione = '.png';
+							break;
+						case 'TIFF':
+							$estensione = '.tiff';
+							break;
+						case 'GIF':
+							$estensione = '.gif';
+							break;
+					}
+					
+					$file = $puzzleId.$estensione;
+					$path = WORK_DIR.$sesskey.'/'.$puzzleId.'/';
+
+					if(!file_exists($path)) {
+						mkdir($path, 0775, true);
+						mkdir($path.'preview', 0775, true);
+						mkdir($path.'thumb', 0775, true);
+						mkdir($path.'boxes', 0775, true);
+						mkdir($path.'puzzle', 0775, true);
+					}
+					
+					move_uploaded_file($_FILES["file"]["tmp_name"], $path.$file);
+					// FIXED: writeImage conversion
+if (isset(preview_file) && file_exists(preview_file)) {
+    copy(preview_file, $path.'preview/'.getName($file, 'preview');
+} else {
+    add_log("Errore writeImage: file non trovato", "ERROR");
+});
+					// FIXED: writeImage conversion
+if (isset(thumb_file) && file_exists(thumb_file)) {
+    copy(thumb_file, $path.'thumb/'.getName($file, 'thumb');
+} else {
+    add_log("Errore writeImage: file non trovato", "ERROR");
+});
+					
+					// im->destroy(); // Cleanup gestito automaticamente
+if (isset(im_temp_files)) {
+    foreach (im_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(im_temp_files);
+}
+					// preview->destroy(); // Cleanup gestito automaticamente
+if (isset(preview_temp_files)) {
+    foreach (preview_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(preview_temp_files);
+}
+					// thumb->destroy(); // Cleanup gestito automaticamente
+if (isset(thumb_temp_files)) {
+    foreach (thumb_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(thumb_temp_files);
+}
+
+					tep_db_query("UPDATE ".TABLE_PHOTO_PUZZLE." SET img_file = '".$file."' WHERE photo_puzzle_id = ".$puzzleId."");
+					//echo json_encode(array('res' => 'ok', 'trueSize' => array($imageWidth, $imageHeight), 'file' => DIR_WS_IMAGES.'temporary/'.$sesskey.'/'.$puzzleId.'/preview/'.getName($file, 'preview').'?cache='.time(), 'orientation' => $orientamento, 'puzzles' => $aPuzzles));
+					echo json_encode(array('res' => 'ok', 'trueSize' => array($imageWidth, $imageHeight), 'file' => WEB_DIR.$sesskey.'/'.$puzzleId.'/preview/'.getName($file, 'preview').'?cache='.time(), 'orientation' => $orientamento, 'puzzles' => $aPuzzles));
+				}
+			}
+		} catch(Exception $e) {echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: errore nell\'invio o tipo di file non supportato'));}//try
+	} else echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: errore nell\'invio o tipo di file non supportato'));
+	
+} elseif ( isset($_GET['mediaID']) ) {
+	
+	require_once BASE_PATH.'/assets/includes/config.php';
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.db.php'; 
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.func.php'; 
+	
+	newMedia($_GET['mediaID']);
+	
+} else {
+	
+	define('BASE_PATH',dirname(dirname(dirname(__FILE__))));
+	require_once BASE_PATH.'/assets/includes/config.php';
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.db.php'; 
+	require_once BASE_PATH.'/assets/includes/photo.puzzle.func.php';
+	
+	require_once BASE_PATH.'/assets/tcpdf/tcpdf.php';
+	require_once BASE_PATH.'/assets/fpdi/fpdi.php';
+}
+
+		
+
+function newMedia($mediaID) {
+			
+	global $smarty;
+	//global $mediaID;
+	global $config;
+	global $dbinfo;
+
+	$useMediaID = $mediaID; // Original untouched media ID
+	if(!$mediaID) // Make sure a media ID was passed
+	{
+		$smarty->assign('noAccess',1); //messaggio di errore sul media non valido
+		return; 
+	}
+	else
+	{
+
+		$smarty->assign('upload', 0);
+		if($config['EncryptIDs']) // Decrypt IDs
+		{
+			$mediaID = k_decrypt($mediaID);
+			//$useGalleryID = k_encrypt($_SESSION['id']);
+		}
+		else //$useGalleryID = $_SESSION['id'];
+
+		idCheck($mediaID); // Make sure ID is numeric
+
+		$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM {$dbinfo[pre]}media WHERE media_id = '{$mediaID}'";
+		$mediaInfo = new mediaList($sql);
+
+		if($mediaInfo->getRows())
+		{
+			//$media = $mediaInfo->getSingleMediaDetails('preview');
+			$media = $mediaInfo->getSingleMediaDetails();
+			$aOriginalPath = db_get_original_path($media);
+			if($aOriginalPath['encrypted'] == 0) $opath = $aOriginalPath['name'];
+			else $opath = $aOriginalPath['enc_name'];
+
+			$originalFile = BASE_PATH.'/assets/library/'.$opath.'/originals/'.$media['filename'];
+			// im = // new Imagick(); // FIXED: Converted to ImageMagick CLI; // Converted to ImageMagick CLI
+im_file = $originalFile;
+im_temp_files = array();
+		
+			format = im_get_image_format(im_file);
+			//if($format == 'PDF') {echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: al momento i pdf non sono supportati')); return;};
+			if($im->valid()) {
+	
+				aPixelSize = im_get_image_geometry(im_file);
+				$imageWidth = $aPixelSize['width'];
+				$imageHeight = $aPixelSize['height'];
+				$printable = FALSE;
+				if($imageWidth > $imageHeight || $imageWidth == $imageHeight) $orientamento = 'landscape';
+				else $orientamento = 'portrait';
+				
+				$aData = db_get_puzzles_list();
+				 
+				foreach ($aData as $k => $aPuzzle) {
+					$aDimensioni = array('larg' => $aPuzzle['larg'], 'alt' => $aPuzzle['alt']);
+					$printQuality = getQuality($aDimensioni['larg'], $aDimensioni['alt'], $imageWidth, $imageHeight, $orientamento, false, false, strtolower($aPuzzle['shape']));
+					if($printQuality == TRUE && $printable == FALSE) $printable = TRUE;
+					$aPuzzles[] = array(	'id' => $aPuzzle['products_id'],
+											'modello' => $aPuzzle['products_model'],
+											'prezzo' => $aPuzzle['prezzo'],
+											'pezzi' => $aPuzzle['pezzi'],
+											'dimensioni' => $aPuzzle['dimensioni'],
+											'shape' => $aPuzzle['shape'],
+											'larg' => $aDimensioni['larg'],
+											'alt' => $aDimensioni['alt'],
+											'initSelectArea' => setCoordinates($imageWidth, $imageHeight, $aDimensioni['larg'], $aDimensioni['alt'], $orientamento, strtolower($aPuzzle['shape'])),
+											'quality' => $printQuality
+					);
+					
+				}
+
+				if(!$printable) {echo json_encode(array('res' => 'ko', 'detail' => 'attenzione: la qualità della foto inviata non è idonea alla stampa')); return;}
+				else {
+
+					// preparo versioni più leggere dell'immagine
+					$preview = clone $im;
+					$thumb = clone $im;
+					if($orientamento == 'landscape') {
+						preview_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+preview_temp_files[] = preview_temp_file;
+if (im_scale_image(preview_file, preview_temp_file, PREVIEW_WIDTH, 0)) {
+    preview_file = preview_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+						thumb_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+thumb_temp_files[] = thumb_temp_file;
+if (im_scale_image(thumb_file, thumb_temp_file, 0, THUMB_HEIGHT)) {
+    thumb_file = thumb_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+					}
+					else {
+						preview_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+preview_temp_files[] = preview_temp_file;
+if (im_scale_image(preview_file, preview_temp_file, 0, PREVIEW_HEIGHT)) {
+    preview_file = preview_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+						thumb_temp_file = tempnam(sys_get_temp_dir(), "im_scale_") . ".png";
+thumb_temp_files[] = thumb_temp_file;
+if (im_scale_image(thumb_file, thumb_temp_file, 0, THUMB_HEIGHT)) {
+    thumb_file = thumb_temp_file;
+} else {
+    add_log("Errore scale immagine", "ERROR");
+}
+					}
+
+					$sesskey = tep_session_id();
+					$puzzleId = db_add_puzzle(FALSE, $opath, $media['filename'], $mediaID);
+					switch ($format) {
+						case 'JPEG':
+							$estensione = '.jpg';
+							break;
+						case 'PNG':
+							$estensione = '.png';
+							break;
+						case 'TIFF':
+							$estensione = '.tiff';
+							break;
+						case 'GIF':
+							$estensione = '.gif';
+							break;
+					}
+					
+					$filePreview = $puzzleId.$estensione;
+					$file = substr($media['filename'], 0, strlen($media['filename'])/2).$estensione;
+					$path = WORK_DIR.$sesskey.'/'.$puzzleId.'/';
+
+					if(!file_exists($path)) {
+						mkdir($path, 0775, true);
+						mkdir($path.'preview', 0775, true);
+						mkdir($path.'thumb', 0775, true);
+						mkdir($path.'boxes', 0775, true);
+						mkdir($path.'puzzle', 0775, true);
+					}
+					
+					//move_uploaded_file($_FILES["file"]["tmp_name"], $path.$file); //non posso spostare il file originale per evitarne il download
+					// FIXED: writeImage conversion
+if (isset(preview_file) && file_exists(preview_file)) {
+    copy(preview_file, $path.'preview/'.getName($filePreview, 'preview');
+} else {
+    add_log("Errore writeImage: file non trovato", "ERROR");
+});
+					// FIXED: writeImage conversion
+if (isset(thumb_file) && file_exists(thumb_file)) {
+    copy(thumb_file, $path.'thumb/'.getName($filePreview, 'thumb');
+} else {
+    add_log("Errore writeImage: file non trovato", "ERROR");
+});
+					
+					// im->destroy(); // Cleanup gestito automaticamente
+if (isset(im_temp_files)) {
+    foreach (im_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(im_temp_files);
+}
+					// preview->destroy(); // Cleanup gestito automaticamente
+if (isset(preview_temp_files)) {
+    foreach (preview_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(preview_temp_files);
+}
+					// thumb->destroy(); // Cleanup gestito automaticamente
+if (isset(thumb_temp_files)) {
+    foreach (thumb_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(thumb_temp_files);
+}
+
+					tep_db_query("UPDATE ".TABLE_PHOTO_PUZZLE." SET img_file = '".$file."' WHERE photo_puzzle_id = ".$puzzleId."");
+					//echo json_encode(array('res' => 'ok', 'trueSize' => array($imageWidth, $imageHeight), 'file' => DIR_WS_IMAGES.'temporary/'.$sesskey.'/'.$puzzleId.'/preview/'.getName($file, 'preview').'?cache='.time(), 'orientation' => $orientamento, 'puzzles' => $aPuzzles));
+					$smarty->assign('file', WEB_DIR.$sesskey.'/'.$puzzleId.'/preview/'.getName($filePreview, 'preview').'?cache='.time());
+					$smarty->assign('aPuzzles', $aPuzzles);
+				}
+			}
+		}
+		else
+			$smarty->assign('noAccess',1);	
+		
+	}
+}
+
+?>

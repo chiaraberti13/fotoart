@@ -1,0 +1,2570 @@
+<?php
+	
+/**
+ * FUNZIONI IMAGEMAGICK COMMAND LINE - Auto-generate da risolve.php
+ */
+
+function im_get_image_geometry($file_path) {
+    $cmd = "identify -format '%wx%h' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        list($width, $height) = explode('x', $output[0]);
+        return array('width' => (int)$width, 'height' => (int)$height);
+    }
+    return false;
+}
+
+function im_get_image_format($file_path) {
+    $cmd = "identify -format '%m' " . escapeshellarg($file_path) . " 2>&1";
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    if ($return_code === 0 && !empty($output[0])) {
+        return trim($output[0]);
+    }
+    return false;
+}
+
+function im_scale_image($input_file, $output_file, $width, $height = 0, $format = null) {
+    $size_param = $height > 0 ? $width . "x" . $height : $width . "x";
+    $cmd = "convert " . escapeshellarg($input_file) . " -resize " . escapeshellarg($size_param) . " ";
+    
+    if ($format) {
+        $cmd .= "-format " . escapeshellarg(strtolower($format)) . " ";
+    }
+    
+    $cmd .= escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_crop_image($input_file, $output_file, $width, $height, $x, $y) {
+    $crop_param = $width . "x" . $height . "+" . $x . "+" . $y;
+    $cmd = "convert " . escapeshellarg($input_file) . " -crop " . escapeshellarg($crop_param) . " +repage " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_composite_image($base_file, $overlay_file, $output_file, $x = 0, $y = 0, $compose = "over") {
+    $cmd = "composite -compose " . escapeshellarg($compose) . " -geometry +" . $x . "+" . $y . " " . 
+           escapeshellarg($overlay_file) . " " . escapeshellarg($base_file) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_set_image_format($input_file, $output_file, $format) {
+    $cmd = "convert " . escapeshellarg($input_file) . " -format " . escapeshellarg(strtolower($format)) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_new_image($width, $height, $color, $output_file, $format = "png") {
+    $size_param = $width . "x" . $height;
+    $cmd = "convert -size " . escapeshellarg($size_param) . " xc:" . escapeshellarg($color) . " -format " . escapeshellarg($format) . " " . escapeshellarg($output_file) . " 2>&1";
+    
+    $output = array();
+    exec($cmd, $output, $return_code);
+    
+    return $return_code === 0;
+}
+
+function im_read_image($file_path) {
+    // Per command line, "leggere" significa solo verificare che esista
+    return file_exists($file_path);
+}
+
+function im_write_image($temp_file, $output_file) {
+    if (file_exists($temp_file)) {
+        return copy($temp_file, $output_file);
+    }
+    return false;
+}
+
+function im_clean_temp_files($pattern) {
+    $files = glob($pattern);
+    if ($files) {
+        foreach ($files as $file) {
+            @unlink($file);
+        }
+    }
+}
+
+###################################################################
+	####	ORDERS EDIT AREA                                       ####
+	####	Copyright 2010 Ktools.net LLC - All Rights Reserved	   ####
+	####	http://www.ktools.net                                  ####
+	####	Created: 8-11-2010                                     ####
+	####	Modified: 8-11-2010                                    #### 
+	###################################################################
+	
+		require_once('../assets/includes/session.php');							# INCLUDE THE SESSION START FILE
+	
+		$page = "orders";
+		$lnav = "sales";
+		
+		$supportPageID = '353';
+	
+		require_once('mgr.security.php');								# INCLUDE SECURITY CHECK FILE		
+		require_once('mgr.config.php');									# INCLUDE MANAGER CONFIG FILE
+		require_once('../assets/includes/tweak.php');					# INCLUDE TWEAK FILE
+		if(file_exists("../assets/includes/db.config.php")){			
+			require_once('../assets/includes/db.config.php');			# INCLUDE DATABASE CONFIG FILE
+		} else { 											
+			@$script_error[] = "The db.config.php file is missing.";	# DATABASE CONFIG FILE MISSING
+		}
+		require_once('../assets/includes/shared.functions.php');		# INCLUDE SHARED FUNCTIONS FILE
+		require_once('mgr.functions.php');								# INCLUDE MANAGER FUNCTIONS FILE		
+		error_reporting(0);												# TURN ERROR REPORTING OFF TEMPORARILY TO USE SCRIPT ERROR REPORTING
+		require_once('../assets/includes/db.conn.php');					# INCLUDE DATABASE CONNECTION FILE
+		require_once('mgr.select.settings.php');						# SELECT THE SETTINGS DATABASE
+		include_lang();													# INCLUDE THE LANGUAGE FILE	
+		require_once('../assets/includes/addons.php');					# INCLUDE MANAGER ADDONS FILE		
+		require_once('mgr.error.check.php');							# INCLUDE THE ERROR CHECKING FILE		
+		require_once('../assets/classes/invoicetools.php');				# INCLUDE THE INVOICE TOOLS FILE
+		require_once('../assets/classes/mediatools.php');				# INCLUDE MEDIA TOOLS
+		
+		require_once('../assets/includes/photo.puzzle.inc.php');  		#FP
+		error_reporting(E_ALL & ~E_NOTICE);								# TURN ERROR REPORTING BACK ON	
+		
+		$ndate = new kdate;
+		$ndate->distime = 1;
+		
+		# INCLUDE DEFAULT CURRENCY SETTINGS
+		require_once('mgr.defaultcur.php');
+		
+		$cleanvalues = new number_formatting;
+		$cleanvalues->set_num_defaults(); // SET THE DEFAULTS
+		$cleanvalues->set_cur_defaults(); // SET THE CURRENCY DEFAULTS
+		
+		$ndate = new kdate;
+		$ndate->distime = 0;
+		
+		# IF EDITING GET THE INFO FROM THE DATABASE		
+		if($_GET['edit'] != "new" and !$_REQUEST['action'])
+		{
+			$orderResult = mysqli_query($db,
+			"
+				SELECT * FROM ({$dbinfo[pre]}orders 
+				LEFT JOIN {$dbinfo[pre]}members 
+				ON {$dbinfo[pre]}orders.member_id = {$dbinfo[pre]}members.mem_id) 
+				LEFT JOIN {$dbinfo[pre]}invoices 
+				ON {$dbinfo[pre]}orders.order_id = {$dbinfo[pre]}invoices.order_id 
+				WHERE {$dbinfo[pre]}orders.order_id = '{$_GET[edit]}'
+			");
+			$orderRows = mysqli_num_rows($orderResult);
+			$order = mysqli_fetch_array($orderResult);
+		}
+		
+		# ACTIONS
+		switch($_REQUEST['action'])
+		{
+			# SAVE EDIT				
+			case "save_edit":
+				# CONVERT POST & GET ARRAYS TO LOCAL VALUES AND CLEAN DATA				
+				require_once('../assets/includes/clean.data.php');
+
+				$order_date = $_POST['order_year']."-".$_POST['order_month']."-".$_POST['order_day']." ".$_POST['order_hour'].":".$_POST['order_minute'].":00";
+				
+				$order_date = $ndate->formdate_to_gmt($order_date);
+				
+				$total_clean = $cleanvalues->currency_clean($total);
+				$subtotal_clean = $cleanvalues->currency_clean($subtotal);
+				$taxa_clean = $cleanvalues->currency_clean($taxa_cost);			
+				$taxb_clean = $cleanvalues->currency_clean($taxb_cost);
+				$taxc_clean = $cleanvalues->currency_clean($taxc_cost);
+				$shipping_cost_clean = $cleanvalues->currency_clean($shipping_cost);
+				
+				// Pull order record
+				$order_result = mysqli_query($db,"SELECT order_status,order_number,uorder_id,member_id FROM {$dbinfo[pre]}orders where order_id = '{$saveid}'");
+				$order = mysqli_fetch_assoc($order_result);
+				
+				//BUILD SMARTY VARIABLES FOR EMAIL
+				$order['orderLink'] = "{$config[settings][site_url]}/order.details.php?orderID={$order[uorder_id]}";
+				$smarty->assign('order',$order);
+				
+				//GET MEMBER INFO FOR SMARTY 
+				if($order['member_id'])
+				{
+					$memberResult = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}members WHERE mem_id = '{$order[member_id]}'");
+					$member = mysqli_fetch_assoc($memberResult); // Get member details
+					$smarty->assign('member',$member);
+				}
+				
+				if(!$order['order_number']) // See if an order number exists
+				{
+					if($config['settings']['order_num_type'] == 1) // Get sequential number
+					{
+						$orderNumber = $config['settings']['order_num_next'];
+						$nextOrderNumber = $orderNumber+1;		
+						mysqli_query($db,"UPDATE {$dbinfo[pre]}settings SET order_num_next='{$nextOrderNumber}' WHERE settings_id = 1"); // update settings db with next number		
+					}
+					else // Get random order number
+						$orderNumber = create_order_number();
+				}
+				else
+					$orderNumber = $order['order_number'];
+					
+				$potentialInvoiceNumber = $config['settings']['invoice_prefix'].$config['settings']['invoice_next'].$config['settings']['invoice_suffix']; // Create an invoice number in case an update is needed
+				
+				$invoiceResult = mysqli_query($db,"SELECT invoice_number FROM {$dbinfo[pre]}invoices WHERE order_id = '{$saveid}'");
+				$invoice = mysqli_fetch_assoc($invoiceResult);
+				
+				// If order status is approve and there is no current invoice number then create one
+				if($order_status == 1 and !$invoice['invoice_number'])
+				{
+					$sql = "UPDATE {$dbinfo[pre]}invoices SET invoice_number='{$potentialInvoiceNumber}' WHERE order_id = '{$saveid}'";
+					$result = mysqli_query($db,$sql);
+					
+					$nextInvoiceNumber = $config['settings']['invoice_next']+1;
+					mysqli_query($db,"UPDATE {$dbinfo[pre]}settings SET invoice_next='{$nextInvoiceNumber}' WHERE settings_id = 1"); // Update sequential invoice number in settings db
+				}
+				
+				# UPDATE THE ORDERS TABLE
+				$sql = "UPDATE {$dbinfo[pre]}orders SET 
+							uorder_id='$uorder_id',
+							order_number='$orderNumber',							
+							member_id='$permpurchaser',
+							admin_notes='$admin_notes',
+							mem_notes='$mem_notes',
+							order_date='$order_date'
+							WHERE order_id  = '$saveid'";
+				$result = mysqli_query($db,$sql); // Removed in 4.4 order_status='$order_status',
+
+				/*
+					invoice_number='$invoice_number',
+					credits_total='$credits_total',
+					total='$total_clean',
+					subtotal='$subtotal_clean',
+					taxa_cost='$taxa_clean',
+					taxb_cost='$taxb_clean',
+					taxc_cost='$taxc_clean',
+					shipping_cost='$shipping_cost_clean',
+				*/
+
+				# UPDATE THE INVOICES TABLE
+				$sql = "UPDATE {$dbinfo[pre]}invoices SET 
+							shipping_status='$shipping_status',
+							invoice_mem_id='$permpurchaser',
+							ship_id='$ship_id',
+							tracking_number='$tracking_number'
+							where order_id  = '$saveid'";
+				$result = mysqli_query($db,$sql); // Removed in 4.4 payment_status='$payment_status',
+				
+				// If order status is approved and there is an email address to send to
+				if($invoice['ship_email'] && $order_status == 1)
+				{
+					// Build email
+					$toEmail = $invoice['ship_email'];
+					$content = getDatabaseContent('orderApprovalMessage'); // Get content from db				
+					$content['name'] = $smarty->fetch('eval:'.$content['name']);
+					$content['body'] = $smarty->fetch('eval:'.$content['body']);
+					$options['replyEmail'] = $config['settings']['support_email'];
+					$options['replyName'] = $config['settings']['business_name'];
+					kmail($toEmail,$toEmail,$config['settings']['support_email'],$config['settings']['business_name'],$content['name'],$content['body'],$options); // Send email
+				}
+				
+				if($item_ship_status)
+				{
+					foreach($item_ship_status as $value)
+					{
+						$iship_status = ${'iship_status_'.$value};
+						$itrack_number = ${'tracknum_'.$value};
+						//echo "$iship_status/";
+						# UPDATE THE ITEMS TABLE
+						$sql = "UPDATE {$dbinfo[pre]}invoice_items SET 
+									shipping_status='$iship_status',
+									tracking_number='$itrack_number'
+									WHERE oi_id  = '$value'";
+						$result = mysqli_query($db,$sql);
+					}
+				}
+				
+				# DELETE GROUPS FIRST
+				mysqli_query($db,"DELETE FROM {$dbinfo[pre]}groupids WHERE item_id = '$saveid' AND mgrarea = '$page'");
+				# ADD GROUPS
+				if($setgroups)
+				{
+					foreach($setgroups as $value)
+					{
+						mysqli_query($db,"INSERT INTO {$dbinfo[pre]}groupids (mgrarea,item_id,group_id) VALUES ('$page','$saveid','$value')");
+					}
+				}
+				
+				# FIND OUT HOW MANY MORE ARE PENDING
+				$_SESSION['pending_orders'] = mysqli_result_patch(mysqli_query($db,"SELECT COUNT(order_id) FROM {$dbinfo[pre]}orders WHERE order_status = '0' AND deleted = '0'"));
+				
+				# UPDATE ACTIVITY LOG
+				save_activity($_SESSION['admin_user']['admin_id'],$mgrlang['subnav_orders'],1,$mgrlang['gen_b_ed'] . " > <strong>$invoice_id</strong>");
+				
+				header("location: mgr.orders.php?mes=edit"); exit;
+			break;
+		}		
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=<?php echo $langset['lang_charset']; ?>" />
+	<title><?php echo $manager_page_title . " : " . $mgrlang['subnav_media_types']; ?></title>
+	<!-- LOAD THE STYLE SHEET -->
+	<link rel="stylesheet" href="mgr.style.css" />
+	<!--[if lt IE 7.]><script defer type="text/javascript" src="../assets/javascript/pngfix.js"></script><![endif]-->
+    <!-- PHP TO JAVASCRIPT VARS -->
+    <?php include('mgr.javascript.vars.php'); ?>
+	<!-- LOAD PUBLIC AND MANAGER SHARED JAVASCRIPT -->	
+	<script type="text/javascript" src="../assets/javascript/shared.min.js"></script>
+	<!-- LOAD PROTOTYPE LIBRARY -->	
+	<script type="text/javascript" src="../assets/javascript/prototype/prototype.js"></script>
+	<!-- LOAD jQUERY -->
+	<script type="text/javascript" src="../assets/javascript/jquery/jquery.min.js"></script>
+	<script>var $j = jQuery.noConflict();</script>
+    <!-- LOAD SCRIPTACULOUS LIBRARY -->   
+    <script type="text/javascript" src="../assets/javascript/scriptaculous/scriptaculous.js"></script>
+	<!-- GENERIC MGR JAVASCRIPT -->	
+	<script type="text/javascript" src="./mgr.min.js"></script>
+    <!-- MESSAGE WINDOW JS -->
+	<script type="text/javascript" src="mgr.js.messagewin.php"></script>
+	<!-- TIME OUT AFTER 15 MINUTES -->
+	<meta http-equiv=refresh content="<?php echo $config['timeout']; ?>; url=mgr.login.php?notice=timed_out" />
+	<!-- INNOVA EDITOR -->
+	<script type="text/javascript" src="../assets/javascript/innovaeditor/scripts/innovaeditor.js"></script>
+	<script language="javascript">	
+		function form_submitter(){
+			// REVERT BACK
+			$('uorder_id_div').className='fs_row_off';
+			$('invoice_id_div').className='fs_row_off';
+			<?php
+				if($_SESSION['admin_user']['admin_id'] == "DEMO")
+				{
+					echo "demo_message();";
+					echo "return false;";
+				}
+				else
+				{
+					$action_link = ($_GET['edit'] == "new") ? "mgr.orders.edit.php?action=save_new" : "mgr.orders.edit.php?action=save_edit";
+
+					js_validate_field("uorder_id","order_f_ordernum",1);
+					js_validate_field("invoice_id","order_f_invoice",1);
+				}
+			?>
+			//return false;
+		}
+		
+		Event.observe(window, 'load', function()
+		{
+			// HELP BUTTON
+			if($('abutton_help')!=null)
+			{
+				$('abutton_help').observe('click', function()
+					{
+						support_popup('<?php echo $supportPageID; ?>');
+					});
+				$('abutton_help').observe('mouseover', function()
+					{
+						$('img_help').src='./images/mgr.button.help.png';
+					});
+				$('abutton_help').observe('mouseout', function()
+					{
+						$('img_help').src='./images/mgr.button.help.off.png';
+					});
+			}
+			//resizefsdiv('items_div',360);
+		});
+		
+		Event.observe(window, 'resize', function()
+		{
+			//resizefsdiv('items_div',360);
+		});
+		
+		// UPDATE EXPIRE DATE
+		function reset_expire(item_id){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				$('expire_div_' + item_id).innerHTML = "<img src=\"images/mgr.loader.gif\">";
+				var updatecontent = 'expire_div_' + item_id;
+				var loadpage = "mgr.orders.actions.php?mode=reset_expire&id=" + item_id;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		// UPDATE DOWNLOADS
+		function reset_downloads(item_id){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				$('downloads_div_' + item_id).innerHTML = "<img src=\"images/mgr.loader.gif\">";
+				var updatecontent = 'downloads_div_' + item_id;
+				var loadpage = "mgr.orders.actions.php?mode=reset_downloads&id=" + item_id;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		// DELETE ORDER ITEM
+		function delete_item(item_id){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{	
+				<?php
+					// IF VERIFT BEFORE DELETE IS ON
+					if($config['settings']['verify_before_delete'])
+					{
+				?>
+						message_box("<?php echo $mgrlang['gen_suredelete']; ?>","<input type='button' value='<?php echo $mgrlang['gen_b_cancel2']; ?>' id='closebutton' class='button' onclick='close_message();' /><input type='button' value='<?php echo $mgrlang['gen_short_delete']; ?>' id='closebutton' class='button' onclick='do_delete_item(\""+item_id+"\");close_message();' />",'');
+				<?php
+					}
+					else
+					{
+						echo "do_delete_item(item_id);";
+					}
+				?>
+			}
+		}
+		// DO THE ACTUAL DELETE
+		function do_delete_item(item_id)
+		{
+			var updatecontent = 'hidden_box';
+			var loadpage = "mgr.orders.actions.php?mode=delete_item&id=" + item_id;
+			var pars = "";
+			var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+		}
+		
+		// UPDATE SHIPPING ON ITEM
+		function update_iship_status(item_id){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				var selected_value = $('iship_status_'+item_id).options[$('iship_status_'+item_id).selectedIndex].value;
+				if(selected_value == 1)
+				{
+					$('tracknum_div_'+item_id).show();
+				}
+				else
+				{
+					$('tracknum_div_'+item_id).hide();
+				}
+				var updatecontent = 'hidden_box';
+				var loadpage = "mgr.orders.actions.php?mode=update_iship_status&id=" + item_id + '&status=' + selected_value;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		// UPDATE SHIPPING ON ORDER
+		function update_oship_status(){
+			var selected_value = $('shipping_status').options[$('shipping_status').selectedIndex].value;
+			if(selected_value == 1 || selected_value == 3)
+			{
+				$('tracking_number_div').show();
+			}
+			else
+			{
+				$('tracking_number_div').hide();
+			}
+		}
+		
+		// START CONTRIBUTORS DETAILS PANEL
+		var start_cpanel;
+		function start_mem_cpanel(id,mem)
+		{
+			var mem_cpanel = 'more_info_c' + mem + '-' + id;
+			$$('.details_win').each(function(s) { s.setStyle({display: "none"}) });
+			start_panel = setTimeout("show_div_fade_load('" + mem_cpanel + "','mgr.members.dwin.php?id="+mem+"','_content')",'550');
+		}
+		
+		// BRING THE PANEL TO THE FRONT
+		function mem_cdetails_tofront(id,mem)
+		{
+			var mem_panel = 'more_info_c' + mem + '-' + id;
+			z_index++;
+			$(mem_panel).setStyle({
+				zIndex: z_index
+			});
+		}
+		
+		// CANCEL LOAD AND CLOSE ALL PANELS
+		function cancel_mem_cpanel(id,mem)
+		{
+			clearTimeout(start_cpanel);
+			$$('.mem_details_win').each(function(s) { s.setStyle({display: "none"}) });
+			$("more_info_c" + mem + "-" + id + "_content").update('<img src="images/mgr.loader.gif" style="margin: 40px;" />');
+		}
+		
+		// START MEMBER DETAILS PANEL
+		var start_panel;
+		function start_mem_panel(id)
+		{
+			var mem_panel = 'more_info_' + id;
+			$$('.details_win').each(function(s) { s.setStyle({display: "none"}) });
+			start_panel = setTimeout("show_div_fade_load('" + mem_panel + "','mgr.members.dwin.php?id="+id+"','_content')",'550');
+		}
+		
+		// BRING THE PANEL TO THE FRONT
+		function mem_details_tofront(id)
+		{
+			var mem_panel = 'more_info_' + id;
+			z_index++;
+			$(mem_panel).setStyle({
+				zIndex: z_index
+			});
+		}
+		
+		// CANCEL LOAD AND CLOSE ALL PANELS
+		function cancel_mem_panel(id)
+		{
+			clearTimeout(start_panel);
+			$$('.mem_details_win').each(function(s) { s.setStyle({display: "none"}) });
+			$("more_info_" + id + "_content").update('<img src="images/mgr.loader.gif" style="margin: 40px;" />');
+		}
+		
+		function loadOptions(invoiceItemID,itemType)
+		{
+			displaybool('optionsDiv'+invoiceItemID,'mgr.orders.actions.php?mode=invoice_item_options&itemType='+itemType+'&invoiceItemID='+invoiceItemID,'optionsDiv'+invoiceItemID,'loader','plusminus-'+invoiceItemID);
+		}
+		
+		var mediaWinTimeout;
+		function createDetailsWindow(mediaID,itemID)
+		{			
+			clearTimeout(mediaWinTimeout);
+			
+			var offset = $('media_div_'+mediaID+'_'+itemID).cumulativeOffset();
+						
+			var mediaDivWidth = $('media_div_'+mediaID+'_'+itemID).getWidth();
+			var arrowoffset = (Math.round(mediaDivWidth/2)-14);
+			var leftoffset = 0;
+			var arrow = 'right';
+			var arrowpos = [400,arrowoffset];
+			
+			if((offset[0] - 402) < 0)
+			{
+				leftoffset = offset[0]+402+mediaDivWidth;
+				arrow = 'left';
+				arrowpos = [-10,arrowoffset];
+			}
+			else
+			{
+				leftoffset = offset[0];
+				arrow = 'right';
+				arrowpos = [400,arrowoffset];
+			}
+			
+			var arrow = "<img src='images/mgr.detailswin.arrow."+arrow+".dark.png' style='position: absolute; margin-left: -10px; bottom: 50px;' />";
+			$('mediaDetailsWindow').update(arrow + "<div class='details_win_inner' style='min-height: 320px; padding: 10px 20px 20px 20px; background-color: #333' id='mediaDetailsWindow_inner'><img src='images/mgr.loader.gif' style='margin: 10px;' /></div>");
+			
+			mediaWinTimeout = setTimeout(function(){ fadeInDetailsWindow(mediaID); },700);
+			
+			$('mediaDetailsWindow').setStyle(
+			{
+				top: offset[1] + "px",
+				left: leftoffset + "px",
+				marginTop: "-440px",
+				marginRight: "0",
+				marginBottom: "0",
+				marginLeft: "-402px"
+			});
+			
+			
+		}
+		
+		function fadeInDetailsWindow(mediaID)
+		{
+			//$('mediaDetailsWindow').show();
+			
+			show_div_fade_load('mediaDetailsWindow','mgr.media.actions.php?mode=preview&mediaid='+mediaID,'_inner')
+			
+		}
+		
+		function hideDetailsWindow()
+		{
+			$('mediaDetailsWindow').hide();
+			clearTimeout(mediaWinTimeout);
+		}
+		
+		function write_status(mode,id,curstatus)
+		{
+			var content = ''
+			var div_id = ''
+			//alert(curstatus);
+			switch(mode)
+			{
+				case "payment":
+					div_id = "payment_sp_"+id;
+					if(curstatus != 0){ content+= "<div class='mtag_processing mtag' onclick=\"switch_payment_status('"+id+"',0);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_processing']; ?></div>"; }
+					if(curstatus != 1){ content+= "<div class='mtag_paid mtag' onclick=\"switch_payment_status('"+id+"',1);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_paid']; ?></div>"; }
+					if(curstatus != 2){ content+= "<div class='mtag_unpaid mtag' onclick=\"switch_payment_status('"+id+"',2);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_unpaid']; ?></div>"; }
+					<?php if(in_array("pro",$installed_addons)){ ?>if(curstatus != 3){ content+= "<div class='mtag_bill mtag' onclick=\"switch_payment_status('"+id+"',3);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_bill']; ?></div>"; }<?php } ?>
+					if(curstatus != 4){ content+= "<div class='mtag_failed mtag' onclick=\"switch_payment_status('"+id+"',4);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_failed']; ?></div>"; }
+					if(curstatus != 5){ content+= "<div class='mtag_refunded mtag' onclick=\"switch_payment_status('"+id+"',5);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_refunded']; ?></div>"; }
+				break;
+				case "orders":
+					div_id = "order_sp_"+id;
+					if(curstatus != 0){ content+= "<div class='mtag_pending mtag' onclick=\"switch_order_status('"+id+"',0);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_pending']; ?></div>"; }
+					if(curstatus != 1){ content+= "<div class='mtag_approved mtag' onclick=\"switch_order_status('"+id+"',1);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_approved']; ?></div>"; }
+					if(curstatus != 2){ content+= "<div class='mtag_incomplete mtag' onclick=\"switch_order_status('"+id+"',2);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_incomplete']; ?></div>"; }
+					if(curstatus != 3){ content+= "<div class='mtag_cancelled mtag' onclick=\"switch_order_status('"+id+"',3);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_cancelled']; ?></div>"; }
+					if(curstatus != 4){ content+= "<div class='mtag_failed mtag' onclick=\"switch_order_status('"+id+"',4);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_failed']; ?></div>"; }
+				break;
+				case "shipping":
+					div_id = "ship_sp_"+id;
+					if(curstatus != 0){ content+= "<div class='mtag_shippingna mtag' style='width: 100px;' onclick=\"switch_ship_status('"+id+"',0);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_shipnone']; ?></div>"; }
+					if(curstatus != 1){ content+= "<div class='mtag_shipped mtag' style='width: 100px;' onclick=\"switch_ship_status('"+id+"',1);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_shipped']; ?></div>"; }
+					if(curstatus != 2){ content+= "<div class='mtag_notshipped mtag' style='width: 100px;' onclick=\"switch_ship_status('"+id+"',2);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_notshipped']; ?></div>"; }
+					if(curstatus != 3){ content+= "<div class='mtag_partshipped mtag' style='width: 100px;' onclick=\"switch_ship_status('"+id+"',3);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_pshipped']; ?></div>"; }
+					if(curstatus != 4){ content+= "<div class='mtag_backordered mtag' style='width: 100px;' onclick=\"switch_ship_status('"+id+"',4);\" onmouseover='clear_sp_timeout();' onmouseout='hide_sp();'><?php echo $mgrlang['gen_backordered']; ?></div>"; }
+				break;
+			}
+			$(div_id).update(content);
+		}
+		
+		// SWITCH ORDER STATUS
+		function switch_order_status(item_id,newstatus){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				$('order_sp_'+item_id).hide();
+				hide_sp();
+				$('orderstatuscheck' + item_id).innerHTML = "<img src=\"images/mgr.loader.gif\">";
+				var updatecontent = 'orderstatuscheck' + item_id;
+				var loadpage = "mgr.orders.actions.php?mode=order_status&id=" + item_id + "&newstatus=" + newstatus;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		// SWITCH PAYMENT STATUS
+		function switch_payment_status(item_id,newstatus){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				//$('payment_sp_'+item_id).fade({ duration: 0.7 });
+				//$('payment_sp_'+item_id).hide();
+				$('payment_sp_'+item_id).hide();
+				hide_sp();
+				$('paymentstatuscheck' + item_id).innerHTML = "<img src=\"images/mgr.loader.gif\">";
+				var updatecontent = 'paymentstatuscheck' + item_id;
+				var loadpage = "mgr.orders.actions.php?mode=payment_status&id=" + item_id + "&newstatus=" + newstatus;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		// SWITCH SHIPPING STATUS
+		function switch_ship_status(item_id,newstatus){
+			if("<?php echo $_SESSION['admin_user']['admin_id']; ?>" == "DEMO")
+			{
+				demo_message();
+			}
+			else
+			{
+				$('ship_sp_'+item_id).hide();
+				hide_sp();
+				$('shippingstatuscheck' + item_id).innerHTML = "<img src=\"images/mgr.loader.gif\">";
+				var updatecontent = 'shippingstatuscheck' + item_id;
+				var loadpage = "mgr.orders.actions.php?mode=shipping_status&id=" + item_id + "&newstatus=" + newstatus;
+				var pars = "";
+				var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+			}
+		}
+		
+		function show_sp(id)
+		{
+			//alert(id);
+			clearTimeout(status_popup_timeout);
+			$(id).show();
+			$$('.status_popup').each(function(e){ if(id != e.id){ e.hide(); } });
+		}
+		
+		var status_popup_timeout;
+		
+		function hide_sp()
+		{
+			clearTimeout(status_popup_timeout);
+			status_popup_timeout = setTimeout(function(){$$('.status_popup').each(function(e){ e.hide(); });},200); // e.fade({ duration: 0.3 });
+		}
+		
+		function clear_sp_timeout()
+		{
+			clearTimeout(status_popup_timeout);
+		}
+	</script>
+	
+	<style>
+		.itemGalleriesList{
+			margin-top: 15px;
+			color: #666;
+			font-size: 11px;
+			font-style: italic;
+		}
+		.itemGalleriesList li{
+			margin-top: 5px;
+		}
+	</style>
+</head>
+<body>
+	<div id="mediaDetailsWindow" style="display: none; width: 400px; margin: 0; border: 1px solid #000" class="details_win"></div>
+	<?php demo_message($_SESSION['admin_user']['admin_id']); ?>
+	<?php include("mgr.message.window.php"); ?>
+	<div id="container">
+		<?php include('mgr.header.php'); ?>
+		<?php include('mgr.support.bar.php'); ?>
+		<?php include('mgr.shortcuts.cont.php'); ?>
+        <!-- START CONTENT CONTAINER -->
+        <div id="content_container">
+        <?php
+            # CHECK FOR DEMO MODE
+            //demo_message($_SESSION['admin_user']['admin_id']);					
+        ?>
+            <form name="data_form" method="post" id="data_form" action="<?php echo $action_link; ?>" onsubmit="return form_submitter();">
+            <input type="hidden" name="saveid" value="<?php echo $_GET['edit']; ?>" />
+			<input type="hidden" name="uorder_id" id="uorder_id" value="<?php echo $order['uorder_id']; ?>" />
+            <!-- TITLE BAR AREA -->
+            <div id="title_bar">
+                <img src="./images/mgr.badge.orders.png" class="badge" />
+                <p><strong><?php echo ($ptitle = ($_GET['edit'] == "new") ? $mgrlang['order_new_header'] : $mgrlang['order_edit_header']); ?></strong><br /><span><?php echo ($pdescr = ($_GET['edit'] == "new") ? $mgrlang['order_new_message'] : $mgrlang['order_edit_message']); ?></span></p>
+                <div style="float: right; margin-right: 20px;" class="abuttons" id="abutton_help"><img src="./images/mgr.button.help.off.png" align="absmiddle" border="0" alt="<?php echo $mgrlang['gen_b_grps_alt-']; ?>" id="img_help" /><br /><?php echo $mgrlang['gen_b_help']; ?></div>
+            </div>
+            <!-- START CONTENT -->
+            <div id="content" style="padding: 0px;">
+                <div style="padding: 10px 20px 0 20px; margin-bottom: 15px; overflow: auto;">   
+                    <div class="tg_header_info" style="height: 180px;">
+                        <?php
+                            $avatar_width2 = 100;
+                        ?>
+                        <div id="avatar_summary" style="float: left; background-image: url(images/mgr.loader.gif); background-repeat: no-repeat; background-position: center; min-height: 50px;">
+                            <?php
+                                if(file_exists("../assets/avatars/" . $order['mem_id'] . "_large.png"))
+                                {
+                                    $mem_needed = figure_memory_needed("../assets/avatars/" . $order['mem_id'] . "_large.png");
+                                    if(ini_get("memory_limit"))
+                                    {
+                                        $memory_limit = ini_get("memory_limit");
+                                    }
+                                    else
+                                    {
+                                        $memory_limit = $config['DefaultMemory'];
+                                    }
+                                    if($memory_limit > $mem_needed)
+                                    {
+                                        // GO FOR IT
+                                        echo "<img src='mgr.display.avatar.php?mem_id={$order[mem_id]}&size=$avatar_width2&ext={$order[avatar]}' style='border: 4px solid #FFF; margin-right: 1px;' class='mediaFrame' />";
+                                    }
+                                    else
+                                    {
+                                        echo "<div style='margin: 4px 0 0 10px; padding: 10px; background-color: #fae8e8; width: 200px; border: 1px solid #ba0202;'><img src='images/mgr.icon.mem.summary2.gif' style='border: 2px solid #eeeeee; margin-left: 10px; margin-right: 10px;' width='40' align='left' />$mgrlang[gen_error_20] : <strong>" . $mem_needed . "mb</strong></div>";
+                                    }
+                                }
+                                else
+                                { 
+                                    echo "<img src='images/mgr.icon.mem.summary.gif' style='border: 4px solid #FFF; margin-right: 1px;' width='$avatar_width2' class='mediaFrame' />";
+                                }
+                            ?>
+                        </div>
+                        <div style="float: left; margin-left: 10px;">
+                            <?php
+                                
+								$country_result = mysqli_query($db,"SELECT name FROM {$dbinfo[pre]}countries WHERE country_id = '{$order[bill_country]}'");
+                                $country_rows = mysqli_num_rows($country_result);
+                                $country = mysqli_fetch_object($country_result);
+                                
+                                $state_result = mysqli_query($db,"SELECT name FROM {$dbinfo[pre]}states WHERE state_id = '{$order[bill_state]}'");
+                                $state_rows = mysqli_num_rows($state_result);
+                                $state = mysqli_fetch_object($state_result);
+                            ?>
+                            
+                            <table cellpadding="0" cellspacing="4">
+                                <tr>
+                                    <td rowspan="<?php if(in_array('multilang',$installed_addons) and $order['language']){ echo 4; } else { echo 3; } ?>" nowrap valign="top">
+                                        <?php
+											if($order['mem_id'])
+											{
+										?>
+											<div style="float: left; margin-right: 5px;"><a href='mgr.members.edit.php?edit=<?php echo $order['mem_id']; ?>' class='editlink' onmouseover='start_mem_panel(<?php echo $order['mem_id']; ?>);' onmouseout='cancel_mem_panel(<?php echo $order['mem_id']; ?>);'><?php echo $order['f_name'] . " " . $order['l_name']; ?></a></div>
+											<div style="float: left; margin-top: -106px;"><!-- USED TO GET CORRECT ALIGNMENT - WINDOW AFTER NAME -->
+												<div id="more_info_<?php echo $order['mem_id']; ?>" style="display: none;" class="mem_details_win">
+													<div class="mem_details_win_inner">
+														<img src="images/mgr.detailswin.arrow.gif" style="position: absolute; margin: 123px 0 0 -9px;" />
+														<div id="more_info_<?php echo $order['mem_id']; ?>_content" style="overflow: auto; border: 1px solid #fff"><img src="images/mgr.loader.gif" style="margin: 40px;" /></div>
+													</div>
+												</div>
+											</div>
+											<br /><a href="mailto:<?php echo @stripslashes($order['email']); ?>"><?php echo @stripslashes($order['email']); ?></a> <img src="images/mgr.icon.email.gif" align="absmiddle" style="cursor: pointer; margin-left: 3px;" onclick="message_window('<?php echo $order['mem_id']; ?>');" />
+											<br />
+										<?php
+											}
+											else
+											{
+												echo "<strong>{$mgrlang[gen_visitor]}</strong><br />";
+												echo "<a href='mailto:{$order[bill_email]}'>{$order[bill_email]}</a><br />";
+											}
+											
+											echo $order['bill_address'] . "<br />";
+											if($order['bill_address2']){ echo $order['bill_address2'] . "<br />"; }
+											echo $order['bill_city'];											
+											if($state_rows){ echo ", " . $state->name; }
+											echo " " . $order['bill_zip'] . "<br />";
+											if($country_rows){ echo $country->name; }
+											if($order['phone']){ echo "<br /><br /><strong>{$mgrlang[mem_f_phone]}</strong>: ".$order['phone']; }
+											
+											if($order['taxid']){ echo "<br /><br /><strong>{$mgrlang[taxvat_id]}</strong>: ".$order['taxid']; }
+											
+                                        ?>
+                                    </td>
+                                    
+                                    <td rowspan="<?php if(in_array('multilang',$installed_addons) and $order['language']){ echo 4; } else { echo 3; } ?>" width="10">&nbsp;</td> 
+                                    <td nowrap width="80"><strong><?php echo $mgrlang['mem_member_num']; ?>:</strong></td>
+                                    <td nowrap><?php if($order['mem_id']){ echo $order['mem_id']; } else { echo "{$mgrlang[gen_visitor]}"; } ?></td>
+                                </tr>
+                                <?php
+									if($order['mem_id'])
+									{
+								?>
+									<tr>
+										<td nowrap><strong><?php echo $mgrlang['mem_last_login']; ?>:</strong></td>
+										<td nowrap><?php if($order['signup_date'] == "0000-00-00 00:00:00"){ echo $mgrlang['mem_never']; } else { echo $ndate->showdate($order['last_login']); } ?></td>
+									</tr>
+									<tr>
+										<td nowrap valign="top"><strong><?php echo $mgrlang['mem_signup_date']; ?>:</strong></td>
+										<td nowrap valign="top"><?php echo $ndate->showdate($order['signup_date']); ?></td>
+									</tr>
+                                <?php
+									}									
+									if(in_array('multilang',$installed_addons) and $order['checkout_lang'])
+									{
+								?>
+                                <tr>
+                                    <td nowrap valign="top"><strong><?php echo $mgrlang['gen_language']; ?>:</strong></td>
+                                    <td nowrap valign="top"><span class="mtag_dblue" style="color: #FFF;"><?php echo ucfirst($order['checkout_lang']); ?></span></td>
+                                </tr>
+                                <?php
+									}
+								?>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="tg_header_info" style="height: 180px;">
+                   		<table cellpadding="0" cellspacing="4">
+                    		<tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_order_date']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap"><?php echo $ndate->showdate($order['order_date']); ?></td>
+                            </tr>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['order_f_ordernum']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap"><?php echo $order['order_number']; ?></td>
+                            </tr>
+                            <tr><td colspan="3"><br /></td></tr>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['billings_f_status']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap">
+									<?php
+										/*
+										switch($order['order_status'])
+										{
+											case 0: // PENDING
+												echo "<div class='mtag_pending mtag'>$mgrlang[gen_pending]</div>";
+											break;
+											case 1: // APPROVED
+												echo "<div class='mtag_approved mtag'>$mgrlang[gen_approved]</div>";
+											break;
+											case 2: // INCOMPLETE                                                
+												echo "<div class='mtag_incomplete mtag'>$mgrlang[gen_incomplete]</div>";
+											break;										
+											case 3: // BILL LATER
+												echo "<div class='mtag_cancelled mtag'>$mgrlang[gen_cancelled]</div>";
+											break;
+											case 4: // FAILED/CANCELLED
+												echo "<div class='mtag_failed mtag'>$mgrlang[gen_failed]</div>";
+											break;
+										}
+										*/									
+									?>
+								
+									<div class='status_popup' id='order_sp_<?php echo $order['order_id']; ?>' style="z-index: 98; display: none; padding-left: 8px; margin-left: -9px;" onmouseout="hide_sp();" onmouseover="clear_sp_timeout();"></div>
+                                    <div id="orderstatuscheck<?php echo $order['order_id']; ?>" style="position: absolute; z-index: 99; margin-top: -10px; cursor: pointer">
+										<?php
+                                            switch($order['order_status'])
+                                            {
+                                                case 0: // PENDING
+                                                    $tag_label = $mgrlang['gen_pending'];
+                                                    $mtag = 'mtag_pending';
+                                                break;
+                                                case 1: // APPROVED
+                                                    $tag_label = $mgrlang['gen_approved'];
+                                                    $mtag = 'mtag_approved';
+                                                break;
+                                                case 2: // INCOMPLETE
+                                                    $tag_label = $mgrlang['gen_incomplete'];
+                                                    $mtag = 'mtag_incomplete';
+                                                break;
+                                                case 3: // CANCELLED
+                                                    $tag_label = $mgrlang['gen_cancelled'];
+                                                    $mtag = 'mtag_cancelled';
+                                                break;
+                                                case 4: // FAILED
+                                                    $tag_label = $mgrlang['gen_failed'];
+                                                    $mtag = 'mtag_failed';
+                                                break;
+                                            }
+                                        ?>
+                                   	  <div class='<?php echo $mtag; ?> mtag' onmouseover="show_sp('order_sp_<?php echo $order['order_id']; ?>');write_status('orders','<?php echo $order['order_id']; ?>',<?php echo $order['order_status']; ?>)"><?php echo $tag_label; ?></div>
+                                    </div>
+								
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="tg_header_info" style="height: 180px; margin-right: 0">
+                   		<table cellpadding="0" cellspacing="4">
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_invoice_number']; ?>:</strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right"><a href="../invoice.php?orderID=<?php echo $order['uorder_id']; ?>" target="_blank"><!-- popup invoice page --><?php echo $order['invoice_number']; ?></a></td>
+                            </tr>
+							<?php
+								if($order['subtotal'] > 0)
+								{
+							?>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_subtotal']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right"><?php echo $cleanvalues->currency_display($order['subtotal'],1); ?></td>
+                            </tr>
+                            <?php
+								}
+								if($order['taxa_cost'] > 0 or $order['taxb_cost'] > 0 or $order['taxc_cost'] > 0)
+								{
+									$tax_cost = $order['taxa_cost'] + $order['taxb_cost'] + $order['taxc_cost'];
+							?>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_tax']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right"><?php echo $cleanvalues->currency_display($tax_cost,1); ?></td>
+                            </tr>
+                            <?php
+								}
+								if($order['shipping_cost'] > 0)
+								{
+							?>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_shipping']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right"><?php echo $cleanvalues->currency_display($order['shipping_cost'],1); ?></td>
+                            </tr>
+                            <?php
+								}
+								if($order['discounts_total'] > 0)
+								{
+							?>
+								<tr>
+									<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_discounts']; ?>: </strong></td>
+									<td>&nbsp;</td>
+									<td nowrap="nowrap" align="right"><?php echo $cleanvalues->currency_display($order['discounts_total'],1); ?></td>
+								</tr>
+							<?php
+								}
+								if($order['discounts_credits_total'] > 0)
+								{
+							?>
+								<tr>
+									<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_cred_discounts']; ?>: </strong></td>
+									<td>&nbsp;</td>
+									<td nowrap="nowrap" align="right"><?php echo $order['discounts_credits_total']; ?></td>
+								</tr>
+							<?php
+								}
+								if($order['total'] > 0)
+								{
+							?>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_total']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right" style="border-top: 1px dashed #999; padding-top: 2px;"><span style="font-weight: bold; font-size: 14px; color: #333"><?php echo $cleanvalues->currency_display($order['total'],1); ?></span></td>
+                            </tr>
+                            <?php
+								}
+								if($order['credits_total'])
+								{
+							?>                            
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_credits']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap" align="right"><span style="font-weight: bold; font-size: 14px; color: #333"><?php echo $order['credits_total']; ?></span></td>
+                            </tr>
+                            <?php
+								}
+							?>
+							<tr><td colspan="3"><br /></td></tr>
+                            <tr>
+                            	<td nowrap="nowrap"><strong><?php echo $mgrlang['gen_payment_status']; ?>: </strong></td>
+                                <td>&nbsp;</td>
+                                <td nowrap="nowrap">
+									<?php
+										/*
+										switch($order['payment_status'])
+										{
+											case 0: // PENDING                                                
+												echo "<div class='mtag_processing mtag' style='float: right;'>$mgrlang[gen_processing]</div>";
+											break;
+											case 1: // APPROVED
+												echo "<div class='mtag_paid mtag' style='float: right;'>$mgrlang[gen_paid]</div>";
+											break;
+											case 2: // INCOMPLETE/NONE
+												echo "<div class='mtag_unpaid mtag' style='float: right;'>$mgrlang[gen_unpaid]</div>";
+											break;
+											case 3: // BILL LATER
+												echo "<div class='mtag_bill mtag' style='float: right;'>$mgrlang[gen_bill]</div>";
+											break;
+											case 4: // FAILED/CANCELLED
+												echo "<div class='mtag_failed mtag' style='float: right;'>$mgrlang[gen_failed]</div>";
+											break;
+											case 5: // REFUNDED
+												echo "<div class='mtag_refunded mtag' style='float: right;'>$mgrlang[gen_refunded]</div>";
+											break;
+										}
+										*/									
+									?>
+									<div class='status_popup' id='payment_sp_<?php echo $order['order_id']; ?>' style="z-index: 98; display: none; padding-left: 9px; margin-left: -10px;" onmouseout="hide_sp();" onmouseover="clear_sp_timeout();"></div>
+									<div id="paymentstatuscheck<?php echo $order['order_id']; ?>" style="position: absolute; z-index: 99; margin-top: -10px; cursor: pointer">
+										<?php
+                                            switch($order['payment_status'])
+                                            {
+                                                case 0: // PROCESSING
+                                                    $tag_label = $mgrlang['gen_processing'];
+                                                    $mtag = 'mtag_processing';
+                                                break;
+                                                case 1: // APPROVED
+                                                    $tag_label = $mgrlang['gen_paid'];
+                                                    $mtag = 'mtag_paid';
+                                                break;
+                                                case 2: // INCOMPLETE/NONE
+                                                    $tag_label = $mgrlang['gen_unpaid'];
+                                                    $mtag = 'mtag_unpaid';
+                                                break;
+                                                case 3: // BILL/LATER
+                                                    $tag_label = $mgrlang['gen_bill'];
+                                                    $mtag = 'mtag_bill';
+                                                break;
+                                                case 4: // FAILED/CANCELLED
+                                                    $tag_label = $mgrlang['gen_failed'];
+                                                    $mtag = 'mtag_failed';
+                                                break;
+                                                case 5: // REFUNDED
+                                                    $tag_label = $mgrlang['gen_refunded'];
+                                                    $mtag = 'mtag_refunded';
+                                                break;
+                                            }
+                                      	?>
+                                   	  <div class='<?php echo $mtag; ?> mtag' onmouseover="show_sp('payment_sp_<?php echo $order['order_id']; ?>');write_status('payment','<?php echo $order['order_id']; ?>',<?php echo $order['payment_status']; ?>)"><?php echo $tag_label; ?></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+				
+				<?php
+					# PULL GROUPS
+					$order_group_result = mysqli_query($db,"SELECT gr_id,flagtype,name FROM {$dbinfo[pre]}groups WHERE mgrarea = '$page' ORDER BY name");
+					$order_group_rows = mysqli_num_rows($order_group_result);
+				?>
+                <div id="button_bar" style="clear: both;">
+                    <div class="subsubon" onclick="bringtofront('1');" id="tab1"><?php echo $mgrlang['order_tab1']; ?></div>
+                    <div class="subsuboff" onclick="bringtofront('4');" id="tab4"><?php echo $mgrlang['order_tab2']; ?></div>
+                    <div class="subsuboff" onclick="bringtofront('3');" id="tab3"><?php echo $mgrlang['order_tab3']; ?></div>
+                    <div class="subsuboff" onclick="bringtofront('7');" id="tab7"><?php echo $mgrlang['order_tab4']; ?></div>
+                    <div class="subsuboff" onclick="bringtofront('6');" id="tab6"><?php echo $mgrlang['gen_tab_shipping']; ?></div>
+                    <?php if($order_group_rows){ ?><div class="subsuboff" onclick="bringtofront('2');" id="tab2"><?php echo $mgrlang['gen_tab_groups']; ?></div><?php } ?>
+                    <div class="subsuboff" onclick="bringtofront('5');" id="tab5" style="border-right: 1px solid #d8d7d7;"><?php echo $mgrlang['gen_tab_advanced']; ?></div>
+                </div>
+                
+                <?php $row_color = 0; ?>
+                <div id="tab1_group" class="group" style="display: block;">
+                    
+					<div class="<?php fs_row_color(); ?>" id="order_number_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_ordernum']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_ordernum_d']; ?></span>
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666; margin-top: 5px;"><?php echo $order['order_number']; ?></span>
+                    </div>
+					<?php if($order['cart_notes']){ ?>
+					<div class="<?php fs_row_color(); ?>" id="order_number_div" style="background-color: #FFC">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['webset_f_onotes']; ?>:<br />
+                            <span><?php echo $mgrlang['order_onotes_d']; ?></span>
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666; margin-top: 5px;"><?php echo $order['cart_notes']; ?></span>
+                    </div>
+					<?php } ?>
+                    
+					<?php /*
+					<div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_status']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_status_d']; ?></span>
+                        </p>
+                        <select name="order_status">
+                        	<option value="0" <?php if($order['order_status'] == 0){ echo "selected"; } ?>><?php echo $mgrlang['gen_pending']; ?></option>
+                            <option value="1" <?php if($order['order_status'] == 1){ echo "selected"; } ?> ><?php echo $mgrlang['gen_approved']; ?></option>
+                            <option value="2" <?php if($order['order_status'] == 2){ echo "selected"; } ?>><?php echo $mgrlang['gen_incomplete']; ?></option>
+                            <option value="3" <?php if($order['order_status'] == 3){ echo "selected"; } ?>><?php echo $mgrlang['gen_cancelled']; ?></option>
+                            <option value="4" <?php if($order['order_status'] == 4){ echo "selected"; } ?>><?php echo $mgrlang['gen_failed']; ?></option>
+                        </select>
+                    </div>
+					*/ ?>
+                    <div class="<?php fs_row_color(); ?>" fsrow='1'>
+                        <img src="images/mgr.ast.gif" class="ast" />
+                        <p onclick="support_popup('<?php echo $supportPageID; ?>');">
+							<?php echo $mgrlang['order_f_datet']; ?>:<br />
+                        	<span><?php echo $mgrlang['order_f_datet_d']; ?></span>
+                        </p>
+                        <?php 
+							$form_order_date = $ndate->date_to_form($order['order_date']);
+						?>
+                        <select style="width: 50px;" name="order_month">
+							<?php
+                                for($i=1; $i<13; $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_order_date['month'] == $dis_i_as or ($_GET['edit'] == "new" and date("m") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        /
+                        <select style="width: 50px;" name="order_day">
+                            <?php
+                                for($i=1; $i<=31; $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_order_date['day'] == $dis_i_as or ($_GET['edit'] == "new" and date("d") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        /
+                        <select style="width: 65px;" name="order_year">
+                            <?php
+                                for($i=2005; $i<(date("Y")+6); $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_order_date['year'] == $dis_i_as or ($_GET['edit'] == "new" and date("Y") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        &nbsp;
+                        <select style="width: 50px;" name="order_hour">
+                            <?php
+                                for($i=0; $i<24; $i++){
+                                    if(strlen($i) < 2){
+                                        $dis_i_as = "0$i";
+                                    } else {
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_order_date['hour'] == $dis_i_as or ($_GET['edit'] == "new" and date("H") == $dis_i_as)){
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        :
+                        <select style="width: 50px;" name="order_minute">
+                            <?php
+                                for($i=1; $i<60; $i++){
+                                    if(strlen($i) < 2){
+                                        $dis_i_as = "0$i";
+                                    } else {
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_order_date['minute'] == $dis_i_as or ($_GET['edit'] == "new" and date("i") == $dis_i_as)){
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_customer']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_customer_d']; ?></span>
+                        </p>
+                        <div style="float: left; padding-right: 10px;" id="owner_name_div">
+							<?php
+								if($order['member_id'] == 0)
+									echo $mgrlang['gen_visitor'];
+								else
+									echo "<strong>{$order[f_name]} {$order[l_name]}</strong> (<a href='mailto:{$order[email]}'>{$order[email]}</a>)";
+                            ?>
+                        </div>
+                        <div style="float: left;"><a href="javascript:workbox2({page: 'mgr.workbox.php',pars: 'box=member_selector&header=members&style=guest&inputbox=permpurchaser&multiple=0&updatenamearea=owner_name_div'});" class="actionlink"><img src="images/mgr.people.icon.png" border="0" id="perm_icon_owner" align="middle" /></a></div>
+                        <input type="hidden" value="<?php echo $order['member_id']; ?>" name="permpurchaser" id="permpurchaser" />
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_adminnotes']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_adminnotes_d']; ?></span>
+                        </p>
+                        <textarea name="admin_notes" style="width: 450px; height: 100px;"><?php echo @stripslashes($order['admin_notes']); ?></textarea>
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_memnotes']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_memnotes_d']; ?></span>
+                        </p>
+                        <textarea name="mem_notes" style="width: 450px; height: 100px;"><?php echo @stripslashes($order['mem_notes']); ?></textarea>
+                    </div>
+                </div>
+                
+                <?php
+            	if($order_group_rows)
+				{
+						$row_color = 0;
+				?>
+					<div id="tab2_group" class="group"> 
+						<div class="<?php fs_row_color(); ?>" id="name_div">
+							<img src="images/mgr.ast.off.gif" class="ast" />
+							<p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+								<?php echo $mgrlang['order_f_ogroups']; ?>:<br />
+								<span><?php echo $mgrlang['order_f_ogroups_d']; ?></span>
+							</p>
+							<?php
+								$plangroups = array();
+								# FIND THE GROUPS THAT THIS ITEM IS IN
+								$order_groupids_result = mysqli_query($db,"SELECT group_id FROM {$dbinfo[pre]}groupids WHERE mgrarea = '$page' AND item_id = '{$order[order_id]}' AND item_id != 0");
+								while($order_groupids = mysqli_fetch_object($order_groupids_result))
+								{
+									$plangroups[] = $order_groupids->group_id;
+								}
+								echo "<ul style='float: left; margin: 0px; list-style-type:none; padding: 0;'>";
+								while($order_group = mysqli_fetch_object($order_group_result))
+								{
+									echo "<li><input type='checkbox' id='grp_$order_group->gr_id' class='permcheckbox' name='setgroups[]' value='$order_group->gr_id' "; if(in_array($order_group->gr_id,$plangroups)){ echo "checked "; } echo "/> "; if($order_group->flagtype == 'icon.none.gif'){ echo "<img src='./images/mini_icons/$order_group->flagtype' align='absmiddle' width='1' height='16' /> "; } else { echo "<img src='./images/mini_icons/$order_group->flagtype' align='absmiddle' /> "; } echo "<label for='grp_$order_group->gr_id'>" . substr($order_group->name,0,30)."</label></li>";
+								}
+								echo "</ul>";
+							?>
+						</div>
+					</div>
+				<?php
+					}
+				?>
+                
+                <?php $row_color = 0; ?>
+                <div id="tab3_group" class="group"> 
+                    <div class="<?php fs_row_color(); ?>" id="invoice_number_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_invoice']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_invoice_d']; ?></span>
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666; margin-top: 5px;"><?php echo $order['invoice_number']; ?></span>
+                    </div>
+                    <?php /*
+					<div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_paystat']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_paystat_d']; ?></span>
+                        </p>
+                        <select name="payment_status" style="margin-top: 15px;">
+                        	<option value="0" <?php if($order['payment_status'] == 0){ echo "selected"; } ?>><?php echo $mgrlang['gen_processing']; ?></option>
+                            <option value="1" <?php if($order['payment_status'] == 1){ echo "selected"; } ?> ><?php echo $mgrlang['gen_paid']; ?></option>
+                            <option value="2" <?php if($order['payment_status'] == 2){ echo "selected"; } ?>><?php echo $mgrlang['gen_unpaid']; ?></option>
+                            <?php if(in_array("pro",$installed_addons)){ ?><option value="3" <?php if($order['payment_status'] == 3){ echo "selected"; } ?>><?php echo $mgrlang['gen_bill']; ?></option><?php } ?>
+                            <option value="4" <?php if($order['payment_status'] == 4){ echo "selected"; } ?>><?php echo $mgrlang['gen_failed']; ?></option>
+                            <option value="5" <?php if($order['payment_status'] == 5){ echo "selected"; } ?>><?php echo $mgrlang['gen_refunded']; ?></option>
+                        </select>
+                    </div>
+                    
+					<?php
+						*/
+						if($order['subtotal'] > 0)
+						{
+					?>
+						<div class="<?php fs_row_color(); ?>" id="name_div">
+							<img src="images/mgr.ast.off.gif" class="ast" />
+							<p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+								<?php echo $mgrlang['gen_subtotal']; ?>:<br />
+							</p>
+							<span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['subtotal'],1); ?></span>
+						</div>
+					<?php
+						}
+					?>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['gen_tax']; ?>:<br />
+                        </p>
+                        <div style="float: left;">
+                            
+							<div class="divTable">
+								<?php
+									if($order['taxa_cost'] > 0)
+									{
+								?>
+									<div class="divTableRow">
+										<div class="divTableCell" style="padding: 6px 6px 6px 0"><span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['taxa_cost'],1); ?></span></div>
+										<div class="divTableCell" style="padding: 6px 6px 6px 0; color: #999">(<?php echo $config['settings']['taxa_name']; ?>)</div> <!--." ". ($order['tax_ratea']*1); ?>% -->
+									</div>
+								<?php
+									}
+								?>
+								<?php
+									if($order['taxb_cost'] > 0)
+									{
+								?>
+									<div class="divTableRow">
+										<div class="divTableCell" style="padding: 6px 6px 6px 0"><span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['taxb_cost'],1); ?></span></div>
+										<div class="divTableCell" style="padding: 6px 6px 6px 0; color: #999">(<?php echo $config['settings']['taxb_name']; ?>)</div><!-- ." ". ($order['tax_rateb']*1); ?>% -->
+									</div>
+								<?php
+									}
+								?>
+								<?php
+									if($order['taxc_cost'] > 0)
+									{
+								?>
+									<div class="divTableRow">
+										<div class="divTableCell" style="padding: 6px 6px 6px 0"><span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['taxc_cost'],1); ?></span></div>
+										<div class="divTableCell" style="padding: 6px 6px 6px 0; color: #999">(<?php echo $config['settings']['taxc_name']; ?>)</div><!-- ." ". ($order['tax_ratec']*1); ?>% -->
+									</div>
+								<?php
+									}
+								?>
+							</div>
+                        </div>
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['gen_shipping']; ?>:<br />
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['shipping_cost'],1); ?></span>
+                    </div>
+					<?php
+						if($order['discounts_total'] > 0)
+						{
+					?>
+						<div class="<?php fs_row_color(); ?>" id="name_div">
+							<img src="images/mgr.ast.off.gif" class="ast" />
+							<p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+								<?php echo $mgrlang['gen_discounts']; ?>:<br />
+							</p>
+							<span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['discounts_total'],1); ?></span>
+						</div>
+					<?php
+						}
+					?>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['gen_total']; ?>:<br />
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $cleanvalues->currency_display($order['total'],1); ?></span>
+                    </div>
+                    <?php
+						if(in_array("creditsys",$installed_addons))
+						{
+							if($order['discounts_credits_total'] > 0)
+							{
+					?>
+							<div class="<?php fs_row_color(); ?>" id="name_div">
+								<img src="images/mgr.ast.off.gif" class="ast" />
+								<p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+									<?php echo $mgrlang['gen_cred_discounts']; ?>:<br />
+								</p>
+								<span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $order['discounts_credits_total']; ?></span>
+							</div>
+						<?php
+							}
+						?>						
+						<div class="<?php fs_row_color(); ?>" id="name_div">
+                            <img src="images/mgr.ast.off.gif" class="ast" />
+                            <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                                <?php echo $mgrlang['gen_cred_total']; ?>:<br />
+                            </p>
+                            <span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $order['credits_total']; ?></span>
+                        </div>
+                    <?php
+						}
+					?>
+                    <div class="<?php fs_row_color(); ?>" fsrow='1'>
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p onclick="support_popup('<?php echo $supportPageID; ?>');">
+							<?php echo $mgrlang['order_f_paydt']; ?>:<br />
+                        	<span><?php echo $mgrlang['order_f_paydt_d']; ?></span>
+                        </p>
+                        <?php 
+							$form_payment_date = $ndate->date_to_form($order['payment_date']);
+						?>
+                        <select style="width: 50px;" name="payment_month">
+							<?php
+                                for($i=1; $i<13; $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_payment_date['month'] == $dis_i_as or ($_GET['edit'] == "new" and date("m") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        /
+                        <select style="width: 50px;" name="payment_day">
+                            <?php
+                                for($i=1; $i<=31; $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_payment_date['day'] == $dis_i_as or ($_GET['edit'] == "new" and date("d") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        /
+                        <select style="width: 65px;" name="payment_year">
+                            <?php
+                                for($i=2005; $i<(date("Y")+6); $i++)
+								{
+                                    if(strlen($i) < 2)
+									{
+                                        $dis_i_as = "0$i";
+                                    }
+									else
+									{
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_payment_date['year'] == $dis_i_as or ($_GET['edit'] == "new" and date("Y") == $dis_i_as))
+									{
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        &nbsp;
+                        <select style="width: 50px;" name="payment_hour">
+                            <?php
+                                for($i=0; $i<24; $i++){
+                                    if(strlen($i) < 2){
+                                        $dis_i_as = "0$i";
+                                    } else {
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_payment_date['hour'] == $dis_i_as or ($_GET['edit'] == "new" and date("H") == $dis_i_as)){
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                        :
+                        <select style="width: 50px;" name="payment_minute">
+                            <?php
+                                for($i=1; $i<60; $i++){
+                                    if(strlen($i) < 2){
+                                        $dis_i_as = "0$i";
+                                    } else {
+                                        $dis_i_as = $i;
+                                    }
+                                    echo "<option ";
+                                    if($form_payment_date['minute'] == $dis_i_as or ($_GET['edit'] == "new" and date("i") == $dis_i_as)){
+                                        echo "selected";
+                                    }
+                                    echo ">$dis_i_as</option>";
+                                }
+                            ?>
+                        </select>
+                    </div>
+                    <?php
+						/*
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            Invoice Date:<br />
+                            <span>Date invoice was created.</span>
+                        </p>
+                        
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            Due Date:<br />
+                            <span>Date invoice is due.</span>
+                        </p>
+                    </div>
+					*/
+					?>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_coupuse']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_coupuse_d']; ?></span>
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $order['discount_ids_used']; ?></span>
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_curuse']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_curuse_d']; ?></span>
+                        </p>
+                        <span style="font-size: 14px; font-weight: bold; color: #666;"><?php echo $order['customer_currency']; ?></span>
+                    </div>
+                    <!--
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            Gateway Info:<br />
+                            <span></span>
+                        </p>
+                        gateway / transaction id / passback / payment date/time
+                    </div>
+                    -->
+                </div>
+                
+                <?php $row_color = 0; ?>
+				<div id="tab4_group" class="group" style="padding: 20px 28px 20px 20px;"> 
+                    <div id="items_div">
+                        <?php
+                            # DIGITAL ORDERS
+                            $invoiceItemResult = mysqli_query($db,
+							"
+								SELECT * FROM {$dbinfo[pre]}invoice_items 
+								LEFT JOIN {$dbinfo[pre]}commission 
+								ON {$dbinfo[pre]}invoice_items.oi_id = {$dbinfo[pre]}commission.oitem_id 
+								WHERE {$dbinfo[pre]}invoice_items.invoice_id = '{$order[invoice_id]}' 
+								AND physical_item = '0' 
+								AND {$dbinfo[pre]}invoice_items.deleted = '0'
+								AND {$dbinfo[pre]}invoice_items.pack_invoice_id = '0'
+							");
+                            $invoiceItemRows = mysqli_num_rows($invoiceItemResult);
+                            if($invoiceItemRows)
+                            {
+                        ?>
+                        <div class="fs_row_part2" style="width: 100%">							
+                        <table width="100%">
+                            <tr>
+                                <th colspan="<?php if(in_array("contr",$installed_addons)){ echo 9; } else { echo 7; } ?>" align="left" style="background-color:#999; color: #FFF"><?php echo $mgrlang['digital_downloads_upper']; ?></th>
+                            </tr>
+                            <tr>
+                                <th align="center"><?php echo $mgrlang['gen_media_caps']; ?></th>
+								<th align="left"><?php echo $mgrlang['gen_t_type']; ?></th>
+                                <th align="left" width="100%"><?php echo $mgrlang['gen_t_item']; ?></th>
+                                <th align="center"><?php echo $mgrlang['gen_t_cost']; ?></th>
+                                <?php
+									if(in_array("contr",$installed_addons))
+									{
+										echo "<th nowrap='nowrap'>{$mgrlang[gen_t_contributor]}</th>";
+										echo "<th nowrap='nowrap'>{$mgrlang[gen_t_commission]}</th>";
+									}
+								?>
+                                <th nowrap="nowrap"><?php echo $mgrlang['gen_t_downexp']; ?></th>
+                                <th nowrap="nowrap"><?php echo $mgrlang['gen_dl_caps']; ?></th>
+                                <th></th>
+                            </tr>
+                            <?php
+                                while($invoiceItem = mysqli_fetch_array($invoiceItemResult))
+                                {
+   
+                                    @$row_color++; // Set the row color
+                                    if ($row_color%2 == 0)
+                                        $backcolor = "FFF";
+                                    else
+                                        $backcolor = "EEE";
+										
+									if($invoiceItem['asset_id'])
+									{
+										try
+										{
+											$media = new mediaTools($invoiceItem['asset_id']);
+											$mediaInfo = $media->getMediaInfoFromDB();
+											$thumbInfo = $media->getIconInfoFromDB();										
+											$verify = $media->verifyMediaSubFileExists('icons');										
+											$mediaStatus = $verify['status'];											
+											
+											$mediaGalleries = $media->getMediaGalleries(); // Get galleries that the media is in
+										}
+										catch(Exception $e)
+										{
+											$mediaStatus = 0;
+										}
+									}
+                            ?>
+                                <tr style="background-color: #<?php echo $backcolor; ?>" id="itemrow_<?php echo $invoiceItem['oi_id']; ?>">
+                                    <td align="center">
+									<?php
+										
+										if($invoiceItem['asset_id'])
+										{	
+											echo "<div class='media_div' id='media_div_{$invoiceItem[asset_id]}_{$invoiceItem[oi_id]}'>";
+											
+											if($mediaStatus == 1)
+												echo "<a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'><img src='mgr.media.preview.php?src={$thumbInfo[thumb_filename]}&folder_id={$mediaInfo[folder_id]}&width=50' class='mediaFrame' title='Media ID: {$invoiceItem[asset_id]}' onmouseover='createDetailsWindow($invoiceItem[asset_id],$invoiceItem[oi_id])' onmouseout='hideDetailsWindow()' /></a>";
+											else
+												echo "<a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'><img src='images/mgr.theme.blank.gif' style='width: 100px;' class='mediaFrame' onmouseover='createDetailsWindow($invoiceItem[asset_id],$invoiceItem[oi_id])' onmouseout='hideDetailsWindow()' /></a>";
+										
+											echo "<br /><span style='font-size: 10px;white-space:nowrap;'>{$mgrlang[order_item_id]}: <a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'>{$invoiceItem[asset_id]}</a></span>";
+											echo "<br /><span style='font-size: 10px;white-space:nowrap;'>{$mgrlang[order_item_file]}: <a href='mgr.media.php?dtype=search&ep=1&search={$mediaInfo[filename]}'>{$mediaInfo[filename]}</a></span>";
+										
+											echo "</div>";
+										}
+										else
+										{
+											echo "-";
+										} 
+									?>
+									</td>
+                                    <td align="left">
+										<?php
+                                            switch($invoiceItem['item_type'])
+                                            {
+                                                default:
+													echo "-";
+												break;
+                                                case 'collection':
+													echo $mgrlang['gen_coll']; 
+												break;
+												case 'digital':
+													echo $mgrlang['gen_digital'].'';
+												break;
+											}
+										?>
+									</td>
+									<td align="left">
+                                        <?php if($invoiceItem['cart_item_notes']) { ?><div class="notes" style="margin-bottom: 10px;"><strong><?php echo $mgrlang['webset_f_onotes']; ?></strong><br /><?php echo $invoiceItem['cart_item_notes']; ?></div><?php } ?>
+										<!-- Invoice Item ID: <?php echo $invoiceItem['oi_id']; ?> | Product ID: <?php echo $invoiceItem['item_id']; ?> -->
+										<?php
+                                            //echo "Invoice Item ID: ".$invoiceItem['oi_id']; // Testing
+											
+											switch($invoiceItem['item_type'])
+                                            {
+                                                case 'digital':
+                                                    if($invoiceItem['item_id']) 
+													{
+														$digitalResult = mysqli_query($db,"SELECT name FROM {$dbinfo[pre]}digital_sizes WHERE ds_id = '{$invoiceItem[item_id]}'");
+														$digitalRows = mysqli_num_rows($digitalResult);
+														$digital = mysqli_fetch_assoc($digitalResult);
+														
+														$digitalAttachResult = mysqli_query($db,"SELECT ofilename FROM {$dbinfo[pre]}media_digital_sizes WHERE ds_id = '{$invoiceItem[item_id]}' AND media_id = '{$invoiceItem[asset_id]}'");
+														$digitalAttach = mysqli_fetch_assoc($digitalAttachResult);
+														
+														if($digitalRows)
+														{
+															echo "<a href='mgr.digital.sp.edit.php?edit={$invoiceItem[item_id]}' class='editlink'>{$digital[name]}</a>";
+															if($digitalAttach['ofilename'])
+																echo "&nbsp;-&nbsp;{$mgrlang[order_item_afile]}: {$digitalAttach[ofilename]}";																
+															
+														}
+														else
+															echo "&nbsp-&nbsp".$mgrlang['not_available'];
+													}
+													else
+														echo "<strong>{$mgrlang[mem_orig]}</strong><span style='font-size: 10px;white-space:nowrap;'>&nbsp;-&nbsp;{$mgrlang[order_item_ofile]}: <a href='mgr.media.php?dtype=search&ep=1&search={$mediaInfo[filename]}'>{$mediaInfo[filename]}</a></span>";
+														
+													if($invoiceItem['rm_selections'])
+													{
+														echo "<div style='background-color: #e2e2e2; margin-top: 10px; border: 1px solid #FFF; padding: 10px;'><span style='font-weight: bold; color: #777'>{$mgrlang[rm_selections]}</span>";
+														echo "<ul style='margin-top: 10px;'>";
+														foreach(explode(',',$invoiceItem['rm_selections']) as $value)
+														{
+															if($value)
+																$rm = explode(':',$value);
+															
+															if($rm[0])
+															{
+																$rmGroupResult = mysqli_query($db,"SELECT og_name FROM {$dbinfo[pre]}rm_option_grp WHERE og_id = '{$rm[0]}'");
+																if($rmGroupRows = mysqli_num_rows($rmGroupResult))
+																{
+																	$rmGroup = mysqli_fetch_assoc($rmGroupResult);
+																	
+																	$rmOptionResult = mysqli_query($db,"SELECT op_name FROM {$dbinfo[pre]}rm_options WHERE op_id = '{$rm[1]}'");
+																	$rmOption = mysqli_fetch_assoc($rmOptionResult);
+																	
+																	echo "<li style='margin: 4px 0'><strong>{$rmGroup[og_name]}</strong>: {$rmOption[op_name]}</li>";	
+																}
+															}
+															
+															unset($rm);
+														}
+														echo "</ul>";
+														echo "</div>";
+													}
+                                                break;
+                                                case 'collection':
+                                                    # GET THE COLLECTION DETAILS
+                                                    $collectionResult = mysqli_query($db,"SELECT item_name,item_code,coll_id FROM {$dbinfo[pre]}collections WHERE coll_id = '{$invoiceItem[item_id]}'");
+                                                    $collectionRows = mysqli_num_rows($collectionResult);
+                                                    $collection = mysqli_fetch_array($collectionResult);
+                                                    
+                                                    if($collectionRows)
+                                                        echo "<a href='mgr.collections.edit.php?edit={$collection[coll_id]}' class='editlink'>{$collection[item_name]}</a>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+                                                    
+                                                break;
+												case 'membership':
+                                                    # GET THE MEMBERSHIP DETAILS
+                                                    $membershipResult = mysqli_query($db,"SELECT name,ms_id FROM {$dbinfo[pre]}memberships WHERE ms_id = '$invoiceItem->item_id'");
+                                                    $membershipRows = mysqli_num_rows($membershipResult);
+                                                    $membership = mysqli_fetch_object($membershipResult);
+                                                
+                                                    echo $mgrlang['membership'].":";
+                                                    
+                                                    if($membershipRows)
+                                                        echo "<a href='mgr.memberships.edit.php?edit={$membership[ms_id]}' class='editlink'>{$membership[name]}</a>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+                                                break;
+                                            }
+											
+											if($mediaGalleries)
+											{
+												echo 
+													"<ul class='itemGalleriesList'>
+														<li><strong>{$mgrlang[galleries]}</strong></li>
+													";	
+												foreach($mediaGalleries as $galleryID)
+												{
+													echo "<li>";
+														echo get_gallery_path($galleryID);
+													echo "</li>";
+												}
+												echo "</ul>";
+											}
+                                        ?>
+                                    </td>
+                                    <td align="center" nowrap="nowrap" style="font-weight: bold;">
+										<?php
+											if($invoiceItem['paytype'] == 'cur') 
+												echo $cleanvalues->currency_display($invoiceItem['price_total'],1);
+											else
+												echo $invoiceItem['credits_total'].$mgrlang['gen_credits'];
+										?>
+									</td>
+                                    <?php
+										# ONLY SHOW THE CONTRIBUTORS COLUMN IF THE ADD-ON IS INSTALLED
+										if(in_array("contr",$installed_addons))
+										{
+									?>
+                                    	<td align="center" nowrap="nowrap">
+										<?php
+											# CHECK FOR COMMISSION ON THE ORDER
+											if($invoiceItem['com_id'])
+											{	
+												# GET THE MEMBERS ADDRESS
+												$cmemResult = mysqli_query($db,"SELECT f_name,l_name,mem_id FROM {$dbinfo[pre]}members WHERE mem_id = '{$invoiceItem[contr_id]}'");
+												$cmemRows = mysqli_num_rows($cmemResult);
+												$cmem = mysqli_fetch_array($cmemResult);
+												
+												
+										?>
+                                        	<div style="float: left;">
+                                            	<div style="float: left;"><!-- USED TO GET CORRECT ALIGNMENT - WINDOW AFTER NAME -->
+                                                    <div id="more_info_c<?php echo $cmem['mem_id']; ?>-<?php echo $invoiceItem['oi_id']; ?>" style="display: none; margin-left: -487px; width: 500px; text-align: left;" class="mem_details_win">
+                                                        <div class="mem_details_win_inner">                                                            
+                                                            <img src="images/mgr.detailswin.arrow.right.png" style="position: absolute; margin: 17px 0 0 499px;" />
+                                                            <div id="more_info_c<?php echo $cmem['mem_id']; ?>-<?php echo $invoiceItem['oi_id']; ?>_content" style="overflow: auto; border: 1px solid #fff"><img src="images/mgr.loader.gif" style="margin: 40px;" /></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+												<?php
+                                                    if(file_exists("../assets/avatars/" . $cmem['mem_id'] . "_small.png"))
+                                                        echo "<img src='../assets/avatars/" . $cmem['mem_id'] . "_small.png?rmd=" . create_unique() . "' width='19' style='border: 2px solid #$border_color; vertical-align: middle; margin-right: 5px;' />";
+                                                    else
+                                                        echo "<img src='images/mgr.no.avatar.gif' width='19' style='border: 2px solid #$border_color; vertical-align: middle; margin-right: 8px;' />";
+                                                ?>
+                                                <a href="<?php if(in_array("members",$_SESSION['admin_user']['permissions'])){ echo "mgr.members.edit.php?edit={$cmem[mem_id]}"; } else { echo "#"; } ?>" class="editlink" style="margin-right: 10px;" onmouseover="start_mem_cpanel(<?php echo $invoiceItem['oi_id']; ?>,<?php echo $cmem['mem_id']; ?>);" onmouseout="cancel_mem_cpanel(<?php echo $invoiceItem['oi_id']; ?>,<?php echo $cmem['mem_id']; ?>);"><?php echo $cmem['f_name']." ".$cmem['l_name']; ?></a>
+                                                </div>
+                                            </div>
+                                        <?php
+											}
+											else
+												echo "-";
+										?>
+                                        </td>
+                                        <td align="center" nowrap="nowrap">
+											<?php
+												
+												$commissionsResult = mysqli_query($db,
+												"
+													SELECT * FROM {$dbinfo[pre]}commission   
+													WHERE oitem_id = '{$invoiceItem[oi_id]}'													
+												");
+												$commission = mysqli_fetch_assoc($commissionsResult);
+												
+												//echo 'Commission ID: '.$commission['com_id']; // Testing
+												
+												if(mysqli_num_rows($commissionsResult))
+												{
+													switch($commission['comtype']) // Type of purchase or download
+													{
+														default:
+														case "cur": // Currency based payment
+															$total = ($commission['com_total']*$commission['item_qty']);
+															
+															if($commission['item_percent'] == 0) // Change a 0 to a 100%
+																$commission['item_percent'] = 100;
+															
+															$itemCommission = round(($total*($commission['item_percent']/100)*($commission['mem_percent']/100)),2);								
+														break;
+														case "cred": // Credit based commission
+															$itemCommission = round(($commission['com_credits']*$commission['item_qty'])*$commission['per_credit_value'],2);
+														break;
+														case "sub": // Subscription download commission
+															$itemCommission = $commission['com_total'];
+														break;	
+													}
+													
+													$commissionTotal = $itemCommission;
+													
+													echo "<div style='clear: both;'><strong>".$cleanvalues->currency_display($commissionTotal,1)."</strong></div>";
+												}
+												else
+													echo "-";
+											?>
+                                        </td>
+                                    <?php
+										}
+									?>
+                                    <td align="center" nowrap="nowrap">
+                                        <div id="expire_div_<?php echo $invoiceItem['oi_id']; ?>" style="font-size: 11px;">
+                                        <?php
+                                            $current_gmt_date = gmt_date();
+                                            # CHECK TO SEE IF IT NEVER EXPIRES
+                                            if($invoiceItem['expires'] == '0000-00-00 00:00:00')
+                                                echo $mgrlang['get_never'];
+                                            else
+                                            {
+                                                # ORDER IS EXPIRED
+                                                if($current_gmt_date > $invoiceItem['expires'])
+                                                {
+                                                    echo "<span style='color: #900; font-weight: bold;'>";
+                                                    echo $ndate->showdate($invoiceItem['expires']);
+                                                    echo "</span>";
+                                                }
+                                                # NOT EXPIRED
+                                                else
+                                                    echo $ndate->showdate($invoiceItem['expires']);
+                                            }
+                                            echo " &nbsp; <a href='javascript:reset_expire({$invoiceItem[oi_id]});' class='actionlink'>Reset</a>";
+                                        ?>
+                                        </div>
+                                    </td>
+                                    <?php
+									    if($config['settings']['dl_attempts'] == 0)
+                                            $dl_limit = $mgrlang['webset_f_dl_unlimited'];
+                                        else
+                                            $dl_limit = $config['settings']['dl_attempts'];
+                                    ?>
+                                    <td align="center" nowrap="nowrap"><?php if($invoiceItem['item_type'] == 'collection'){ echo $mgrlang['gen_notap']; } else { echo "<div id='downloads_div_{$invoiceItem[oi_id]}'><strong>{$invoiceItem[downloads]}/".$dl_limit."</strong> &nbsp; <a href='javascript:reset_downloads({$invoiceItem[oi_id]});' class='actionlink'>$mgrlang[gen_reset]</a></div>"; } ?></td>
+                                    <td align="center"><a href="javascript:delete_item(<?php echo $invoiceItem['oi_id']; ?>);" class="actionlink"><?php echo $mgrlang['gen_remove']; ?></a></td>
+                                </tr>
+                        <?php
+                                }
+                                echo "</table></div>";
+                            }
+                            # PHYSICAL ORDERS
+                            $invoiceItemResult = mysqli_query($db,
+							"
+								SELECT * FROM {$dbinfo[pre]}invoice_items 
+								LEFT JOIN {$dbinfo[pre]}commission 
+								ON {$dbinfo[pre]}invoice_items.oi_id = {$dbinfo[pre]}commission.oitem_id 
+								WHERE {$dbinfo[pre]}invoice_items.invoice_id = '{$order[invoice_id]}' 
+								AND physical_item = '1' 
+								AND {$dbinfo[pre]}invoice_items.deleted = '0' 
+								AND {$dbinfo[pre]}invoice_items.pack_invoice_id = '0'
+							");
+							$invoiceItemRows = mysqli_num_rows($invoiceItemResult);
+                            if($invoiceItemRows)
+                            {
+                        ?>
+                        <div class="fs_row_part2" style="width: 100%; margin-top: 15px;">
+                        <table width="100%">
+                            <tr>
+                                <th colspan="<?php if(in_array("contr",$installed_addons)){ echo 9; } else { echo 7; } ?>" align="left" style="background-color:#999; color: #FFF"><?php echo $mgrlang['products_upper']; ?></th>
+                            </tr>
+                            <tr>
+                                <!--<th>ID</th>-->
+                                <th align="center"><?php echo $mgrlang['gen_t_media']; ?></th>
+                                <th align="left"><?php echo $mgrlang['gen_t_type']; ?></th>
+								<th align="left" width="100%"><?php echo $mgrlang['gen_t_item']; ?></th>
+                                <th align="center"><?php echo $mgrlang['gen_t_quantity']; ?></th>
+                                <th align="center"><?php echo $mgrlang['gen_t_cost']; ?></th>
+                                <?php
+									if(in_array("contr",$installed_addons))
+									{
+										echo "<th nowrap='nowrap'>{$mgrlang[gen_t_contributor]}</th>";
+										echo "<th nowrap='nowrap'>{$mgrlang[gen_t_commission]}</th>";
+									}
+								?>
+                                <th nowrap="nowrap"><?php echo $mgrlang['gen_t_ship_status']; ?></th>
+                                <th></th>
+                            </tr>
+                            <?php
+                                while($invoiceItem = mysqli_fetch_array($invoiceItemResult))
+                                {
+									//FP                                		
+                                	$bPP = is_photo_puzzle($invoiceItem['item_id']);
+									if($bPP) {
+										
+										$puzzleQuery = tep_db_query("SELECT * FROM ".TABLE_PHOTO_PUZZLE." WHERE photo_puzzle_id = ".$invoiceItem['asset_id']."");
+					        			$aCurrent = tep_db_fetch_array($puzzleQuery);
+										$photoPuzzleId = $aCurrent['photo_puzzle_id'];
+										
+										$targetPath = BASE_PATH.'/assets/puzzles/ordini/'.$order['order_id'];
+										$sourcePath = WORK_DIR.$aCurrent['sesskey'].'/'.$aCurrent['photo_puzzle_id'];
+										$orderPath = '/httpdocs/assets/puzzles/ordini/'.$order['order_id'];
+										
+										$aJson = json_decode($aCurrent['crop_coords'], true);
+										if($aJson['shape']) {
+											$sourceImg = getName(changeExt($aCurrent['img_file'], 'png'), 'crop');
+											$targetImg = $order['order_id'].'_'.$aCurrent['photo_puzzle_id'].'_puzzle.png';
+										}
+										else {
+											$sourceImg = getName($aCurrent['img_file'], 'crop');
+											$aInfo = pathinfo($sourceImg);
+											$targetImg = $order['order_id'].'_'.$aCurrent['photo_puzzle_id'].'_puzzle.'.$aInfo['extension'];
+										}
+										//var_dump("QUI");
+										if(!file_exists($targetPath)) {
+											mkdir($targetPath, 0754, true);
+											//copy($sourcePath.'/boxes/'.$aCurrent['box_file'].'.pdf', $targetPath.'/'.$targetBox);
+										}
+										
+										if(!file_exists($targetPath.'/'.$targetImg) && !is_null($aCurrent['box_id'])) {
+
+											copy($sourcePath.'/puzzle/'.$sourceImg, $targetPath.'/'.$targetImg);
+
+
+									        $pdfBox = $aCurrent['box_file'].'.pdf';
+												
+									        $boxesQuery = tep_db_query("SELECT products_options_values_name FROM
+								        								fotoartphfpuzzle.photo_puzzle_products_options_values as a
+																		LEFT JOIN photo_puzzle_ps4_options_to_products_options_values as b
+																		ON b.products_options_values_id = a.products_options_values_id
+																		where b.op_id = ".$aCurrent['box_id']."");
+
+					        				$aBoxesQuey = tep_db_fetch_array($boxesQuery);
+											$aDesc = json_decode($aBoxesQuey['products_options_values_name'], TRUE);
+											$aBox = $aDesc['scatole'][$aCurrent['box_option_value_index']];
+											
+											$model = DIR_BOX_MODELS.$aBox['modelFile'];
+											// im = // new Imagick(); // FIXED: Converted to ImageMagick CLI; // Converted to ImageMagick CLI
+im_file = $model;
+im_temp_files = array();
+											$aResolution = $im->getImageResolution();
+											aGeo = im_get_image_geometry(im_file);
+											$mmWidth = px2mm($aGeo['width'], $aResolution['x']);
+											$mmHeight = px2mm($aGeo['height'], $aResolution['y']);
+											// im->destroy(); // Cleanup gestito automaticamente
+if (isset(im_temp_files)) {
+    foreach (im_temp_files as $temp_file) {
+        @unlink($temp_file);
+    }
+    unset(im_temp_files);
+}
+											
+											$margineX = (($mmWidth-$aBox['width'])/2);
+											$margineY = (($mmHeight-$aBox['height'])/2);
+											
+											$mmWidth = $mmWidth;
+											$mmHeight = $mmHeight;
+											$margineX = $margineX;
+											$margineY = $margineY;
+											$orderxy = $aBox['orderxy'];
+											$ordersize = $aBox['ordersize'];
+											$orderFontSize = $aBox['orderFontSize'];
+											$orderFontColor = $aBox['orderFontColor'];
+											$orderFontBorderColor = $aBox['orderFontBorderColor'];
+									       
+											$targetBox = $order['order_id'].'_'.$aCurrent['photo_puzzle_id'].'.pdf';
+										        
+									        $pdf = new FPDI('L', 'mm', array($mmWidth, $mmHeight)); //FPDI extends TCPDF
+									        $pdf->SetAutoPageBreak(FALSE, 0);
+									        $pdf->SetPrintHeader(FALSE);
+									        $pdf->SetPrintFooter(FALSE);
+									        $pdf->AddPage();
+									        $pdf->setSourceFile($sourcePath.'/boxes/'.$aCurrent['box_file'].'.pdf');
+									        $tplIdx = $pdf->ImportPage(1);
+									        $pdf->useTemplate($tplIdx, 0, 0, $mmWidth, $mmHeight, TRUE);
+									
+									        list($xCentro, $yCentro) = explode(';', $orderxy);
+									        $xCentro+=$margineX;
+									        $yCentro = $mmHeight-$yCentro-$margineY;
+											
+											$orderText = "F ".$order['order_id'];
+									
+									        $pdf->SetFontSize($orderFontSize);
+									        list($c, $m, $y, $k) = explode(',', $orderFontBorderColor);
+									        $pdf->SetDrawColor($c, $m, $y, $k);
+									        $pdf->setTextRenderingMode($stroke=0.2, $fill=true, $clip=false);
+									        list($c, $m, $y, $k) = explode(',', $orderFontColor);
+									        $pdf->SetTextColor($c, $m, $y, $k);
+									        //$textWidth = $pdf->GetStringWidth($order['order_id']);
+									        $textWidth = $pdf->GetStringWidth($orderText);
+									        $xCentro-=($textWidth/2);
+									
+									        $pdf->setXY($xCentro, $yCentro);
+									        //$pdf->Cell($textWidth, 0, $order['order_id'], $border = 0, $ln = 0, $align = 'C', $fill = false, $link = '', $stretch = 0, $ignore_min_height = false, $calign = 'C', $valign = 'C');
+									        $pdf->Cell($textWidth, 0, $orderText, $border = 0, $ln = 0, $align = 'C', $fill = false, $link = '', $stretch = 0, $ignore_min_height = false, $calign = 'C', $valign = 'C');
+									
+									        $targetTmpFile = $targetPath.'/'.$order['order_id'].'_'.$aCurrent['photo_puzzle_id'].'_tmp.pdf';
+									        $pdf->Output($targetTmpFile, 'F');
+									        $cmd = 'gs -dPDFX -sDEVICE=pdfwrite -dCompatibilityLevel=1.3 -dPDFSETTINGS=/prepress -dNOPAUSE -dQUIET -dBATCH -sOutputFile='.$targetPath.'/'.$targetBox.' '.$targetTmpFile;
+									        exec($cmd);
+											unlink($targetTmpFile);
+											
+										} elseif (!file_exists($targetPath.'/'.$targetImg)) copy($sourcePath.'/puzzle/'.$sourceImg, $targetPath.'/'.$targetImg);
+										//
+									}
+
+                                    @$row_color2++; // Set the row color
+                                    if ($row_color2%2 == 0)
+                                        $backcolor2 = "EEE";
+                                    else
+                                        $backcolor2 = "FFF";
+										
+									if($invoiceItem['asset_id'] and $invoiceItem['item_type'] != 'package' and $bPP == FALSE)
+									{
+										try
+										{
+											$media = new mediaTools($invoiceItem['asset_id']);
+											$mediaInfo = $media->getMediaInfoFromDB();
+											$thumbInfo = $media->getIconInfoFromDB();										
+											$verify = $media->verifyMediaSubFileExists('icons');										
+											$mediaStatus = $verify['status'];
+											
+											$mediaGalleries = $media->getMediaGalleries(); // Get galleries that the media is in
+										}
+										catch(Exception $e)
+										{
+											$mediaStatus = 0;
+										}
+									}
+                            ?>
+                                <tr style="background-color: #<?php echo $backcolor2; ?>" id="itemrow_<?php echo $invoiceItem['oi_id']; ?>">
+                                    <td align="center">
+									<?php
+										if($invoiceItem['asset_id'] and $invoiceItem['item_type'] != 'package')
+										{
+											
+											echo "<div class='media_div' id='media_div_{$invoiceItem[asset_id]}_{$invoiceItem[oi_id]}'>";
+											if(!$bPP) {
+												if($mediaStatus == 1)
+													echo "<a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'><img src='mgr.media.preview.php?src={$thumbInfo[thumb_filename]}&folder_id={$mediaInfo[folder_id]}&width=50' class='mediaFrame' title='Media ID: {$invoiceItem[asset_id]}' onmouseover='createDetailsWindow($invoiceItem[asset_id],$invoiceItem[oi_id])' onmouseout='hideDetailsWindow()' /></a>";
+												else
+													echo "<a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'><img src='images/mgr.theme.blank.gif' style='width: 100px;' class='mediaFrame' onmouseover='createDetailsWindow($invoiceItem[asset_id],$invoiceItem[oi_id])' onmouseout='hideDetailsWindow()' /></a>";
+												
+												echo "<br /><span style='font-size: 10px;'>{$mgrlang[order_item_id]}: <a href='mgr.media.php?dtype=search&ep=1&search={$invoiceItem[asset_id]}'>{$invoiceItem[asset_id]}</a></span>";
+												echo "<br /><span style='font-size: 10px;white-space:nowrap;'>{$mgrlang[order_item_file]}: <a href='mgr.media.php?dtype=search&ep=1&search={$mediaInfo[filename]}'>{$mediaInfo[filename]}</a></span>";
+											} else echo "<img src='images/mgr.theme.blank.gif' style='width: 100px;' class='mediaFrame' />";
+											echo "</div>";
+										
+										}
+										else
+										{
+											echo "-";
+										} 
+									?>
+									</td>
+									<td align="left">
+										<?php
+                                            switch($invoiceItem['item_type'])
+                                            {
+                                                default:
+													echo "-";
+												break;
+                                                case 'print':
+													echo $mgrlang['gen_print'];
+												break;
+												case 'product':
+													echo $mgrlang['gen_prod'];
+												break;
+												case "package":
+													echo $mgrlang['gen_pack'];
+												break;
+												case "subscription":
+													echo $mgrlang['gen_sub'];
+												break;
+												case 'credits':
+                                                    echo $mgrlang['gen_credits'];
+                                                break;
+											}
+										?>
+									</td>
+                                    <td align="left">
+										<?php if($invoiceItem['cart_item_notes']) { ?><div class="notes" style="margin-bottom: 10px;"><strong><?php echo $mgrlang['webset_f_onotes']; ?></strong><br /><?php echo $invoiceItem['cart_item_notes']; ?></div><?php } ?>
+										<!-- Invoice Item ID: <?php echo $invoiceItem['oi_id']; ?> | Product ID: <?php echo $invoiceItem['item_id']; ?> -->
+                                        <?php
+                                            switch($invoiceItem['item_type'])
+                                            {
+                                                default:
+                                                case 'print':														
+                                                    # GET THE PRINT DETAILS
+                                                    $printResult = mysqli_query($db,"SELECT item_name,print_id FROM {$dbinfo[pre]}prints WHERE print_id = '{$invoiceItem[item_id]}'");
+                                                    $printRows = mysqli_num_rows($printResult);
+                                                    $print = mysqli_fetch_array($printResult);
+                                                    
+                                                    if($printRows)
+                                                        echo "<a href='mgr.prints.edit.php?edit={$print[print_id]}' class='editlink'>{$print[item_name]}</a><span style='font-size: 10px;white-space:nowrap;'>&nbsp;-&nbsp;{$mgrlang[order_item_file]}: <a href='mgr.media.php?dtype=search&ep=1&search={$mediaInfo[filename]}'>{$mediaInfo[filename]}</a></span>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+										
+                                                break;
+                                                case 'product':
+                                                    # GET THE PRODUCT DETAILS
+                                                    $prodResult = mysqli_query($db,"SELECT item_name,prod_id,product_type FROM {$dbinfo[pre]}products WHERE prod_id = '{$invoiceItem[item_id]}'");
+                                                    $prodRows = mysqli_num_rows($prodResult);
+                                                    $prod = mysqli_fetch_array($prodResult);
+                                                
+                                                	if(!$bPP) {
+	                                                    if($prodRows)
+	                                                        echo "<a href='mgr.products.edit.php?edit={$prod[prod_id]}' class='editlink'>{$prod[item_name]}</a>";
+	                                                        if($prod['product_type'] == 1)
+	                                                        	echo "<span style='font-size: 10px;white-space:nowrap;'>&nbsp;-&nbsp;{$mgrlang[order_item_file]}: <a href='mgr.media.php?dtype=search&ep=1&search={$mediaInfo[filename]}'>{$mediaInfo[filename]}</a></span>";
+	                                                    else
+	                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+													} else  echo "<span>{$prod[item_name]} - Path Ordine (FTP): ".$orderPath."</span>";
+                                                break;
+                                                case 'package':
+                                                    # GET THE PACKAGE DETAILS
+                                                    $packResult = mysqli_query($db,"SELECT item_name,pack_id FROM {$dbinfo[pre]}packages WHERE pack_id = '{$invoiceItem[item_id]}'");
+                                                    $packRows = mysqli_num_rows($packResult);
+                                                    $pack = mysqli_fetch_array($packResult);
+                                                    
+                                                    if($packRows)
+                                                        echo "<a href='mgr.package.edit.php?edit={$pack[pack_id]}' class='editlink'>{$pack[item_name]}</a>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+                                                break;
+                                                case 'subscription':
+                                                    # GET THE SUBSCRIPTION DETAILS
+                                                    $subResult = mysqli_query($db,"SELECT item_name,sub_id FROM {$dbinfo[pre]}subscriptions WHERE sub_id = '{$invoiceItem[item_id]}'");
+                                                    $subRows = mysqli_num_rows($subResult);
+                                                    $sub = mysqli_fetch_array($subResult);
+                                                    
+                                                    if($subRows)
+                                                        echo "<a href='mgr.subscriptions.edit.php?edit={$sub[sub_id]}' class='editlink'>{$sub[item_name]}</a>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+                                                break;
+                                                case 'invoice':
+                                                    echo "Invoice: ";
+                                                break;
+                                                case 'credits':
+													# GET THE CREDIT PACK DETAILS
+                                                    $creditResult = mysqli_query($db,"SELECT name,credit_id FROM {$dbinfo[pre]}credits WHERE credit_id = '{$invoiceItem[item_id]}'");
+                                                    $creditRows = mysqli_num_rows($creditResult);
+                                                    $credit = mysqli_fetch_array($creditResult);
+                                                    
+                                                    if($creditRows)
+                                                        echo "<a href='mgr.credits.edit.php?edit={$credit[credit_id]}' class='editlink'>{$credit[name]}</a>";
+                                                    else
+                                                        echo "&nbsp-&nbsp".$mgrlang['not_available'];
+                                                break;													
+                                            }
+											
+											if($invoiceItem['has_options'])
+											{
+												echo "<br /><a href=\"javascript:loadOptions('{$invoiceItem['oi_id']}','{$invoiceItem['item_type']}');\"><img src='images/mgr.plusminus.0.png' id='plusminus{$invoiceItem['oi_id']}' style='margin-top: 6px;' /></a> <span style='font-size: 11px; color: #666'><a href=\"javascript:loadOptions('{$invoiceItem['oi_id']}','{$invoiceItem['item_type']}');\">{$mgrlang[gen_tab_options]}</a></span>";
+												echo "<div class='optionsDiv' id='optionsDiv{$invoiceItem['oi_id']}' style='display: none; margin-top: 3px; padding: 4px 6px 6px 0;'></div>";
+											}
+											
+											if($mediaGalleries)
+											{
+												echo 
+													"<ul class='itemGalleriesList'>
+														<li><strong>{$mgrlang[galleries]}</strong></li>
+													";	
+												foreach($mediaGalleries as $galleryID)
+												{
+													echo "<li>";
+														echo get_gallery_path($galleryID);
+													echo "</li>";
+												}
+												echo "</ul>";
+											}
+                                        ?>
+                                    </td>
+                                    <td align="center"><?php echo $invoiceItem['quantity']; ?></td>
+                                    <td align="center" nowrap="nowrap">
+                                    <?php
+										echo "<div style='font-weight: bold;'>";
+											if($invoiceItem['paytype'] == 'cur') 
+												echo $cleanvalues->currency_display($invoiceItem['price_total'],1);
+											else
+												echo $invoiceItem['credits_total'].$mgrlang['gen_credits'];											
+										echo "</div>";
+										
+										# QUANTITY IS GREATER THAN 1. OUTLINE COST STRUCTURE.
+										if($invoiceItem['quantity'] > 1)
+										{
+											echo "<div style='color: #666; font-size: 11px;margin-top: 4px;'>";
+											
+											if($invoiceItem['paytype'] == 'cur') 
+												echo $cleanvalues->currency_display($invoiceItem['price'],1);
+											else
+												echo $invoiceItem['credits'].' credits';
+											echo $mgrlang['gen_each'];
+											
+											/*
+											# PRICE FOR EACH ITEM IS THE SAME
+											if($invoiceItem['price_first'] == $invoiceItem['price_additional'])
+											{
+												echo $cleanvalues->currency_display($invoiceItem['price_first'],1)." $mgrlang[gen_each]";
+											}
+											# PRICE IS DIFFERENT
+											else
+											{
+												$quan_additional = $invoiceItem['quantity'] - 1;
+												echo "1 @ ".$cleanvalues->currency_display($invoiceItem['price_first'],1)." $mgrlang[gen_each]<br />$quan_additional @ ".$cleanvalues->currency_display($invoiceItem['price_additional'],1)." $mgrlang[gen_each]";
+											}
+											*/
+											echo "</div>";
+										}
+                                    ?>
+                                    </td>
+                                    <?php
+										# ONLY SHOW THE CONTRIBUTORS COLUMN IF THE ADD-ON IS INSTALLED
+										if(in_array("contr",$installed_addons))
+										{
+									?>
+                                    	<td align="center" nowrap="nowrap">
+										<?php
+											# CHECK FOR COMMISSION ON THE ORDER
+											if($invoiceItem['com_id'])
+											{	
+												# GET THE MEMBERS ADDRESS
+												$cmemResult = mysqli_query($db,"SELECT f_name,l_name,mem_id FROM {$dbinfo[pre]}members WHERE mem_id = '{$invoiceItem[contr_id]}'");
+												$cmemRows = mysqli_num_rows($cmemResult);
+												$cmem = mysqli_fetch_array($cmemResult);
+										?>
+                                        	<div style="float: left;">
+                                            	<div style="float: left;"><!-- USED TO GET CORRECT ALIGNMENT - WINDOW AFTER NAME -->
+                                                    <div id="more_info_c<?php echo $cmem['mem_id']; ?>-<?php echo $invoiceItem['oi_id']; ?>" style="display: none; margin-left: -487px; width: 500px; text-align: left;" class="mem_details_win">
+                                                        <div class="mem_details_win_inner">                                                            
+                                                            <img src="images/mgr.detailswin.arrow.right.png" style="position: absolute; margin: 17px 0 0 499px;" />
+                                                            <div id="more_info_c<?php echo $cmem['mem_id']; ?>-<?php echo $invoiceItem['oi_id']; ?>_content" style="overflow: auto; border: 1px solid #fff"><img src="images/mgr.loader.gif" style="margin: 40px;" /></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+												<?php
+                                                    if(file_exists("../assets/avatars/" . $cmem['mem_id'] . "_small.png"))
+                                                        echo "<img src='../assets/avatars/" . $cmem['mem_id'] . "_small.png?rmd=" . create_unique() . "' width='19' style='border: 2px solid #$border_color; vertical-align: middle; margin-right: 5px;' />";
+                                                    else
+                                                        echo "<img src='images/mgr.no.avatar.gif' width='19' style='border: 2px solid #$border_color; vertical-align: middle; margin-right: 8px;' />";
+                                                ?>
+                                                <a href="<?php if(in_array("members",$_SESSION['admin_user']['permissions'])){ echo "mgr.members.edit.php?edit={$cmem[mem_id]}"; } else { echo "#"; } ?>" class="editlink" style="margin-right: 10px;" onmouseover="start_mem_cpanel(<?php echo $invoiceItem['oi_id']; ?>,<?php echo $cmem['mem_id']; ?>);" onmouseout="cancel_mem_cpanel(<?php echo $invoiceItem['oi_id']; ?>,<?php echo $cmem['mem_id']; ?>);"><?php echo $cmem['f_name']." ".$cmem['l_name']; ?></a>
+                                                </div>
+                                            </div>
+                                        <?php
+											}
+											else
+												echo "-";
+										?>
+                                        </td>
+                                        <td align="center" nowrap="nowrap">
+                                        <?php
+											if($invoiceItem['com_id'])
+											{
+                                        		$commissionsResult = mysqli_query($db,
+												"
+													SELECT * FROM {$dbinfo[pre]}commission   
+													WHERE oitem_id = '{$invoiceItem[oi_id]}'													
+												");
+												$commission = mysqli_fetch_assoc($commissionsResult);
+
+												if(mysqli_num_rows($commissionsResult))
+												{
+													//var_dump($commission);
+													switch($commission['comtype']) // Type of purchase or download
+													{
+														default:
+														case "cur": // Currency based payment
+															$total = ($commission['com_total']*$commission['item_qty']);
+															
+															if($commission['item_percent'] == 0) // Change a 0 to a 100%
+																$commission['item_percent'] = 100;
+															//FP
+															if(!$bPP) $itemCommission = round(($total*($commission['item_percent']/100)*($commission['mem_percent']/100)),2);								
+															else $itemCommission = round(($total*($commission['mem_percent']/100)),2);
+														break;
+														case "cred": // Credit based commission
+															$itemCommission = round(($commission['com_credits']*$commission['item_qty'])*$commission['per_credit_value'],2);
+														break;
+														case "sub": // Subscription download commission
+															$itemCommission = $commission['com_total'];
+														break;	
+													}
+													
+													$commissionTotal = $itemCommission;
+													
+													echo "<div style='clear: both;'><strong>".$cleanvalues->currency_display($commissionTotal,1)."</strong></div>";
+												}
+												else
+													echo "-";
+																							
+												//echo "<div style='clear: both;' class='mtag_dgrey'><strong>".$cleanvalues->currency_display($invoiceItem['com_total'],1)."</strong></div>";
+											}
+											else
+												echo "-";
+                                        ?>
+                                        </td>
+                                    <?php
+										}
+									?>
+                                    <td align="center">
+                                        <input type="hidden" name="item_ship_status[]" value="<?php echo $invoiceItem['oi_id'] ?>" />
+                                        <?php if($invoiceItem['item_type'] == 'subscription' or $invoiceItem['item_type'] == 'credits'){ echo $mgrlang['gen_notap']; } else { ?>
+										<select name="iship_status_<?php echo $invoiceItem['oi_id']; ?>" id="iship_status_<?php echo $invoiceItem['oi_id']; ?>" style="width: 200px;" onchange="update_iship_status(<?php echo $invoiceItem['oi_id']; ?>);">
+                                            <option value="0" <?php if($invoiceItem['shipping_status'] == 0){ echo "selected"; } ?>><?php echo $mgrlang['gen_shipparent']; ?></option>
+                                            <option value="1" <?php if($invoiceItem['shipping_status'] == 1){ echo "selected"; } ?> ><?php echo $mgrlang['gen_shipped']; ?></option>
+                                            <option value="2" <?php if($invoiceItem['shipping_status'] == 2){ echo "selected"; } ?>><?php echo $mgrlang['gen_notshipped']; ?></option>
+                                            <option value="3" <?php if($invoiceItem['shipping_status'] == 3){ echo "selected"; } ?>><?php echo $mgrlang['gen_backordered']; ?></option>
+                                        </select>
+                                        <div id="tracknum_div_<?php echo $invoiceItem['oi_id']; ?>" style="display: <?php if($invoiceItem['shipping_status'] == 1){ echo "block"; } else { echo "none"; } ?>; padding-top: 4px; font-size: 11px; text-align: left; color: #666"><?php echo $mgrlang['order_track_num']; ?><input type="text" id="tracknum_<?php echo $invoiceItem['oi_id']; ?>" name="tracknum_<?php echo $invoiceItem['oi_id']; ?>" value="<?php echo $invoiceItem['tracking_number']; ?>" style="width: 178px;" /></div>
+                                    	<?php } ?>
+									</td>
+                                    <td align="center"><a href="javascript:delete_item(<?php echo $invoiceItem['oi_id']; ?>);" class="actionlink"><?php echo $mgrlang['gen_remove']; ?></a></td>
+                                </tr>
+                        <?php
+                                }
+                                echo "</table></div>";
+                            }
+                        ?>
+                    </div>                    
+                </div>
+                
+                <?php $row_color = 0; ?>
+                <div id="tab5_group" class="group"> 
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_pubord']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_pubord_d']; ?></span>
+                        </p>
+						<input type="text" style="width: 400px;" value="<?php echo $config['settings']['site_url']; ?>/order.details.php?orderID=<?php echo $order['uorder_id']; ?>" />
+                    </div>
+					<div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_pubilin']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_pubilin_d']; ?></span>
+                        </p>
+						<input type="text" style="width: 400px;" value="<?php echo $config['settings']['site_url']; ?>/invoice.php?orderID=<?php echo $order['uorder_id']; ?>" />
+                    </div>
+                </div>
+                
+                <?php $row_color = 0; ?>
+                <div id="tab6_group" class="group"> 
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_oshipstat']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_oshipstat_d']; ?></span>
+                        </p>
+                        <div style="float: left;">
+                            <select name="shipping_status" id="shipping_status" style="width: 190px;" onchange="update_oship_status();">
+                                <option value="0" <?php if($order['shipping_status'] == 0){ echo "selected"; } ?>><?php echo $mgrlang['gen_shipnone']; ?></option>
+                                <option value="1" <?php if($order['shipping_status'] == 1){ echo "selected"; } ?> ><?php echo $mgrlang['gen_shipped']; ?></option>
+                                <option value="2" <?php if($order['shipping_status'] == 2){ echo "selected"; } ?>><?php echo $mgrlang['gen_notshipped']; ?></option>
+                                <option value="3" <?php if($order['shipping_status'] == 3){ echo "selected"; } ?>><?php echo $mgrlang['gen_pshipped']; ?></option>
+                                <option value="4" <?php if($order['shipping_status'] == 4){ echo "selected"; } ?>><?php echo $mgrlang['gen_backordered']; ?></option>
+                            </select>
+                            <div id="tracking_number_div" style="display: <?php if($order['shipping_status'] == 1){ echo "block"; } else { echo "none"; } ?>; padding-top: 4px; font-size: 11px; text-align: left; color: #666"><?php echo $mgrlang['order_track_num']; ?><br /><input type="text" id="tracking_number" name="tracking_number" value="<?php echo $order['tracking_number']; ?>" style="width: 178px;" /></div>
+                        </div>
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_shipto']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_shipto_d']; ?></span>
+                        </p>
+                        <div style="float: left;">
+                        	<strong><?php echo @stripslashes($order['ship_name']); ?></strong>
+                            <br />
+                            <?php
+                                $ocountry_result = mysqli_query($db,"SELECT name FROM {$dbinfo[pre]}countries WHERE country_id = '{$order[ship_country]}'");
+                                $ocountry_rows = mysqli_num_rows($ocountry_result);
+                                $ocountry = mysqli_fetch_object($ocountry_result);
+                               
+							   	$ostate_result = mysqli_query($db,"SELECT name FROM {$dbinfo[pre]}states WHERE state_id = '{$order[ship_state]}'");
+                                $ostate_rows = mysqli_num_rows($ostate_result);
+                                $ostate = mysqli_fetch_object($ostate_result);
+								
+								echo $order['ship_address'] . "<br />";
+                                if($order['ship_address2']){ echo $order['ship_address2'] . "<br />"; }
+                                echo $order['ship_city'];											
+                                if($ostate_rows){ echo ", " . $ostate->name; }
+                                echo " " . $order['ship_zip'] . "<br />";
+                                if($ocountry_rows){ echo $ocountry->name; }
+                            ?>
+                        </div> 
+                    </div>
+                    <div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_shipmeth']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_shipmeth_d']; ?></span>
+                        </p>
+                        <select name="ship_id" style="width: 190px;">
+                        	<option value="0"></option>
+                            <?php
+								# GET SHIPPING METHODS
+								$ship_result = mysqli_query($db,"SELECT * FROM {$dbinfo[pre]}shipping");
+								$ship_rows = mysqli_num_rows($ship_result);
+								while($ship = mysqli_fetch_object($ship_result))
+								{
+									if($ship->deleted == 0 or $ship->ship_id == $order['ship_id'])
+									{
+										echo "<option value='$ship->ship_id' ";
+										if($ship->ship_id == $order['ship_id']){ echo "selected='selected'"; }
+										echo ">$ship->title ({$ship->ship_id})</option>";
+									}
+								}
+							?>
+                        </select>
+                    </div>
+                </div>
+                <?php $row_color = 0; ?>
+                <div id="tab7_group" class="group">
+                	<div class="<?php fs_row_color(); ?>" id="name_div">
+                        <img src="images/mgr.ast.off.gif" class="ast" />
+                        <p for="name" onclick="support_popup('<?php echo $supportPageID; ?>');">
+                            <?php echo $mgrlang['order_f_pback']; ?>:<br />
+                            <span><?php echo $mgrlang['order_f_pback_d']; ?></span>
+                        </p>
+						<div style="float: left;">
+							<?php
+								$postVars = explode('|',$order['post_vars']);
+								foreach($postVars as $value)
+								{
+									$postVar = explode("=",$value);
+									echo "<strong>{$postVar[0]}</strong>: {$postVar[1]}<br />";
+								}
+							?>
+						</div>
+                    </div>
+				<!--
+				
+				Will list transactions and payments
+                <br /><br />
+                payment amount / fees / gateway / payment time and date / passback parms<br /><br />
+                <input type="button" value="add payment" />
+				-->
+                </div>
+            </div>
+            <div id="save_bar">
+                <input type="button" value="<?php echo $mgrlang['gen_b_cancel']; ?>" onclick="cancel_edit('mgr.orders.php');" /><input type="submit" value="<?php echo $mgrlang['gen_b_save']; ?>" />
+            </div>
+            </form>
+            <div class="footer_spacer"></div>
+        </div>
+        <!-- END CONTENT CONTAINER -->
+		<?php include("mgr.footer.php"); ?>		
+	</div>
+</body>
+</html>
+<?php mysqli_close($db); ?>

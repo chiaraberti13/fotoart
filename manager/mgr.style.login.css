@@ -1,0 +1,132 @@
+/* LOGIN PAGE */
+	body {
+		background-color: #222;
+		border: 0;		
+		font-family: Arial, Helvetica, sans-serif;
+		font-size: 11px;
+		padding-top: 10%;
+		/*background-image: url(images/mgr.background.lines.gif);*/
+		background-repeat: repeat;
+	}
+	
+	#login_container{
+		z-index:9999;
+		width:440px;
+		margin: auto;
+		text-align:left;
+		-moz-box-shadow: 0 0 18px #111; 
+		-webkit-box-shadow: 0 0 18px #111;     
+		box-shadow: 0 0 18px #111;
+		background-color: #444;
+		overflow: auto;		
+		-moz-border-radius-topleft: 14px;
+		-moz-border-radius-topright: 14px;
+		border-top-left-radius: 14px;
+		border-top-right-radius: 14px;
+		-moz-border-radius-bottomleft: 14px;
+		-moz-border-radius-bottomright: 14px;
+		border-bottom-left-radius: 14px;
+		border-bottom-right-radius: 14px;
+		
+	}
+	
+	#login_box{
+		overflow: auto;
+		min-height: 100px;		
+		padding: 0;
+		/*
+		-moz-border-radius-topleft: 14px;
+		-moz-border-radius-topright: 14px;
+		border-top-left-radius: 14px;
+		border-top-right-radius: 14px;
+		-moz-border-radius-bottomleft: 14px;
+		-moz-border-radius-bottomright: 14px;
+		border-bottom-left-radius: 14px;
+		border-bottom-right-radius: 14px;
+		*/
+	}
+	
+	#remembermediv{
+		overflow: auto;
+		margin-top: 6px;
+		font-size: 11px;
+		display: block;
+	}
+	/*
+	#tab1_group:hover #remembermediv{
+		display: block;
+	}
+	*/
+	
+	form {
+		margin: 0;
+	}
+	
+	#login_box_white{
+		width: 358px;
+		height: 124px;
+		margin-left: 33%;
+	}
+	#login{
+		width: 320px;
+		height: 71px;
+		position: relative;
+		color: #2A2A2A;
+		top: 13px;
+		left: 18px;
+		z-index: 2;
+	}
+	#header_l{
+		/*
+		-moz-border-radius-topleft: 14px;
+		-moz-border-radius-topright: 14px;
+		border-top-left-radius: 14px;
+		border-top-right-radius: 14px;
+		*/
+		background-image: none;
+		background-color: #444;
+	}
+	#login_footer{
+		color: #ffffff;
+		padding: 5px 0px 5px 10px;
+		font-size: 10px;
+	}	
+	#login_footer img{
+		margin-right: 4px;
+	}
+	#login_footer div{
+		padding-top: 6px;
+	}
+	.checkbox {
+		height: 15px;
+		width: 15px;
+		padding: 0px;
+		margin: 0px;
+	}
+	#footer{
+		clear: both;
+		height: 52px;
+		background-repeat: repeat-x;
+		border-top: 0;
+		padding: 0 10px 0 10px;
+		background-color: #222;
+		background-position: bottom;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		/*
+		background-image: url(images/mgr.footer.bg2.gif);
+		background-repeat: repeat-x;
+		
+		-moz-border-radius-bottomleft: 12px;
+		-moz-border-radius-bottomright: 12px;
+		border-bottom-left-radius: 12px;
+		border-bottom-right-radius: 12px;
+		*/
+	}
+	#footer div{
+		margin-top: 2px;
+	}
+	#footer img{
+		margin-top: 2px;
+	}

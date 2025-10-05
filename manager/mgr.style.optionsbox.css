@@ -1,0 +1,14 @@
+.optionsbox_row{
+	overflow: auto;
+	/*
+	border: 1px dotted #CCC;
+	margin-bottom: 4px;
+	*/
+	padding: 6px;	
+	background-color: #f8f8f8;
+	color: #666;
+}
+
+.optionsbox_row p,.optionsbox_row span{
+	font-weight: normal;
+}

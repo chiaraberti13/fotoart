@@ -1,0 +1,1848 @@
+// LOAD THE OBSERVE FUNCTIONS
+	Event.observe(window, 'load', function() {
+		// IF THE CONTENT CONTAINER EXISTS OBSERVE IT
+		if($('content_container')!=null){
+			$('content_container').observe('click', function(){
+				hide_div('shortcuts','loader');
+				Effect.Fade('search_box',{ duration: 0.7 });
+				//hide_div_fade('alerts');
+				});
+		}
+		// IF THE SHORTCUTS BAR IS PRESENT OBSERVE IT
+		if($('shortcuts_bar')!=null){
+			$('shortcuts_bar').observe('click', function(){
+				shortcuts_height();
+				displaybool('shortcuts','mgr.shortcuts.php','shortcuts','loader');
+				});
+			Event.observe(window, 'resize', shortcuts_height);
+		}
+		// IF THE OVERLAY IS PRESENT OBSERVE IT
+		if($('overlay')!=null){
+			Event.observe(window, 'resize', overlay_height);
+		}	
+		// IF THE SEARCH BOX EXISTS OBSERVE IT
+		if($('search_phrase')!=null){
+			$('search_phrase').observe('click', function(){
+				Effect.Appear('search_box',{ duration: 0.7 });
+				$('search_phrase').setValue('');
+				});
+			$('search_phrase').observe('keyup', delay_searchbox);
+		}
+		// LOAD THE ALERTS
+		if($('alerts')!=null){
+			// DELAY THE ALERTS FROM LOADING
+			loadalerts = setTimeout("load_alerts(40)",'5000');
+			//setTimeout("load_alerts('alerts')",'5000');
+		}
+	});
+	
+	
+// GET WINDOW SIZE
+	//Event.observe(window, 'resize', function()
+	//{
+	//	var viewheight = document.viewport.getHeight();
+	//	var viewwidth = document.viewport.getWidth();
+		//document.viewport.getDimensions() -> { width: Number, height: Number }
+		//document.viewport.getScrollOffsets() -> [Number, Number] also accessible as { top: Number, left: Number }
+	//});
+	
+// OPEN THE PASSWORD GENERATOR WINDOW
+	function open_password_gen_win()
+	{
+		window.open('mgr.password.form.php', 'PassGen', 'toolbar=no, directories=no, location=no, status=yes, menubar=no, resizable=yes, scrollbars=no, width=270, height=380');
+		return false;	
+	}
+	
+// FIX CURRENCY INPUT
+	function clear_currency_input()
+	{
+		
+	}
+	
+// ADD SLASHES - STRIP SLASHES FUNCTIONS
+function addslashes(str) {
+	str=str.replace(/\\/g,'\\\\');
+	str=str.replace(/\'/g,'\\\'');
+	str=str.replace(/\"/g,'\\"');
+	str=str.replace(/\0/g,'\\0');
+	return str;
+}
+function stripslashes(str) {
+	str=str.replace(/\\'/g,'\'');
+	str=str.replace(/\\"/g,'"');
+	str=str.replace(/\\0/g,'\0');
+	str=str.replace(/\\\\/g,'\\');
+	return str;
+}
+	
+// ADD AN inARRAY FUNCTION TO PROTOTYPE
+	Array.prototype.inArray = function (value)
+	{
+		// Returns true if the passed value is found in the
+		// array. Returns false if it is not.
+		var i;
+		for (i=0; i < this.length; i++) 
+		{
+			if (this[i] == value) 
+			{
+			return true;
+			}
+		}
+		return false;
+	};
+	
+// RESIZE A FS ROW DIV
+	function resizefsdiv(div_name,offset)
+	{
+		if($(div_name)!=null)
+		{
+			var newwidth = document.viewport.getWidth() - offset;
+			$(div_name).setStyle({width: newwidth + "px"});
+		}
+	}
+	
+	function resizeDivHeight(div_name,newheight)
+	{
+		if($(div_name)!=null)
+		{
+			//var newwidth = document.viewport.getWidth() - offset;
+			$(div_name).setStyle({height: newheight + "px"});
+		}
+	}
+	
+	function resizeDivWidth(div_name,newwidth)
+	{
+		if($(div_name)!=null)
+		{
+			//var newwidth = document.viewport.getWidth() - offset;
+			$(div_name).setStyle({width: newwidth + "px"});
+		}
+	}
+	
+// ALERTS WINDOW
+	var pupdater = null;
+	var myalerts = null;
+	var loadalerts;
+	var rotatealerts;
+	function show_alerts(showfor){
+		//clearTimeout('hide_div_fade');
+		Effect.Appear('alerts',{ duration: 1.0, from: 0, to: 1.0 });
+		//show_div('alerts');
+		//$('alerticon').src="images/mgr.alert.icon.png";
+		hl_alert_icon();
+		rotate_alerts(0);
+		//setTimeout("hide_div_fade('alerts')",showfor);
+	}
+	function hl_alert_icon(){
+		$('alerticon').src="images/mgr.alert.icon.png";
+	}
+	function load_alerts(freseconds){
+		//pupdater = new Ajax.Updater('alerts', 'mgr.alerts.php', {method: 'get', parameters: '', evalScripts: true});
+		pupdater = new Ajax.PeriodicalUpdater('alerts', 'mgr.alerts.php', {method: 'get', parameters: '', evalScripts: true, frequency: freseconds});
+	}
+	function load_alerts_b(){
+		//if(myalerts != null){
+			$('alerts').update('');
+			show_div('alerts');
+			clearTimeout(loadalerts);
+			clearTimeout(rotatealerts);
+			if(pupdater != null){
+				pupdater.stop();
+			}
+			new Ajax.Updater('alerts', 'mgr.alerts.php', {method: 'get', parameters: 'recent=1', evalScripts: true});
+			
+			// OLD WAY
+			//var alertcontent = '';
+			//for(var y=0;y<myalerts.length;y++){
+				//alert('test');
+				//alertcontent = alertcontent + "<hr />" + myalerts[y];
+			//}
+			//$('alertsinner').update(alertcontent);
+		//}
+	}
+	function rotate_alerts(x){
+		if(pupdater != null){
+			pupdater.stop();
+		}
+		if(x < myalerts.length){
+			var alconent = "<div style='float: right;'><a href='javascript:close_alerts()'><img src='images/mgr.button.close2.png' border='0' /></a></div><p align='right' style='margin-right: 20px; font-weight: bold'>" + (x+1) + "/" + myalerts.length + "</p>" + myalerts[x];
+			$('alertsinner').update(alconent);
+			rotatealerts = setTimeout("rotate_alerts("+ (x+1) +")",'5000');
+		} else {
+			clearTimeout(rotate_alerts);
+			hide_div_fade('alerts');
+			loadalerts = setTimeout("load_alerts(40)",'5000');
+		}
+	}
+	
+	function close_alerts(){
+		clearTimeout(rotate_alerts);
+		hide_div_fade('alerts');
+	}
+	function close_alerts2(){
+		clearTimeout(rotate_alerts);
+		hide_div_fade('alerts');
+		$('alerticon').src="images/mgr.alert.icon.gray.png";
+		loadalerts = setTimeout("load_alerts(40)",'5000');
+	}
+	
+	function restart_alerts(){
+		clearTimeout(loadalerts);
+		loadalerts = setTimeout("load_alerts('alerts')",'11000');
+		$('alerticon').src="images/mgr.alert.icon.gray.png";
+		//$('alertsinner').update('');
+	}
+	
+	function delay_restart(){
+		//hide_div('alerts');
+		hide_div_fade('alerts');
+		restart_alerts();	
+	}
+	
+	function stop_alerts(){	
+		updater.stop();
+	}
+	
+// GROUP FUNCTIONS
+	function edit_group(item_id)
+	{
+		show_group_edit();
+		if(item_id == 'new')
+		{
+			$('group_edit').update(gen_new_group);
+		}
+		else
+		{
+			$('group_edit').update(gen_edit_group);
+		}
+		show_loader('group_edit_win');
+		var updatecontent = 'group_edit_win';
+		var loadpage = "mgr.groups.actions.php?mode=edit_group&edit=" + item_id;
+		var pars = "";
+		var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+	}
+	function delete_group(item_id)
+	{
+		var updatecontent = 'hidden_box';
+		var loadpage = "mgr.groups.actions.php?mode=delete_group&id=" + item_id;
+		var pars = "";
+		var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+	}
+	function update_grrow(){
+			var rowclass = 'list_row_off';
+			//alert($$('#' + tab + ' div[fsrow]'));
+			$$('#group_list_win tr').each(function(e){
+			//$$('#tab1_group div').each(function(e){
+				//alert(e.id);
+				if(e.style.display!='none'){
+					e.className = rowclass;
+					if(rowclass == 'list_row_off'){
+						rowclass = 'list_row_on';
+					} else {
+						rowclass = 'list_row_off';
+					}
+				}
+			});			
+		}
+	function show_group_list(){
+		show_div('group_list_win');
+		hide_div('group_edit_win');		
+		show_div('group_list_win_buttons');
+		hide_div('group_edit_win_buttons');
+		$('group_edit').update(gen_new_group);
+		//$('dobutton').value = gen_b_assign;
+		//$('tofrom').update(gen_to);		
+		$('group_list').className = 'subsubon';
+		$('group_edit').className = 'subsuboff';
+	}
+	function show_group_edit(){
+		hide_div('group_list_win');
+		show_div('group_edit_win');
+		hide_div('group_list_win_buttons');
+		show_div('group_edit_win_buttons');
+		//$('dobutton').value = gen_b_assign;
+		//$('tofrom').update(gen_to);		
+		$('group_list').className = 'subsuboff';
+		$('group_edit').className = 'subsubon';
+	}
+	function load_group_list_win(mgrarea)
+	{
+		show_loader('group_list_win');
+		var updatecontent = 'group_list_win';
+		var loadpage = "mgr.groups.actions.php?mode=wb_group_list&mgrarea=" + mgrarea;
+		var pars = "";
+		var myAjax = new Ajax.Updater(updatecontent, loadpage, {evalScripts: true, method: 'get', parameters: pars});
+	}
+	function submit_group_form(mgrarea,dmode)
+	{
+		if(dmode == "DEMO"){
+			demo_message();
+		} else {
+			if($F('group_name') == '' || $F('group_name') == null){
+				$('group_name_div').className='fs_row_error';
+				return false;
+			}
+			//alert($F('group_name'));
+			$('group_edit_form').request({
+				onFailure: function() { alert('failed'); }, 
+				onSuccess: function(transport) {
+					load_group_list_win(mgrarea);
+					show_group_list();
+				}
+			});
+		}
+	}
+	
+// CHECKBOX ON/OFF SHOW/HIDE DIV
+	function cb_bool(checkbox,div,other_div){
+		if($(checkbox).checked == true){				
+			$(div).setStyle({display: 'block'});
+		} else {
+			$(div).setStyle({display: 'none'});
+			if(other_div){
+				$(other_div).setStyle({display: 'none'});
+			}
+		}	
+	}
+	
+// CHECKBOX ON/OFF SHOW/HIDE ELEMENT INLINE
+	function cb_bool_inline(checkbox,element){
+		if($(checkbox).checked == true){				
+			$(element).setStyle({display: 'inline'});
+		} else {
+			$(element).setStyle({display: 'none'});
+		}	
+	}
+	
+// WORKBOX
+	// UNSELECT THE SELECTED LETTER
+	function alphabet_clean(){
+		$$('.alphabet_on').each(function(s){
+										  	s.className = 'alphabet_off';
+										  });
+	}
+// CREATE THE WORKBOX
+	function workbox_old(id){
+		wboxid=id; // CONVERT TO GLOBAL		
+		$('workbox').setStyle({
+			display: 'block'
+		});		
+		$('workbox').update('<div id="wbheader"><p><img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" /></p></div><div id="wbbody"><br /><br /></div><div id="wbfooter"></div>');
+		
+		// load here
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		var updatecontent = 'workbox';
+		var loadpath = 'mgr.workbox.php';
+		var pars = '';
+		//var pars = 'id=' + id;
+		var myAjax = new Ajax.Updater(updatecontent, loadpath, {method: 'get', parameters: pars, evalScripts: true});
+	}
+// CREATE THE ADVANCED WORKBOX
+	function workbox(workboxobj){
+		//alert(workboxobj.id);
+		if(workboxobj.id != null){
+			wboxid=workboxobj.id; // CONVERT TO GLOBAL
+		}
+		if(workboxobj.mo != null){
+			wboxmo=workboxobj.mo; // MEMBERS ONLY CONVERT TO GLOBAL
+		}
+		$('workbox').setStyle({
+			display: 'block'
+		});
+		if(workboxobj.maxfiles)
+		{
+			wboxmaxfiles = workboxobj.maxfiles;
+		}
+		else
+		{
+			wboxmaxfiles = 1000;	
+		}
+		$('workbox').update('<div id="wbheader"><p><img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" /></p></div><div id="wbbody"><br /><br /></div><div id="wbfooter"></div>');
+		
+		// load here
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		var updatecontent = 'workbox';
+		var loadpath = 'mgr.workbox.php';		
+		var pars = 'box='+workboxobj.mode;
+		if(workboxobj.page != null){			
+			pars = pars + '&page=' + workboxobj.page;
+		}
+		if(workboxobj.id != null){			
+			pars = pars + '&id=' + workboxobj.id;
+		}
+		if(workboxobj.mgrarea != null){			
+			pars = pars + '&mgrarea=' + workboxobj.mgrarea;
+		}
+		pars = pars + '&maxfiles=' + wboxmaxfiles;
+		//var pars = 'id=' + id;
+		var myAjax = new Ajax.Updater(updatecontent, loadpath, {method: 'get', parameters: pars, evalScripts: true});
+	}
+// WORKBOX VERSION 2.0
+	function workbox2(workboxobj){
+		$('workbox').setStyle({
+			display: 'block'
+		});
+		$('workbox').update('<div id="wbheader"><p><img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" /></p></div><div id="wbbody"><br /><br /></div><div id="wbfooter"></div>');
+		// load here
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		var updatecontent = 'workbox';
+		var loadpath = workboxobj.page;
+
+		var myAjax = new Ajax.Updater(updatecontent, loadpath, {method: 'get', parameters: workboxobj.pars, evalScripts: true});
+	}
+// CLOSE WORKBOX
+	function close_workbox(){		
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.7, to: 0.0, afterFinish: hide_message });	
+		$('workbox').hide();
+	}
+// UPLOAD BOX
+	function uploadbox(workboxobj){
+		$('uploadbox').setStyle({
+			display: 'block'
+		});
+		$('uploadbox').update('<div id="wbheader"><p><img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" /></p></div><div id="wbbody"><br /><br /></div><div id="wbfooter"></div>');
+		// load here
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		var updatecontent = 'uploadbox';
+		var loadpath = workboxobj.page;
+
+		var myAjax = new Ajax.Updater(updatecontent, loadpath, {method: 'get', parameters: workboxobj.pars, evalScripts: true});
+	}
+// CLOSE WORKBOX
+	function close_uploadbox(){		
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.7, to: 0.0, afterFinish: hide_message });	
+		if($('javacontent')) $('javacontent').update();
+		$('uploadbox').hide();
+	}
+// SHOW wbselector
+	function load_wbselector(objdata){
+		if($('wbmembers') != null){ show_div('wbmembers'); }
+		if($('wbgroups') != null){ show_div('wbgroups'); }
+		if($('wbmemberships') != null){ show_div('wbmemberships'); }
+		getwbselector(objdata);
+	}
+// DECIDE WHICH TO SELECT
+	function wbselect(objdata){
+		if($F(objdata.inputbox) == "everyone"){
+			$('uperm_everyone').checked = true;	
+		} else {
+			$('uperm_specific').checked = true;
+			load_wbselector(objdata);
+		}
+	}
+	function wbselect_owner(objdata){
+		if($F(objdata.inputbox) == "0"){
+			$('uperm_everyone').checked = true;	
+		} else {
+			$('uperm_specific').checked = true;
+			load_wbselector(objdata);
+		}
+	}
+	
+// PROCESS MEMBERS, GROUPS, MEMBERSHIPS DATA
+	function getwbResponse(transport,objdata)
+	{	
+		var currentperms = $F(objdata.inputbox);
+		var perms = currentperms.split(",");
+		
+		var json = transport.responseText.evalJSON(true);
+		
+		// ALLOW MULTIPLE SELECTIONS OR NOT
+		if(objdata.multiple == '1')
+		{
+			var inputtype = "checkbox";
+			var inputname = "permissionsradiolist"; // SHOULD BE UNIQUE
+		}
+		else
+		{
+			var inputtype = "radio";
+			var inputname = "permissionsradiolist";
+		}
+		
+		// MEMBERS
+		if(json.members != null)
+		{
+			var wbmembers_inner = '<ul>';		
+			for (var i = 0; i < json.members.name.length; i++)
+			{
+				if(json.members.flag[i] != "none")
+				{
+					var memberflag = json.members.flag[i];
+				}
+				else
+				{
+					var memberflag = 'icon.none.gif';
+				}
+				
+				if(objdata.multiple == '1')
+				{
+					wbmembers_inner += '<li><input type="'+inputtype+'" class="permcheckbox" value="mem'+json.members.id[i]+'" name="'+inputname+'" id="mem'+json.members.id[i]+'" onclick="insert_perm(\'mem'+json.members.id[i]+'\',\''+objdata.inputbox+'\',1);" ';
+				}
+				else
+				{
+					wbmembers_inner += '<li><input type="'+inputtype+'" class="permcheckbox" value="mem'+json.members.id[i]+'" name="'+inputname+'" id="mem'+json.members.id[i]+'" onclick="insert_perm(\''+json.members.id[i]+'\',\''+objdata.inputbox+'\',0);insert_perm_name(\''+objdata.updatenamearea+'\',\''+json.members.name[i]+'\',\''+json.members.email[i]+'\');" ';
+				}				
+				if(('mem'+json.members.id[i]) in oc(perms)){ wbmembers_inner += 'checked'; }
+				wbmembers_inner += '/>&nbsp;<label for="mem'+json.members.id[i]+'">' + json.members.name[i] + ' (' + json.members.email[i] + ')</label></li>';
+			}
+			wbmembers_inner += '</ul>';
+			$('wbmembers_inner').update(wbmembers_inner);
+		}
+		else
+		{
+			$('wbmembers_inner').update('<div style="margin: 6px;">'+gen_wb_noneavail+'</div>');
+		}
+		
+		// GROUPS
+		if(json.groups != null)
+		{
+			var wbgroups_inner = '<ul>';		
+			for (var i = 0; i < json.groups.name.length; i++)
+			{
+				if(json.groups.flag[i] != "none")
+				{
+					var groupflag = json.groups.flag[i];
+				}
+				else
+				{
+					var groupflag = 'icon.none.gif';
+				}
+				
+				if(objdata.multiple == '1')
+				{
+					wbgroups_inner += '<li><img src="images/mini_icons/'+groupflag+'" align="absmiddle" /> <input type="'+inputtype+'" class="permcheckbox" name="'+inputname+'" value="grp'+json.groups.id[i]+'" id="grp'+json.groups.id[i]+'" onclick="insert_perm(\'grp'+json.groups.id[i]+'\',\''+objdata.inputbox+'\',1);" ';
+				}
+				else
+				{
+					wbgroups_inner += '<li><img src="images/mini_icons/'+groupflag+'" align="absmiddle" /> <input type="'+inputtype+'" class="permcheckbox" name="'+inputname+'" value="grp'+json.groups.id[i]+'" id="grp'+json.groups.id[i]+'" onclick="insert_perm(\''+json.groups.id[i]+'\',\''+objdata.inputbox+'\',0);" ';	
+				}
+				if(('grp'+json.groups.id[i]) in oc(perms)){ wbgroups_inner += 'checked'; }
+				wbgroups_inner += '/>&nbsp;<label for="grp'+json.groups.id[i]+'">' + json.groups.name[i] + '</label></li>';
+			}
+			wbgroups_inner += '</ul>';
+			$('wbgroups_inner').update(wbgroups_inner);
+		}
+		else
+		{
+			//$('wbgroups_inner').update('');
+		}
+		
+		// MEMBERSHIPS
+		if(json.memberships != null)
+		{
+			var wbmemberships_inner = '<ul>';		
+			for (var i = 0; i < json.memberships.name.length; i++)
+			{
+				if(json.memberships.flag[i] != "none")
+				{
+					var membershipsflag = json.memberships.flag[i];
+				}
+				else
+				{
+					var membershipsflag = 'icon.none.gif';
+				}
+				
+				if(objdata.multiple == '1')
+				{
+					wbmemberships_inner += '<li><img src="images/mini_icons/'+membershipsflag+'" align="absmiddle" /> <input type="'+inputtype+'" class="permcheckbox" name="'+inputname+'" value="msp'+json.memberships.id[i]+'" id="msp'+json.memberships.id[i]+'" onclick="insert_perm(\'msp'+json.memberships.id[i]+'\',\''+objdata.inputbox+'\',1);" ';
+				}
+				else
+				{
+					wbmemberships_inner += '<li><img src="images/mini_icons/'+membershipsflag+'" align="absmiddle" /> <input type="'+inputtype+'" class="permcheckbox" name="'+inputname+'" value="msp'+json.memberships.id[i]+'" id="msp'+json.memberships.id[i]+'" onclick="insert_perm(\'msp'+json.memberships.id[i]+'\',\''+objdata.inputbox+'\',0);" ';	
+				}
+				if(('msp'+json.memberships.id[i]) in oc(perms)){ wbmemberships_inner += 'checked'; }
+				wbmemberships_inner += '/>&nbsp;<label for="msp'+json.memberships.id[i]+'">' + json.memberships.name[i] + '</label></li>';
+			}
+			wbmemberships_inner += '</ul>';
+			$('wbmemberships_inner').update(wbmemberships_inner);
+		}
+		else
+		{
+			//$('wbmemberships_inner').update('');
+		}
+	}
+	
+// GET THE SELECTOR BOXES
+	function getwbselector(objdata){
+		var url = 'mgr.wb.members.php';
+		var pars = '';
+		var myAjax = new Ajax.Request(url,
+									  {method: 'get',
+									  parameters: pars,
+									  onSuccess: function(transport){ getwbResponse(transport,objdata); }});
+	}
+// CONVERT ARRAY
+	function oc(a){
+	  var o = {};
+	  for(var i=0;i<a.length;i++)
+	  {
+		o[a[i]]='';
+	  }
+	  return o;
+	}
+	
+// INSERT THE NAME INTO A TEXT AREA
+	function insert_perm_name(updatenamearea,name,email)
+	{
+		//alert('test');
+		$(updatenamearea).innerHTML = "<strong>"+name+"</strong> (<a href='mailto:"+email+"'>"+email+"</a>)";
+	}
+
+// INSERT THE PERMISSIONS INTO THE BOX
+	function insert_perm(permid,inputbox,multiple){
+		// IF MULTIPLE CLEAR FIRST
+		if(multiple == '0')
+		{
+			
+			$(inputbox).setValue(permid);
+		}
+		else
+		{
+			// CLEAR EVERYONE FIRST
+			if($F(inputbox) == 'everyone'){
+				$(inputbox).setValue('');
+			}
+			
+			// CHECK TO SEE IF THAT BOX IS CHECKED OR NOT
+			if($(permid).checked == true){
+				// ADD TO
+				$(inputbox).setValue($F(inputbox) + ',' +  permid);
+			} else {
+				// REMOVE FROM
+				var newpermstring = $F(inputbox);
+				$(inputbox).setValue(newpermstring.replace(',' + permid, ''));
+			}
+			
+			if($F(inputbox) == ''){
+				$(inputbox).setValue('everyone');
+				//$('perm_icon').src = 'images/mgr.people.icon.png';
+			} else {
+				//$('perm_icon').src = 'images/mgr.lock.icon.png';
+			}
+		}
+	}
+	
+	function insert_perm_owner(permid,name,email){
+
+		$('perm'+wboxid).value = permid;		
+		$('owner_name_div').innerHTML = "<strong>"+name+"</strong> (<a href='mailto:"+email+"'>"+email+"</a>)";
+
+	}
+
+// LOAD THE MEMBERS WB AREA
+	function load_wbmembers_inner(startletter,objdata){
+		//alert(startletter);
+		alphabet_clean();
+		$('sl_'+startletter).className =  'alphabet_on';
+		//obj.className = 'alphabet_on';
+		$('wbmembers_inner').update('<img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" />');
+		var url = 'mgr.wb.members.php';
+		var pars = 'members_only=1&startletter='+startletter;
+		var myAjax = new Ajax.Request(url,
+									  {method: 'get',
+									  parameters: pars,
+									  onSuccess: function(transport){ getwbResponse(transport,objdata); }});
+		//getwbResponse(transport,inputbox)
+	}
+	
+// CHOOSE IF THE PERM DIV SHOULD SHOW EVERYONE OR LIMITED
+	function check_perm_box(inputbox)
+	{
+		//alert(inputbox);
+		if($F(inputbox) == "everyone")
+		{
+			show_div('perm_div_a');
+			hide_div('perm_div_b');
+		}
+		else
+		{
+			hide_div('perm_div_a');
+			show_div('perm_div_b');
+		}
+	}
+	
+// UNLOAD THE SELECTOR BOXES
+	function unload_wbselector()
+	{
+		if($('wbmembers') != null)
+		{
+			$('wbmembers_inner').update('<img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" />');
+			hide_div('wbmembers');
+		}
+		if($('wbgroups') != null)
+		{
+			$('wbgroups_inner').update('<img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" />');
+			hide_div('wbgroups');		
+		}
+		if($('wbmemberships') != null)
+		{
+			$('wbmemberships_inner').update('<img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" />');
+			hide_div('wbmemberships');
+		}
+		//if($('perm_icon') != null)
+		//{
+		//	$('perm_icon').src = 'images/mgr.people.icon.png';
+		//}
+	}
+	function unload_wbselector_owner(name,inputbox)
+	{
+		if($('wbmembers') != null)
+		{
+			$('wbmembers_inner').update('<img src="./images/mgr.loader.gif" align="absmiddle" style="margin: 10px;" />');
+			hide_div('wbmembers');
+		}
+		$(inputbox).setValue('0');		
+		$('owner_name_div').innerHTML = name;
+	}
+// UPDATE SORT LIST VALS
+	function make_sortlist(){
+		$('sort_list_vals').value = Sortable.serialize('sortlist');	
+	}
+// FIX SHORTCUTS HEIGHT
+	function shortcuts_height(){
+		if($('shortcuts')!=null){
+			if(navigator.userAgent.indexOf('MSIE')>=0){
+				var newheight = (document.body.offsetHeight - 165) + 'px';
+			} else {
+				var newheight = (document.body.offsetHeight - 165) + 'px';
+			}			
+			$('shortcuts').setStyle({
+				height: newheight
+			});
+		}
+	}
+
+// UPDATE ROW COLOR ON EDIT PAGE
+	function update_fsrow(tab){
+			//alert($$('#tab1_group div[fsrow]').length);
+			//alert($$('div.fs_row_off', 'div.fs_row_on').length);
+			var rowclass = 'fs_row_off';
+			//alert($$('#' + tab + ' div[fsrow]'));
+			$$('#' + tab + ' div[fsrow]').each(function(e){
+			//$$('#tab1_group div').each(function(e){
+				//alert(e.id);
+				if(e.style.display!='none'){
+					e.className = rowclass;
+					if(rowclass == 'fs_row_off'){
+						rowclass = 'fs_row_on';
+					} else {
+						rowclass = 'fs_row_off';
+					}
+				}
+			});			
+		}
+
+// SET ASSIGN BUTTON IN WORKBOX
+	function assignbutton(){
+		show_div('clear_prev_div');
+		$('dobutton').value = gen_b_assign;
+		$('tofrom').update(gen_to);		
+		$('assign_b').className = 'subsubon';
+		$('unassign_b').className = 'subsuboff';
+	}
+// SET UNASSIGN BUTTON IN WORKBOX		
+	function unassignbutton(){
+		hide_div('clear_prev_div');
+		$('dobutton').value = gen_b_unassign;
+		$('tofrom').update(gen_from);
+		$('assign_b').className = 'subsuboff';
+		$('unassign_b').className = 'subsubon';
+	}
+	
+// SET ACTIVE BUTTON IN WORKBOX
+	function activebutton(){
+		$('active_b').className = 'subsubon';
+		$('inactive_b').className = 'subsuboff';
+	}
+// SET INACTIVE BUTTON IN WORKBOX		
+	function inactivebutton(){
+		$('active_b').className = 'subsuboff';
+		$('inactive_b').className = 'subsubon';
+	}
+
+// ASSIGN GROUPS TO FIELD
+	function assign_groups(){
+		var selected_items = '';
+		$$('.atitems').each(function(s){
+										//s.className = 'alphabet_off';
+										if($F(s) != "" && $F(s) != null && $(s).checked == 1){
+											selected_items = $F(s) + "," + selected_items;
+										}
+									  });
+		$('selected_items').value = selected_items;
+		//alert(selected_items);
+	}
+	
+// ASSIGN GROUPS TO FIELD
+	function assign_regions(){
+		var selected_items = '';
+		$$('.atitems').each(function(s){
+										//s.className = 'alphabet_off';
+										if($F(s) != "" && $F(s) != null && $(s).checked == 1){
+											selected_items = $F(s) + "," + selected_items;
+										}
+									  });
+		$('selected_items').value = selected_items;
+	}
+	
+// ASSIGN ACTIVE/INACTIVE STATUS
+	function assign_status(){
+		var selected_items = '';
+		$$('.atitems').each(function(s){
+										//s.className = 'alphabet_off';
+										if($F(s) != "" && $F(s) != null && $(s).checked == 1){
+											selected_items = $F(s) + "," + selected_items;
+										}
+									  });
+		$('selected_items').value = selected_items;
+	}
+
+// ASSIGN APPROVED/UNAPPROVED
+	function assign_approved(){
+		var selected_items = '';
+		$$('.atitems').each(function(s){
+										//s.className = 'alphabet_off';
+										if($F(s) != "" && $F(s) != null && $(s).checked == 1){
+											selected_items = $F(s) + "," + selected_items;
+										}
+									  });
+		$('selected_items').value = selected_items;
+	}
+	
+	function regiontype_boxes(regtype)
+	{
+		if(regtype == 'global')
+		{
+			hide_div('regions');
+			hide_div('regions_clear');
+			//$('ship_global_b').className = 'subsubon';
+			//$('ship_regional_b').className = 'subsuboff';
+		}
+		else
+		{
+			show_div('regions');				
+			if($('assign').checked == true)
+			{
+				show_div('regions_clear');
+			}
+			else
+			{
+				hide_div('regions_clear');	
+			}
+			var item_id = 'new';
+			$('regions').innerHTML = "<img src=\"images/mgr.loader2.gif\">";
+			regions_loaded = 1;
+			var updatecontent = 'regions';
+			var loadpage = "mgr.shipping.actions.php?action=load_shipping_regions&id=" + item_id;
+			var pars = "";
+			var myAjax = new Ajax.Updater(updatecontent, loadpage, {method: 'get', parameters: pars});
+		}
+	}
+
+// REGION ASSIGN BUTTON IN WORKBOX
+	function rassignbutton(){
+		$('assign_b').className = 'subsubon';
+		$('unassign_b').className = 'subsuboff';
+		show_div('regions_clear');
+		$('global_option_span').show();
+		$('global_option').checked = true;
+		regiontype_boxes('global');
+		$('tofrom').update(gen_to);	
+	}
+	// REGION UNASSIGN BUTTON IN WORKBOX		
+	function runassignbutton(){
+		$('assign_b').className = 'subsuboff';
+		$('unassign_b').className = 'subsubon';
+		hide_div('regions_clear');
+		$('global_option_span').hide();
+		$('regional_option').checked = true;
+		regiontype_boxes('regional');
+		$('tofrom').update(gen_from);	
+	}
+
+// CREATE JAVASCRIPT ALERT
+	function alert_message(message){
+		alert(message);
+		return false;
+	}
+
+// LOAD SUPPORT OVERLAY
+	function support_overlay(){
+		panel_button();
+	}
+
+// FLIP QUESTION BUTTON
+	var pb_status = "off";
+	function panel_button(){
+		if(pb_status == "off"){
+			$('panel_button').src = "images/mgr.panels.on.png";
+			pb_status = "on";
+			
+			Effect.Appear('panels',{ duration: 0.5, from: 0.0, to: 1.0 });
+			//show_div('panels');
+			//Effect.BlindDown('panels',{ duration: 0.5 });
+			
+			$('qsupport_bubble').setStyle({
+				display: "none"
+			});
+		} else {
+			$('panel_button').src = "images/mgr.panels.off.png";
+			pb_status = "off";
+			Effect.Fade('panels',{ duration: 0.5 });
+		}
+	}
+	
+// LOAD ROTATIONAL BOX
+	function load_r_box(startat,div,page){
+		show_loader(div);
+		var myAjax = new Ajax.Updater(
+			div, 
+			page, 
+			{
+				method: 'get', 
+				parameters: 'start=' + startat
+			});
+	}
+
+// TABS - BRING TO FRONT	
+	function bringtofront(sel){			
+		for(var x=1;x<20;x++){
+			if($('tab'+x) != null){
+				$('tab'+x).className = "subsuboff";
+				//$('tab'+x+'_group').style.display = "none";
+
+				$('tab'+x+'_group').setStyle({
+					display: "none"
+				});
+			}
+		}
+		$('tab'+sel).className = "subsubon";		
+		//$('tab'+sel+'_group').style.display = "block";
+		$('tab'+sel+'_group').setStyle({
+			display: "block"
+		});
+	}
+	
+// TAB GROUP	
+	function tabselect(sel,group){			
+		for(var t=1;t<14;t++){
+			if($('tab_'+group+t) != null){
+				$('tab_'+group+t).className = "subsuboff";
+				//$('tab'+x+'_group').style.display = "none";
+
+				$('tab_'+group+t+'_group').setStyle({
+					display: "none"
+				});
+			}
+		}
+		$('tab_'+group+sel).className = "subsubon";		
+		//$('tab'+sel+'_group').style.display = "block";
+		$('tab_'+group+sel+'_group').setStyle({
+			display: "block"
+		});
+	}
+
+// LOAD SEARCH BOX DELAY
+	var search_box_go;
+	function delay_searchbox()
+	{
+		//load_search_box
+		clearTimeout(search_box_go);
+		search_box_go = setTimeout(load_search_box,500);
+	}
+
+// LOAD SEARCH BOX RESULTS
+	function load_search_box(){
+		var pars = $H({searchphrase: $F('search_phrase')}).toQueryString();		
+		var myAjax = new Ajax.Updater(
+			'search_box_results', 
+			'mgr.search.box.php', 
+			{
+				method: 'get', 
+				parameters: pars
+			});
+	}
+	
+// LOAD GALLERY DETAILS WINDOW - NOW USING show_details_win
+	var loadmydiv;	
+	function show_gdetails(div_id){
+		clearTimeout(loadmydiv);
+		loadmydiv = setTimeout("show_div_fade_load('"+div_id+"','mgr.galleries.details.php?id="+div_id+"','')",'900');		
+		//loadElement('mgr.galleries.details.php?id='+div_id,"",div_id);
+	}
+// HIDE GALLERY DETAILS WINDOW
+	function hide_gdetails(div_id){
+		clearTimeout(loadmydiv);
+		//hide_div(div_id);
+		//alert($$('div.galdet_win'));		
+		$$('.galdet_win').each(function(s) {   s.setStyle({display: "none"}) });
+		//div.galdet_win
+	}
+	
+// LOAD GENERIC DETAILS WINDOW
+	var loadgwin;
+	function show_details_win(div_id,loadpage){
+		clearTimeout(loadgwin);
+		$(div_id).update("<img src='images/mgr.detailswin.arrow.left.png' class='detailswinarrow' /><div id='" + div_id + "_inner' class='details_win_inner'></div>");
+		loadmydiv = setTimeout("show_div_fade_load('"+div_id+"','"+loadpage+"','_inner')",'900');
+		//<img src='images/mgr.loader2.gif' align='absmiddle' style='margin: 10px;' />
+		
+	}
+	// SHOW DIV FADE IN & LOAD PAGE - MADE THIS TO PREVENT LOADING IF ROLLED OFF LINK
+	function show_div_fade_load(div_id,loadpage,inner){
+		Effect.Appear(div_id,{ duration: 0.5, from: 0.0, to: 1.0 });
+		if(loadpage){
+			//show_loader(div_id + "_inner");
+			loadElement(loadpage,"",div_id + inner);
+		}
+	}
+	
+// SET THE SCROLL OFFSET ON AN ELEMENT
+	function set_scrolloffset(setele,parentele,offsetval){
+			// GET THE SCROLL OFFSET OF THE PARENT ELEMENTS
+			var offset = $(parentele).cumulativeScrollOffset();
+			// GET THE VIEWPORT OFFSET
+			var vp_offset = document.viewport.getScrollOffsets();			
+			//alert(vp_offset); // TEST			
+			//var offset = document.viewport.cumulativeScrollOffset();
+			// CALCULATE THE CORRECT OFFSET
+			var offset_to = (0 - offset[1]) + vp_offset[1];
+			// SET THE STYLE OF THE ELEMENT
+			
+			
+			//alert(); // TEST	
+			
+			
+			//Prototype.Browser.IE		
+			
+			if(offset[1] != 0){
+				$(setele).setStyle({
+					marginTop: offset_to + 'px'
+				});
+			}
+		}
+	
+// HIDE GENERIC DETAILS WINDOW
+	function hide_details_win(div_id){
+		clearTimeout(loadmydiv);
+		//hide_div(div_id);
+		$$('.details_win').each(function(s) {   s.setStyle({display: "none"}) })
+	}
+	
+// SHOW DIV FADE IN
+	function show_div_fade(div_id){
+		Effect.Appear(div_id,{ duration: 1.0, from: 0.0, to: 1.0 });
+		//Effect.Appear(div_id,{ duration: 0.5, from: 0.0, to: 1.0, afterFinish: loadElement('mgr.galleries.details.php',"",div_id) });
+	}
+// HIDE DIV FADE OUT
+	function hide_div_fade(div_id){
+		Effect.Fade(div_id,{ duration: 0.5 });
+		//Effect.Appear(div_id,{ duration: 0.5, from: 0.0, to: 1.0, afterFinish: loadElement('mgr.galleries.details.php',"",div_id) });
+	}
+
+// FUNCTION
+	function overlay_height(){
+		// CHANGED THIS TO WORK WITH A FIXED POSITION OVERLAY
+		// UNCOMMENT THE AREAS OF THE FUNCTION TO CHANGE IT BACK - ALSO NEEDS STYLE UPDATED TO ABSOLUTE AND FUNCTION ON RESIZE REMOVED FROM ABOVE
+		if(navigator.userAgent.indexOf('MSIE')>=0){
+			var viewheight = document.viewport.getDimensions().height;
+			//var bodyheight = document.body.offsetHeight;
+		} else {
+			var viewheight = document.viewport.getDimensions().height;
+			//var bodyheight = document.body.offsetHeight + 6;
+		}		
+		//if(viewheight > bodyheight){
+			var winheight = viewheight;
+		//} else {
+		//	var winheight = bodyheight;
+		//}
+		
+		$('overlay').setStyle({
+			height: winheight + 'px'
+		});	
+	}
+
+// SUBMIT WINDOW FOR PRINTING - DELETE
+	function simple_print(print_content){
+		//fade_overlay_in();
+		//show_div('print_window');
+		$('print_window').update($(print_content).innerHTML);
+		//overlay_height();
+		window.print();
+	}
+	
+// PRINT WINDOW
+	function do_printing(print_details){
+		scroll(0,0);			
+		fade_overlay_in();
+		show_div('print_window');
+		show_loader('print_window_inner');			
+		var myAjax = new Ajax.Updater(print_details.updatecontent, print_details.loadpath, {method: 'get', parameters: print_details.pars, evalScripts: true, onSuccess: function() { overlay_height(); } });
+		hide_div('workbox');
+		hide_div('overlay');
+		show_div('print_window');
+	}
+
+// GET THE FROM DATE FROM THE DROP DOWNS
+	function get_from_date(){
+		if($('from_day') != null){
+			var fday = $('from_day').options[$('from_day').selectedIndex].value;
+			var fmonth = $('from_month').options[$('from_month').selectedIndex].value;
+			var fyear = $('from_year').options[$('from_year').selectedIndex].value;
+		} else {
+			var fday = '01';
+			var fmonth = '01';
+			var fyear = '2008';
+		}
+		return "&fyear=" + fyear + "&fmonth=" + fmonth + "&fday=" + fday;
+	}
+
+// GET THE DATE FROM THE TO DROP DOWNS
+	function get_to_date(){
+		if($('to_day') != null){
+			var tday = $('to_day').options[$('to_day').selectedIndex].value;
+			var tmonth = $('to_month').options[$('to_month').selectedIndex].value;
+			var tyear = $('to_year').options[$('to_year').selectedIndex].value;				
+		} else {
+			var uid = new Date();
+			var tday = two_digit_date(uid.getDate());
+			var tmonth = two_digit_date((uid.getMonth()+1));
+			var tyear = uid.getFullYear();
+		}
+		return "&tyear=" + tyear + "&tmonth=" + tmonth + "&tday=" + tday;
+	}
+
+// CONVERT TO 2 DIGIT DATE
+	function two_digit_date(mystring){
+		mystring = mystring + '';
+		if(mystring.length < 2){
+			mystring = '0' + mystring;
+		}
+		return mystring;
+	}
+
+// DEMO MODE ALERT
+	function demo_message(){
+		//alert("This feature has been disabled in DEMO mode.");
+		//return false;
+		//$('overlay').style.display = "block";
+		
+		overlay_height();
+		//fade effect
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		//$('messagebox').style.display = "block";
+		
+		$('messagebox').setStyle({
+			display: "block"
+		});
+		
+		$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold;'>This feature is disabled in demo mode.</p><p align='right' style='padding: 10px 0 0 0; margin: 0px;'><input type='button' value='"+ gen_b_close +"' id='closebutton' class='button' onclick='close_message();' /></p>");
+		// JUMP TO THE TOP OF THE BROWSER WINDOW
+		//scroll(0,0);
+		
+		// FOCUS ON THE CLOSE BUTTON
+		$('closebutton').focus();
+	}
+	
+// DEMO MODE ALERT - FOR WHEN THE WORKBOX IS ALREADY OPEN
+	function demo_message2(){
+		//overlay_height();
+		$('workbox').setStyle({
+			display: "none"
+		});		
+		$('messagebox').setStyle({
+			display: "block"
+		});		
+		$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold;'>This feature is disabled in demo mode.</p><p align='right' style='padding: 10px 0 0 0; margin: 0px;'><input type='button' value='"+ gen_b_close +"' id='closebutton' class='button' onclick='close_message();' /></p>");
+		// FOCUS ON THE CLOSE BUTTON
+		$('closebutton').focus();
+	}
+	
+// FADE OVERLAY IN
+	function fade_overlay_in(){
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+	}
+	
+// SIMPLE MESSAGE BOX
+	function simple_message_box(innercontent,focusback){
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		$('messagebox').setStyle({
+			display: "block"
+		});
+		$('innermessage').update(innercontent);
+		$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold; line-height: 1;'>" + innercontent + "</p><p align='right' style='padding: 10px 0 0 0; margin: 0px; clear: both;'><input type='button' value='"+ gen_b_close +"' id='closebutton' class='button' onclick='close_message(\""+ focusback +"\");' /></p>");
+		// JUMP TO THE TOP OF THE BROWSER WINDOW
+
+		//scroll(0,0);
+		//alert(focusback);
+		// FOCUS ON THE CLOSE BUTTON
+		$('closebutton').focus();
+	}
+
+// SIMPLE MESSAGE BOX 2 - FOR WHEN WORKBOX IS ALREADY OPEN
+	function simple_message_box2(innercontent,focusback){
+		//overlay_height();
+		
+		$('workbox').setStyle({
+			display: "none"
+		});		
+		$('messagebox').setStyle({
+			display: "block"
+		});
+		$('innermessage').update(innercontent);
+		$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold; line-height: 1;'>" + innercontent + "</p><p align='right' style='padding: 10px 0 0 0; margin: 0px; clear: both;'><input type='button' value='"+ gen_b_close +"' id='closebutton' class='button' onclick='close_message(\""+ focusback +"\");' /></p>");
+
+		// FOCUS ON THE CLOSE BUTTON
+		$('closebutton').focus();
+	}
+	
+// FULL MESSAGE BOX
+	function message_box(innercontent,buttons,focusback){
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		$('messagebox').setStyle({
+			display: "block"
+		});
+		//$('innermessage').update(innercontent);
+		$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold;'>" + innercontent + "</p><p align='right' style='padding: 10px 0 0 0; margin: 0px; clear: both;'>" + buttons + "</p>");
+		// JUMP TO THE TOP OF THE BROWSER WINDOW
+		//scroll(0,0);
+		// FOCUS ON THE CLOSE BUTTON
+		//$('closebutton').focus();
+	}
+
+// HIDE MESSAGE BOX
+	function hide_message(){
+		//after transition fade the box
+		//$('overlay').style.display = "none";
+		
+		$('overlay').setStyle({
+			display: "none"
+		});
+	}
+
+// CLOSE MESSAGE BOX
+	function close_message(focusback){		
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.7, to: 0.0, afterFinish: hide_message });	
+		$('messagebox').setStyle({
+			display: "none"
+		});
+		//alert(focusback);
+		if(focusback){
+			//$(focusback).focus();
+			if ($(focusback).createTextRange) {
+				var v = $(focusback).value;
+				var r = $(focusback).createTextRange();
+				r.moveStart('character', v.length);
+				r.select();
+			} else {
+				$(focusback).focus();
+			}
+		}
+	}
+	
+// DELETE RECORDS
+	function delete_link(dmode,verify,dtype,dlink){		
+		if(dmode == "DEMO"){
+			demo_message();
+		} else {
+			if(verify == 1){
+				overlay_height();
+				Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+			
+				$('messagebox').setStyle({
+					display: "block"
+				});
+				$('innermessage').update("<p align='left' style='padding: 0px; margin: 0px; font-weight: bold;'>"+gen_suredelete+"</p><p align='right' style='padding: 10px 0 0 0; margin: 0px;'><input type='button' value='"+gen_b_cancel2+"' class='button' onclick='close_message();' /><input type='button' value='"+gen_b_del+"' id='deletebutton' class='button' onclick='process_delete(\"" + dlink + "\",\"" + dtype + "\");' /></p>");
+			} else {
+				if(dtype == "form"){
+					document.datalist.action=dlink;
+					document.datalist.submit();
+				} else {
+					location.href=dlink;
+				}
+			}
+			// FOCUS ON THE DELETE BUTTON
+			$('deletebutton').focus();
+		}
+		// JUMP TO THE TOP OF THE BROWSER WINDOW
+		//scroll(0,0);
+		
+		false;
+	}
+	
+	function process_delete(dlink,dtype){
+		if(dtype=="link"){			
+			location.href=dlink;
+		}
+		if(dtype=="form"){
+			document.datalist.action=dlink;
+			document.datalist.submit();	
+		}
+	}
+	
+// VERIFY BEFORE DELETE
+	function verify_delete(dtype,url){
+		var agree=confirm("Delete?");
+		if (agree) {
+			if(dtype == "link"){
+				location.href=url;
+			}
+			if(dtype == "form"){
+				document.datalist.action = url;
+				document.datalist.submit();
+			}
+		}
+		else {
+			false;
+		}			
+	}
+
+// SUPPORT/HELP LINK
+	function support_popup(pageid){
+		window.open('http://www.ktools.net/wiki/'+pageid);
+	}
+
+// BOOLEAN DIV DISPLAY
+	function displaybool(div_id,loadpage,updatecontent,onhide,arrow_name){
+		if($(div_id).style.display == "block"){
+			$(div_id).style.display='none';
+			// CLEAR ON CLOSE
+			if(onhide == "clear"){
+				$(div_id).update("");
+			}
+			// SHOW LOADER ON CLOSE
+			if(onhide == "loader"){
+				show_loader(div_id);
+			}
+			
+			if(arrow_name){
+				arrow = arrow_name.split("-");
+				arrow_ele = arrow[0] + arrow[1];
+				$(arrow_ele).src="images/mgr."+arrow[0]+".0.png";
+			}
+		} else {
+			$(div_id).style.display='block';
+			// LOAD AJAX CONTENT IF NEEDED
+			if(loadpage){
+				// MOO AJAX VERSION
+				//new ajax(loadpage, {
+					//postBody: '', 
+					//update: $(updatecontent)
+				//});				
+				var pars = "";
+				var myAjax = new Ajax.Updater(
+					updatecontent, 
+					loadpage, 
+					{
+						method: 'get', 
+						parameters: pars
+					});
+
+			}
+			if(arrow_name){
+				//document.getElementById(arrow_name).src="images/mgr."+arrow_name+".1.gif";
+				if(arrow_name){
+					arrow = arrow_name.split("-");
+					arrow_ele = arrow[0] + arrow[1];
+					$(arrow_ele).src="images/mgr."+arrow[0]+".1.png";
+				}
+			}
+		}
+	}
+	
+// BOOLEAN DIV DISPLAY (SIMPLE VERSION)
+	function sdisplaybool(div_id){
+		if(document.getElementById(div_id).style.display == "block"){
+			$(div_id).style.display='none';
+		} else {
+			$(div_id).style.display='block';
+		}
+	}
+
+// CANCEL AN EDIT
+	function cancel_edit(returnto){
+		document.location.href = returnto;
+	}
+	
+// DISPLAY SINGLE DIV
+	function show_div(div_id){
+		//$(div_id).style.display='block';
+		$(div_id).setStyle({
+			display: "block"
+		});
+	}
+
+// HIDE SINGLE DIV
+	function hide_div(div_id,onhide){
+		$(div_id).style.display='none';
+		// CLEAR ON CLOSE
+		if(onhide == "clear"){
+			$(div).update("");
+		}
+		// SHOW LOADER
+		if(onhide == "loader"){
+			show_loader(div_id);
+		}
+	}
+
+// HIDE SINGLE DIV W/ DELAY
+	var delayhide;
+	function hide_div_delay(div_id,delaytime)
+	{
+		//
+		//$(div_id).style.display='none';
+		//$(div_id).setStyle({
+		//	display: "none"
+		//});
+		delayhide=setTimeout("hide_div('"+div_id+"')",delaytime);
+	}
+	
+// DISPLAY SINGLE DIV
+	function show_div_delay(div_id){
+		clear_other_navs();
+		clear_hide_timer();
+		$(div_id).setStyle({
+			display: "block"
+		});
+	}
+	
+	function clear_hide_timer()
+	{
+		if(delayhide)
+		{
+			clearTimeout(delayhide);
+		}
+	}
+	
+	function clear_other_navs()
+	{
+		$$('.subnav_dd').each(function(s) { s.setStyle({display: "none"}) });
+	}
+	
+
+// HIDE TIMER
+	function hide_timer(id){
+		$(id).style.display='none';
+		//Effect.BlindUp(id);
+	}
+
+// SHOW LOADER
+	function show_loader(div){
+		$(div).update("<img src='images/mgr.loader2.gif' align='absmiddle' style='margin: 10px;' />"); //  Loading... can't say loading because of languages
+	}
+	function show_loader_mt(div){
+		$(div).update("<img src='images/mgr.loader2.gif' align='absmiddle' style='margin-top: 10px;' />"); //  Loading... can't say loading because of languages
+	}
+
+// SELECT ALL CHECKBOXES
+	function select_all_cb(formname)
+	{
+		//alert($$('#' + formname + ' input[type="checkbox"]'));
+		//$('cb944').checked = true;
+		$$('#' + formname + ' input[type="checkbox"]').each(function(elem)
+						 {
+							//alert(elem);
+							if(!elem.getAttribute('disabled'))
+							{
+								elem.checked = true;
+							}
+							
+						 });
+	}
+
+// DESELECT ALL CHECKBOXES
+	function deselect_all_cb(formname) {
+		//alert($$('#' + formname + ' input[type="checkbox"]'));
+		//$('cb944').checked = true;
+		$$('#' + formname + ' input[type="checkbox"]').each(function(elem)
+						 {
+							//alert(elem); 
+							elem.checked = false;
+						 });
+	}
+
+
+// DESELECT ALL FILE CONTAINERS
+	function deselectAllFC(){		
+		var inc=0;
+		var alltags=document.all? document.all : document.getElementsByTagName("*");
+		for (i=0; i<alltags.length; i++){
+			if (alltags[i].className=='file_container_on'){
+				document.getElementById(alltags[i].id).className = 'file_container';
+			}
+		}
+	}
+	
+// SELECT ALL FILE CONTAINERS
+	function selectAllFC(){		
+		var inc=0;
+		var alltags=document.all? document.all : document.getElementsByTagName("*");
+		for (i=0; i<alltags.length; i++){
+			if (alltags[i].className=='file_container'){
+				document.getElementById(alltags[i].id).className = 'file_container_on';
+			}
+		}
+	}
+	
+// PAGE LOADER
+	function pageloader(){
+		document.write('<div id="pageloading" align="left"><br><br>Loading Page Content...<br /><img src="images/mgr.loader2.gif" align="absmiddle" style="margin: 10px;" /></div>');		
+		window.onload=function(){		
+			$("pageloading").style.display="none";		
+		}	
+	}
+
+// LOAD THE LIBRARY		
+	function loadElement(page,post,update){
+		// MOO AJAX VERSION
+		//new ajax(page, {
+		//	postBody: '', 
+		//	update: $(update)
+			//,onComplete: alert(responseText)
+		//});
+		
+		//evalScripts: true
+		
+		var pars = "";
+		var myAjax = new Ajax.Updater(
+			update, 
+			page, 
+			{
+				method: 'get', 
+				parameters: pars,
+				evalScripts: true
+			});
+	}
+	
+// ALTERNATE ROW COLORS
+	function updaterowcolors(selector,color1,color2)
+	{
+		var rowcolor = color1;
+		$$(selector).each(function(e){
+			if(e.style.display!='none'){				
+				e.setStyle({
+					backgroundColor: rowcolor
+				});
+				
+				if(rowcolor == color1){
+					rowcolor = color2;
+				} else {
+					rowcolor = color1;
+				}
+			}
+		});
+	}
+
+// JAVASCRIPT FADE CELLS
+	var iId = null;
+	var sr, sg, sb;
+	var er, eg, eb;
+	var interval = 1;
+	var step;
+	var steps = 16;
+	var colorstart, colorend;
+	var daEl;
+	var timerRunning = false;
+	var hexa = new Array();
+	for (var i = 0; i < 16; i++) {
+		hexa[i] = i.toString(16)
+	}
+	function hex(i) {
+		if (i < 0)	  return "00";
+		else if (i > 255) return "ff";
+		return "" + hexa[Math.floor(i/16)] + hexa[i%16];
+	}
+	function hextodec(daHex) {
+		return parseInt('0x' + daHex);
+	}
+	function setColor(r,g,b) {
+		var hr = hex(r); var hg = hex(g); var hb = hex(b);
+		var daColor = "#"+hr+hg+hb;
+		daEl.style.backgroundColor = daColor;
+		if (daColor == colorend.toLowerCase()) {
+			clearInterval(iId);
+			iId = null;
+			timerRunning = false;
+		}
+	}
+	function fade() {
+		step++;
+		setColor(
+			Math.floor(sr * ((steps-step)/steps) + er * (step/steps)),
+			Math.floor(sg * ((steps-step)/steps) + eg * (step/steps)),
+			Math.floor(sb * ((steps-step)/steps) + eb * (step/steps))
+			);
+	}
+	function myfade(el,cs,ce,iv,st) {
+		daEl = el;
+		colorstart = cs;
+		colorend = ce;
+		interval = iv;
+		steps = st;
+		step = 0;
+		if (timerRunning) {
+			clearInterval(iId);
+			iId = null;
+		}
+		var myRe = /#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i;
+		if (colorstart.match(myRe)) {
+			sr = hextodec(RegExp.$1);
+			sg = hextodec(RegExp.$2);
+			sb = hextodec(RegExp.$3);
+		}
+		if (colorend.match(myRe)) {
+			er = hextodec(RegExp.$1);
+			eg = hextodec(RegExp.$2);
+			eb = hextodec(RegExp.$3);
+		}
+		timerRunning = false;
+		iId = setInterval("fade()",interval);
+		timerRunning = true;
+	}
+	function cellover(table_cell,incolor,listfadetime) {
+		// play around with these values
+		// element, from_color, to_color, interval(milliseconds), transition steps
+		// make sure to change the end color in cellout()
+		myfade(table_cell,incolor,'#edfeff',10,listfadetime);
+	}
+	function cellout(table_cell,outcolor) {
+		if (timerRunning) {
+			clearInterval(iId);
+			iId = null;
+		}
+		table_cell.style.backgroundColor = outcolor;
+	}
+	
+	// GET A RANDOM NUMBER
+	function randomNumber()
+	{
+		var randomnumber=Math.floor(Math.random()*1111111);
+		return randomnumber; 	
+	}
+	
+	
+	// JAVASCRIPT CHECK TO SEE IF A VALUE IS A NUMBER
+	function IsNumeric(sText){
+	   var ValidChars = "0123456789.,";
+	   var IsNumber=true;
+	   var Char;
+	   
+	   for (i = 0; i < sText.length && IsNumber == true; i++){ 
+		  Char = sText.charAt(i); 
+		  if (ValidChars.indexOf(Char) == -1) 
+			 {
+			 IsNumber = false;
+			 }
+		  }
+	   return IsNumber;   
+   }
+   
+	// SHORTCUTS JAVASCRIPT CODE
+	function shortcut(shortcut,callback,opt) {
+		//Provide a set of default options
+		var default_options = {
+			'type':'keydown',
+			'propagate':false,
+			'target':document
+		}
+		if(!opt) opt = default_options;
+		else {
+			for(var dfo in default_options) {
+				if(typeof opt[dfo] == 'undefined') opt[dfo] = default_options[dfo];
+			}
+		}
+	
+		var ele = opt.target
+		if(typeof opt.target == 'string') ele = document.getElementById(opt.target);
+		var ths = this;
+	
+		//The function to be called at keypress
+		var func = function(e) {
+			e = e || window.event;
+			
+			//Find Which key is pressed
+			if (e.keyCode) code = e.keyCode;
+			else if (e.which) code = e.which;
+			var character = String.fromCharCode(code).toLowerCase();
+	
+			var keys = shortcut.toLowerCase().split("+");
+			//Key Pressed - counts the number of valid keypresses - if it is same as the number of keys, the shortcut function is invoked
+			var kp = 0;
+			
+			//Work around for stupid Shift key bug created by using lowercase - as a result the shift+num combination was broken
+			var shift_nums = {
+				"`":"~",
+				"1":"!",
+				"2":"@",
+				"3":"#",
+				"4":"$",
+				"5":"%",
+				"6":"^",
+				"7":"&",
+				"8":"*",
+				"9":"(",
+				"0":")",
+				"-":"_",
+				"=":"+",
+				";":":",
+				"'":"\"",
+				",":"<",
+				".":">",
+				"/":"?",
+				"\\":"|"
+			}
+			//Special Keys - and their codes
+			var special_keys = {
+				'esc':27,
+				'escape':27,
+				'tab':9,
+				'space':32,
+				'return':13,
+				'enter':13,
+				'backspace':8,
+	
+				'scrolllock':145,
+				'scroll_lock':145,
+				'scroll':145,
+				'capslock':20,
+				'caps_lock':20,
+				'caps':20,
+				'numlock':144,
+				'num_lock':144,
+				'num':144,
+				
+				'pause':19,
+				'break':19,
+				
+				'insert':45,
+				'home':36,
+				'delete':46,
+				'end':35,
+				
+				'pageup':33,
+				'page_up':33,
+				'pu':33,
+	
+				'pagedown':34,
+				'page_down':34,
+				'pd':34,
+	
+				'left':37,
+				'up':38,
+				'right':39,
+				'down':40,
+	
+				'f1':112,
+				'f2':113,
+				'f3':114,
+				'f4':115,
+				'f5':116,
+				'f6':117,
+				'f7':118,
+				'f8':119,
+				'f9':120,
+				'f10':121,
+				'f11':122,
+				'f12':123
+			}
+	
+	
+			for(var i=0; k=keys[i],i<keys.length; i++) {
+				//Modifiers
+				if(k == 'ctrl' || k == 'control') {
+					if(e.ctrlKey) kp++;
+	
+				} else if(k ==  'shift') {
+					if(e.shiftKey) kp++;
+	
+				} else if(k == 'alt') {
+						if(e.altKey) kp++;
+	
+				} else if(k.length > 1) { //If it is a special key
+					if(special_keys[k] == code) kp++;
+	
+				} else { //The special keys did not match
+					if(character == k) kp++;
+					else {
+						if(shift_nums[character] && e.shiftKey) { //Stupid Shift key bug created by using lowercase
+							character = shift_nums[character]; 
+							if(character == k) kp++;
+						}
+					}
+				}
+			}
+	
+			if(kp == keys.length) {
+				callback(e);
+	
+				if(!opt['propagate']) { //Stop the event
+					//e.cancelBubble is supported by IE - this will kill the bubbling process.
+					e.cancelBubble = true;
+					e.returnValue = false;
+	
+					//e.stopPropagation works only in Firefox.
+					if (e.stopPropagation) {
+						e.stopPropagation();
+						e.preventDefault();
+					}
+					return false;
+				}
+			}
+		}
+	
+		//Attach the function with the event	
+		if(ele.addEventListener) ele.addEventListener(opt['type'], func, false);
+		else if(ele.attachEvent) ele.attachEvent('on'+opt['type'], func);
+		else ele['on'+opt['type']] = func;
+	}
+	
+	// SHORTCUT TO OPEN SHORTCUTS PANEL
+	shortcut("Ctrl+Shift+s",function() {
+		displaybool('shortcuts','mgr.shortcuts.php','shortcuts','loader');
+	});
+	// SHOW VERSION INFORMATION
+	shortcut("Ctrl+Shift+v",function() {
+		//$('overlay').style.display = "block";
+		overlay_height();
+		Effect.Appear('overlay',{ duration: 0.5, from: 0.0, to: 0.7 });
+		
+		//$('messagebox').style.display = "block";
+		$('messagebox').setStyle({
+			display: "block"
+		});
+		$('innermessage').update("<div id='verioninfo' style='padding-bottom: 2px;'></div><p align='right' style='padding: 0px; margin: 0px;'><input type='button' value='"+ gen_b_close +"' class='button' onclick='close_message();' /></p>");
+		loadElement('../assets/includes/version.php?display=1','','verioninfo');
+		//scroll(0,0);
+	});
+	// SHOW DEBUGGER
+	shortcut("Ctrl+Shift+f",function() {
+		//sdisplaybool('debugger');
+		Effect.toggle('debugger','blind',{duration: 0.3, afterFinish: function (){
+																		var viewheight = document.viewport.getDimensions().height;
+																		window.scroll(0,viewheight);																				
+																		}});		
+	});
+	// GO TO THE MEMBERS PAGE
+	shortcut("Ctrl+Shift+d",function() {
+		workbox2({page: 'mgr.debugger.php',pars: 'box=groupswb&mgrarea=$mgrarea&grouprows=$group_rows'})
+	});
+	// GO TO THE MEMBERS PAGE
+	shortcut("Ctrl+Shift+m",function() {
+		document.location.href = 'mgr.members.php?ep=1';
+	});
+	// GO TO THE ASSETS PAGE
+	shortcut("Ctrl+Shift+l",function() {
+		document.location.href = 'mgr.assets.php?ep=1';
+	});

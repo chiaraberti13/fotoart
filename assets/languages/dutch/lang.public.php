@@ -1,0 +1,786 @@
+<?php
+	# Dutch
+    # PUBLIC LANG
+    
+	// changed all "lightbox" strings to "lighttafel"
+	// proper translation should be "lighttafel", according to http://www.shutterstock.com/language.nl/index.mhtml
+	
+	# 4.7
+	$lang['featuredGalleries']		= "Featured Galleries";
+	
+
+	# 4.6.3	
+	$lang['ccMessage']				= "Please enter your credit card information below.";
+	$lang['ccNumber']				= "Card Number";
+	$lang['ccCVC']					= "CVC";
+	$lang['ccExpiration']			= "Expiration (MM/YYYY)";
+	
+	# 4.6.1
+	$lang['passwordLeaveBlank']		= "Leave blank for no password";
+	$lang['myAlbums']				= "My Albums";
+	
+	# 4.5
+	$lang['dateDownloadUpper']		= "DATUM GEDOWNLOAD";
+	$lang['downloadTypeUpper']		= "DOWNLOAD TYPE";
+	$lang['rss']					= "RSS";
+
+	# 4.4.8
+    $lang['uploadFile']                = "Upload Bestand";
+
+    # 4.4.7
+    $lang['contrSmallFileSize']         = "Het bestand is te klein. De minimale bestandsgrootte is";
+    # plupload
+    $lang['plupSelectFiles']            =  "Selecteer Bestanden";
+    $lang['plupAddFilesToQueue']        =  "Voeg bestanden toe aan de upload wachtrij en klik op de start knop.";
+    $lang['plupFilename']               =  "Bestandsnaam";
+    $lang['plupStatus']                 =  "Status";
+    $lang['plupSize']                   =  "Grootte";
+    $lang['plupAddFiles']               =  "Voeg bestanden toe";
+    $lang['plupStartUplaod']            =  "Start upload";
+    $lang['plupStopUpload']             =  "Stop huidige upload";
+    $lang['plupStartQueue']             =  "Start uploaden wachtrij";
+    $lang['plupDragFilesHere']          =  "Sleep bestande hierin.";
+    
+	# 4.4.6
+    $lang['batchUploader']              = "Batch Uploader";
+    $lang['uploader'][1]                = "Java Gebaseerd";
+    $lang['uploader'][2]                = "HTML5/Flash Gebaseerd";
+    $lang['change']                     = "Change";
+
+    # 4.4.5
+    $lang['moreInfoPlus']               = "[Meer Info]";
+
+    # 4.4.3
+    $lang['mediaLabelPropRelease']      = "Property Release";
+    
+    # 4.4.2
+    $lang['go']                         = "GA";
+    
+    # 4.4.0
+    $lang['share']                      = "Delen";
+    $lang['bbcode']                     = "BBCode";
+    $lang['html']                       = "HTML";
+    $lang['link']                       = "Link";
+    $lang['pricingCalculator']          = "Tarief Berekenen";
+    $lang['noOptionsAvailable']         = "Geen opties beschikbaar";
+    $lang['viewCartUpper']              = "BEKIJK WINKELWAGEN";
+
+    # 4.3
+    $lang['vatIDNumber']                = "BTW nummer";
+        
+    # 4.2.1
+    $lang['captchaError']               = "Het ingevoerde captcha is niet juist. Uw bericht is niet verzonden.";
+    
+    # 4.1.7
+    $lang['mediaLicenseEU']             = "Redactioneel gebruik"; //"Editorial Use";
+    
+    # 4.1.6
+    $lang['yourBill']                   = "Uw rekening"; //"Your Bill";
+    $lang['invoiceNumber']              = "Factuurnummer"; //"Invoice Number";
+    $lang['paymentThanks']              = "Bedankt voor uw betaling."; //"Thank you for your payment.";
+    $lang['msActive']                   = "Uw lidmaatschap is nu aktief."; //"Your membership is now active.";
+    $lang['today']                      = "Vandaag"; //"Today";
+    $lang['downloadsRemainingB']        = "Resterende downloads"; //"Downloads Remaining";
+    
+    # 4.1.4
+    $lang['link']                       = "Link";
+    $lang['optional']                   = "Optioneel"; //"Optional";
+    
+    # 4.1.3
+    $lang['keywordRelevancy']           = "Trefwoord relevantie"; //"Keyword Relevancy";
+    $lang['mediaLicenseEX']             = "Uitgebreide licentie"; //"Extended License";
+    
+    # 4.1.1
+    $lang['editMediaDetails']           = "Wijzig mediadetails"; //"Edit Media Details";
+    $lang['searchResults']              = "Zoek resultaten"; //"Search Results";
+    $lang['width']                      = "Breedte"; //"Width";
+    $lang['height']                     = "Hoogte"; //"Height";
+    $lang['hd']                         = "HD";
+    $lang['mediaProfile']               = "Profiel"; //"Profile";
+    $lang['photo']                      = "Foto"; //"Photo";
+    $lang['video']                      = "Video";
+    $lang['other']                      = "Anders"; //"Other";
+    $lang['thumbnail']                  = "Thumbnail";
+    $lang['videoSample']                = "Videosample";
+    $lang['attachFile']                 = "Voeg bestand toe"; //"Attach File";
+    $lang['fileAttached']               = "Bestand toegevoegd"; //"File Attached";
+    $lang['attachMessage']              = "Selecteer een bestand om aan dit profiel toe te voegen"; //"Please select a file to attach for this profile";
+    $lang['browse']                     = "Bladeren"; //"Browse";
+    $lang['uploadThumb']                = "Upload thumbnail";
+    $lang['uploadVideo']                = "Upload video voorbeeld"; //"Upload Video Preview";
+    
+    # 4.1
+    $lang['importSuccessMes']           = "Succesvol geimporteerd"; //"Imported successfully!";
+    $lang['forgotPassword']             = "Wachtwoord vergeten?"; //"Forgot Password?";
+    $lang['passwordSent']               = "Email is verzonden. Controleer uw email inbox voor dit bericht. Controleert u ook aub uw spam map."; //"Email was sent, please check your email inbox or spam folder for the message.";
+    $lang['passwordFailed']             = "Sorry, maar deze gebruiker bestaat niet. probeert u nogmaals uw email adres."; //"Sorry but that membership does not exists, please try to enter your email again.";
+    $lang['photoProfiles']              = "Foto profielen"; //"Photo Profiles";
+    $lang['videoProfiles']              = "Video profielen"; //"Video Profiles";
+    $lang['otherProfiles']              = "Andere profielen"; //"Other Profiles";
+    $lang['saving']                     = "Opslaan"; //"Saving";
+    $lang['myAccount']                  = "Mijn account"; //"My Account";
+    $lang['myGalleries']                = "Mijn galerijen"; //"My Galleries";
+    $lang['noMediaAlbum']               = "Er is geen media om te tonen"; //"There is no meida to display.";
+    $lang['editDetails']                = "Wijzig details"; //"Edit Details";
+    $lang['approvalStatus0']            = "in afwachting van goedkeuring"; //"Pending Approval";
+    $lang['approvalStatus1']            = "Goedgekeurd"; //"Approved";
+    $lang['approvalStatus2']            = "Afgekeurd"; //"Failed Approval";
+    $lang['noDetailsMes']               = "Er zijn geen nadere opmerkingen opgegeven!"; //"No further details were provided!";    
+    $lang['orphanedMedia']              = "Zwervende media"; //"Orphaned Media";
+    $lang['lastBatch']                  = "Laatst toegevoegde batch"; //"Last Batch Added";
+    $lang['deleteAlbumMes']             = "Verwijder dit album en alle media die zich daarin bevind."; //"Delete this album and all media it contains?";
+    $lang['mailInMedia']                = "Verstuur op CD/DVD"; //"Mail on CD/DVD";
+    $lang['deleteAlbum']                = "Verwijder album"; //"Delete Album";
+    $lang['editAlbum']                  = "Wijzig album"; //"Edit Album";
+    $lang['albumName']                  = "Albumnaam"; //"Album Name";
+    $lang['makePublic']                 = "Maak openbaar"; //"Make Public";
+    $lang['deleteMedia']                = "Verwijder media"; //"Delete Media";
+    $lang['deleteMediaMes']             = "Verwijder de geselecteerde mediabestanden?"; //"Delete the selected media files?";
+    $lang['selectAll']                  = "Alles selecteren"; //"Select All";
+    $lang['selectNone']                 = "Niets selecteren"; //"Select None";
+    $lang['noImportFilesMessage']       = "Er zijn geen bestanden te importeren!"; //"There are no files to import!";
+    $lang['selectAlbumMes']             = "Selecteer het album waar u de media aan wil toevoegen."; //"Select the album you wish to add this media to.";
+    $lang['selectGalleriesMes']         = "Selecteer de galerijen waar u de media aan wil toevoegen."; //"Select the galleries you wish to add this media to.";
+    $lang['chooseItemsMes']             = "Kies uit onderstaande lijst de artikelen die u wilt verkopen."; //"Choose the items to sell from the list below.";
+    $lang['ablum']                      = "Album";
+    $lang['pricing']                    = "Prijzen"; //"Pricing";
+    $lang['px']                         = "px";    
+    $lang['noSales']                    = "U heeft nog niets verkocht."; //"You have no sales.";
+    $lang['itemUpper']                  = "Artikel"; //"ITEM";
+    $lang['commissionUpper']            = "COMMISSIE"; //"COMMISSION";
+    $lang['addUpper']                   = "TOEVOEGEN"; //"ADD";
+    $lang['cmDeleteVerify']             = "Weet u zeker dat u deze media wilt verwijderen?"; //"Are you sure that you would like to delete this media?";
+    $lang['waitingForImport']           = "Media wacht op importeren."; //"Media Waiting For Import";
+    $lang['importSelectedUpper']        = "IMPORT GESELCTEERD"; //"IMPORT SELECTED";
+    $lang['addMediaDetails']            = "Mediadetails toevoegen"; //"Add Media Details";
+    $lang['uploadUpper']                = "UPLOAD";
+    $lang['noBioMessage']               = "Er is momenteel geen bio voor deze gebruiker beschikbaar."; //"Currently there is no bio for this member.";
+    $lang['collections']                = "Collecties"; //"Collections";
+    $lang['uploadMediaUpper']           = "UPLOAD NIEUWE MEDIA"; //"UPLOAD NEW MEDIA";
+    $lang['startUpper']                 = "START";
+    
+    # 4.0.9
+    $lang['displayName']                = "Toon naam"; //"Display Name";
+    $lang['newAlbum']                   = "Nieuw album"; //"New Album";
+    $lang['albums']                     = "Albums";
+    $lang['viewAllMedia']               = "BEKIJK ALLE MEDIA"; //"VIEW ALL MEDIA";
+    $lang['signUpNow']                  = "MELD JE NU AAN"; //"SIGN UP NOW";
+    
+    # 4.0.8        
+    $lang['exactMatch']                 = "Exacte overeenkomsten"; //"Exact Match";
+    $lang['mediaLabelMediaTypes']       = "Mediatypes";
+    
+    # 4.0.6
+    $lang['orderNumUpper']              = "BESTEL NUMMER"; // "ORDER NUMBER";
+    $lang['orderDateUpper']             = "BESTELDATUM"; // "ORDER DATE"; 
+    $lang['paymentUpper']               = "BETALING"; // "PAYMENT";    
+    
+    # 4.0.5
+    $lang['dateRange']                  = "Datumbereik"; // "Date Range";
+    $lang['resolution']                 = "Resolutie"; // "Resolution";
+    $lang['continueShopUpper']          = "DOORGAAN MET WINKELEN"; // "CONTINUE SHOPPING";
+    $lang['votes']                      = "Stemmen"; // "votes";
+    $lang['moreNews']                   = "Meer nieuws"; // "more news";
+    $lang['currentSearch']              = "Huidige zoekopdracht"; // "Current Search";
+    $lang['dates']                      = "Datums"; // "Dates";
+    $lang['licenseType']                = "Soort licentie"; // "License Type";
+    $lang['searchUpper']                = "ZOEKEN"; // "SEARCH";
+    $lang['from']                       = "Van"; // "From";
+    $lang['to']                         = "Tot"; // "To";
+    $lang['lightboxUpper']              = "LIGHTTAFEL"; // "LIGHTBOX";
+    $lang['itemsUpper']                 = "ARTIKELEN"; // "ITEMS";
+    $lang['createdUpper']               = "GEMAAKT"; // "CREATED";
+    $lang['na']                         = "Niet beschikbaar"; // "N/A"; 
+    $lang['galSortCDate']               = "Aanmaakdatum"; // "Date Created";
+        
+    # 4.0.4
+    $lang['digitalDownloads']           = "Digitale downloads"; // "Digital Downloads";
+
+    $lang['copyright']                  = "Auteursrecht & Copy; ".date("Y"); // "Copyright &copy; ".date("Y");
+    $lang['reserved']                   = "Alle rechten voorbehouden."; // "All Rights Reserved.";
+    
+    $lang['days']                       = "Dagen"; // "Days";
+    $lang['weeks']                      = "Weken"; // "Weeks";
+    $lang['months']                     = "Maanden"; // "Months";
+    $lang['years']                      = "Jaren"; // "Years";
+    $lang['weekly']                     = "Weken"; // "Weekly";
+    $lang['monthly']                    = "Maanden"; // "Monthly";
+    $lang['quarterly']                  = "Driemaandelijks"; // "Quarterly";
+    $lang['semi-annually']              = "Halfjaarlijks"; // "Semi-Annually";
+    $lang['annually']                   = "Jaarlijks"; // "Annually";    
+    $lang['guest']                      = "Gast"; // "Guest";    
+    $lang['login']                      = "Inloggen"; // "Login";    
+    $lang['loginCaps']                  = "INLOGGEN"; // "LOGIN";    
+    $lang['loginMessage']               = "Vul uw e-mailadres en wachtwoord in om in te loggen."; // "Please enter your email address and password below to login.";
+    $lang['loggedOutMessage']           = "U bent uitgelogd."; // "You have been logged out.";
+    $lang['loginFailedMessage']         = "Inloggen mislukt: Uw email of wachtwoord zijn onjuist."; // "Login Failed: Your email or password were incorrect.";
+    $lang['accountActivated']           = "Uw account is geactiveerd."; // "Your account has been activated.";
+    $lang['activationEmail']            = "Een verificatie e-mail is verzonden. Gebruik de link die u in uw e-mail ontvangen heeft om uw account te activeren."; // "A verification email has been sent. Please use the link you receive in your email to active your account.";
+    $lang['loginAccountClosed']         = "Dit account is gesloten of niet-actief."; // "This account is closed or inactive.";
+    $lang['loginPending']               = "Dit account is niet geverifieerd. Het moet eerst worden geverifieerd voordat u kunt inloggen."; // "This account is not verified. It must be verified before you can login.";
+    $lang['yesLogin']                   = "Ja, ik wil inloggen."; // "Yes, I would like to login.";
+    $lang['noCreateAccount']            = "Nee, ik wil een account aanmaken."; // "No, I would like to create an account.";
+    $lang['haveAccountQuestion']        = "Heeft u een account bij ons?"; // "Do you have an account with us?";    
+    $lang['collections']                = "Digitale collecties"; // "Digital Collections";
+    $lang['featuredCollections']        = "Aanbevolen digitale collecties"; // "Featured Digital Collections";    
+    $lang['similarMedia']               =  "Soortgelijke media"; // "Similar Media";    
+    $lang['paypal']                     = "PayPal"; // "PayPal";
+    $lang['checkMO']                    = "Cheque/Postwissel"; // "Check/Money Order";
+    $lang['paypalEmail']                = "PayPal Email"; // "PayPal Email";    
+    $lang['paid']                       = "Betaald"; // "Paid";
+    $lang['processing']                 = "In bewerking"; // "Processing";
+    $lang['unpaid']                     = "Onbetaald"; // "Unpaid";
+    $lang['refunded']                   = "Terugbetaald"; // "Refunded";
+    $lang['failed']                     = "Mislukt"; // "Failed";
+    $lang['cancelled']                  = "Geannuleerd"; // "Cancelled";
+    $lang['approved']                   = "Goedgekeurd"; // "Approved";
+    $lang['incomplete']                 = "Onvolledig"; // "Incomplete";
+    $lang['billLater']                  = "Factuureer Later"; // "Bill Later";
+    $lang['expired']                    = "Verlopen"; // "Expired";
+    $lang['unlimited']                  = "Onbeperkt"; // "Unlimited";
+    $lang['quantityAvailable']          = "Aantal beschikbaar"; // "Quantity Available";    
+    $lang['shipped']                    = "Verzonden"; // "Shipped";
+    $lang['notShipped']                 = "Niet verzonden"; // "Not Shipped";
+    $lang['backordered']                = "Nabesteld"; // "Backordered";    
+    $lang['taxIncMessage']              = "Inclusief BTW"; // "Including Tax";    
+    $lang['addTag']                     = "Trefwoord toevoegen"; // "Add Tag";
+    $lang['memberTags']                 = "Trefwoorden toegevoegd door leden"; // "Member Tags";
+    $lang['comments']                   = "Reacties"; // "Comments";
+    $lang['showMoreComments']           = "Toon alle Reacties"; // "Show All Comments";
+    $lang['noComments']                 = "Er zijn geen goedgekeurde reacties."; // "There are no approved comments.";
+    $lang['noTags']                     = "Er zijn geen goedgekeurde trefwoorden."; // "There are no approved tags.";
+    $lang['addNewComment']              = "Voeg reactie toe"; // "Add New Comment";
+    $lang['commentPosted']              = "Uw reactie werd gepubliceerd."; // "Your comment has been posted.";
+    $lang['commentPending']             = "Uw nieuwe reactie is ingediend en zal binnenkort worden goedgekeurd."; // "Your new comment has been submitted and will be approved shortly.";
+    $lang['commentError']               = "Er was een fout en uw reactie is niet ingediend."; // "There was an error and your comment was not submitted.";
+    $lang['tagPosted']                  = "Uw trefwoord werd gepubliceerd."; // "Your tag has been posted.";
+    $lang['tagPending']                 = "Uw nieuw trefwoord is ingediend en zal binnenkort worden goedgekeurd."; // "Your new tag has been submitted and will be approved shortly.";
+    $lang['tagError']                   = "Er was een fout en uw trefwoord is niet ingediend."; // "There was an error and your tag was not submitted.";
+    $lang['tagDuplicate']               = "Dit trefwoord bestaat reeds."; // "This tag already exists.";
+    $lang['tagNotAccepted']             = "Uw trefwoord werd niet geaccepteerd door ons systeem."; // "Your tag was not accepted by our system.";    
+    $lang['preferredLang']              = "Gewenste taal"; // "Preferred Language";
+    $lang['dateTime']                   = "Datum/tijd"; // "Date/Time";
+    $lang['preferredCurrency']          = "Gewenste valuta"; // "Preferred Currency";    
+    $lang['longDate']                   = "Lange datum"; // "Long Date";
+    $lang['shortDate']                  = "Korte datum"; // "Short Date";
+    $lang['numbDate']                   = "Genummerde datum"; // "Number Date";    
+    $lang['daylightSavings']            = "Zomertijd"; // "Daylight Savings";
+    $lang['dateFormat']                 = "Datumnotatie"; // "Date Format";
+    $lang['timeZone']                   = "Tijdzone"; // "Time Zone";
+    $lang['dateDisplay']                = "Datumweergave"; // "Date Display";
+    $lang['clockFormat']                = "Tijdnotatie"; // "Clock Format";
+    $lang['numberDateSep']              = "Scheidingsteken Genummerde Datum"; // "Number Date Separator";    
+    $lang['renew']                      = "VERNIEUW"; // "RENEW";    
+    $lang['noOrders']                   = "Er zijn geen bestellingen onder dit account."; // "There are no orders under this account.";
+    $lang['noDownloads']                = "Er zijn geen downloads onder dit account."; // "There have been no downloads under this account.";
+    $lang['noFeatured']                 = "Er zijn geen aanbevolen artikelen in dit gebied."; // "There are no featured items in this area.";    
+    $lang['promotions']                 = "Promoties"; // "Promotions";
+    $lang['noPromotions']               = "Er zijn geen kortingen of promoties op dit moment."; // "There are no coupons or promotions at this time.";    
+    $lang['autoApply']                  = "Automatisch toegepast bij het afrekenen."; // "Automatically applied at checkout.";
+    $lang['useCoupon']                  = "Gebruik de volgende code bij het afrekenen of klik op de knop Toepassen om deze korting/promotie te gebruiken"; // "Use the following code at checkout or click the apply button to use this coupon/promotion";    
+    $lang['couponApplied']              = "Een coupon of korting is toegepast op uw winkelwagentje."; // "A coupon or discount has been applied to your cart.";
+    $lang['couponFailed']               = "Deze coupon of korting is niet geldig."; // "This coupon or discount is invalid.";    
+    $lang['couponNeedsLogin']           = "U moet ingelogd zijn om deze coupon of korting te gebruiken."; // "You must be logged in to use this coupon or discount.";
+    $lang['couponMinumumWarn']          = "Uw subtotaal voldoet niet aan de vereiste om deze coupon of korting te gebruiken."; // "Your subtotal doesn't meet the requirement to use this coupon or discount.";
+    $lang['couponAlreadyUsed']          = "U kunt maar één keer gebruik maken van deze coupon of korting."; // "You can only use this coupon or discount once.";
+    $lang['couponLoginWarn']            = "U moet ingelogd zijn om deze coupon of korting te gebruiken."; // "You must be logged in to use this coupon or discount.";    
+    $lang['checkout']                   = "AFREKENEN"; // "CHECKOUT";
+    $lang['continue']                   = "VERDER"; // "CONTINUE";    
+    $lang['shipTo']                     = "Verzenden naar"; // "Ship To";
+    $lang['billTo']                     = "Factureer aan"; // "Bill To";
+//$lang['mailTo']                = "Mail Payment To";
+    $lang['galleries']                  = "Galerijen"; // "Galleries";
+    $lang['chooseGallery']              = "Kies een galerij om de inhoud te bekijken."; // "Choose a gallery below to view it's contents.";
+    $lang['galleryLogin']               = "Vul het wachtwoord in voor deze galerij om in te loggen."; // "Please enter the password for this gallery below to login.";
+    $lang['galleryWrongPass']           = "Het ingevoerde wachtwoord voor deze galerij is onjuist."; // "The password you entered for this gallery was incorrect.";    
+    $lang['newestMedia']                = "Nieuwste media"; // "Newest Media";
+    $lang['popularMedia']               = "Populaire media"; // "Popular Media";    
+    $lang['contributors']               = "Aanbieders"; // "Contributors";
+    $lang['contUploadNewMedia']         = "Upload nieuwe media"; // "Upload New Media";
+    $lang['contViewSales']              = "Bekijk verkopen"; // "View Sales";
+    $lang['contPortfolio']              = "Mijn portfolio"; // "My Portfolio";
+    $lang['contGalleries']              = "Mijn galerijen"; // "My Galleries";
+    $lang['contMedia']                  = "Mijn media"; // "My Media";    
+    $lang['aboutUs']                    = "Over ons"; // "About Us";    
+    $lang['news']                       = "Nieuws"; // "News";
+    $lang['noNews']                     = "Er zijn geen nieuwsberichten op dit moment."; // "There are no news articles at this time.";    
+    $lang['termsOfUse']                 = "Gebruiksovereenkomst"; // "Terms Of Use";
+    $lang['privacyPolicy']              = "Privacybeleid"; // "Privacy Policy";
+    $lang['purchaseAgreement']          = "Koopovereenkomst"; // "Purchase Agreement";    
+    $lang['iAgree']                     = "Ik ga akkoord met de"; // "I agree to the";    
+    $lang['createAccount']              = "Nieuwe account aanmaken"; // "Create An Account";
+    $lang['createAccountMessage']       = "Vul het formulier hieronder in om een nieuwe account aan te maken."; // "Please fill out the form below to create a new account.";    
+    $lang['contactUs']                  = "Contact"; // "Contact Us";
+    $lang['contactMessage']             = "Bedankt voor uw bericht. We zullen zo spoedig mogelijk uw vraag beantwoorden."; // "Thank you for contacting us. We will respond shortly.";
+    $lang['contactError']               = "Het contact formulier is niet correct ingevuld. Uw bericht is niet verzonden."; // "The contact form was not correctly filled out. Your message was not sent.";
+    $lang['contactIntro']               = "Gebruik het formulier hieronder om ons te contacteren. Wij zullen zo snel mogelijk reageren."; // "Please use the form below to contact us. We will respond as soon as possible.";
+    $lang['contactEmailSubject']        = "Vraag van contactformulier"; // "Question From Contact Form";
+    $lang['contactFromName']            = "Contactformulier"; // "Contact Form";    
+    $lang['prints']                     = "Afdrukken"; // "Prints";
+    $lang['featuredPrints']             = "Aanbevolen afdrukken"; // "Featured Prints";    
+    $lang['newBill']                    = "Een nieuwe factuur is aangemaakt voor dit lidmaatschap. Dit lidmaatschap wordt niet geactiveerd of verlengd totdat de rekening is betaald. Alle openstaande facturen voor lidmaatschapsgeld zijn geannuleerd."; // "A new bill has been created for this membership. This membership will not become active or renew until the bill is paid. Any outstanding bills for membership fees have been cancelled.";
+    $lang['accountInfo']                = "Account info"; // "Account Info";
+    $lang['accountUpdated']             = "Uw account info is bijgewerkt."; // "Your account information has been updated.";
+    $lang['editAccountInfo']            = "Wijzig uw account info"; // "Edit Your Account Info";
+    $lang['editAccountInfoMes']         = "Wijzig uw account info hieronder en klik op de knop opslaan om uw wijzigingen op te slaan."; // "Edit your account info below and click the save button to save your changes.";    
+    $lang['accountInfoError1']          = "Wachtwoord en wachtwoord bevestiging komen niet overeen!"; // "Password and verify password do not match!";
+    $lang['accountInfoError5']          = "Het huidige ingevoerde wachtwoord is onjuist!"; // "The current password you entered is incorrect!";
+    $lang['accountInfoError2']          = "Uw wachtwoord moet minstens 6 tekens bevatten!"; // "Your password must be at least 6 characters!";
+    $lang['accountInfoError12']         = "Dit emailadres is al in gebruik!"; // "This email address is already in use!";
+    $lang['accountInfoError13']         = "Uw email was niet geaccepteerd!"; // "Your email was not accepted!";
+    $lang['accountInfoError3']          = "Vul de hierboven afgebeelde woorden in!"; // "Enter the words above!";
+    $lang['accountInfoError4']          = "Captcha woorden zijn onjuist!"; // "Captcha words were incorrect!";
+    $lang['readAgree']                  = "Ik las de"; // "I have read the";    
+    $lang['agreements']                 = "overeenkomsten"; // "Agreements";    
+    $lang['poweredBy']                  = "Powered By"; // "Powered By";
+    $lang['captchaAudio']               = "Vul de nummers in die je hoort"; // "Enter the numbers you hear";
+    $lang['captchaIncorrect']           = "Verkeerd, probeer het opnieuw"; // "Incorrect please try again";
+    $lang['captchaPlayAgain']           = "Speel opnieuw"; // "Play again";
+    $lang['captchaDownloadMP3']         = "Download in MP3-formaat"; // "Download in MP3 format";
+    $lang['captcha']                    = "Captcha"; // "Captcha";
+    $lang['subHeaderID']                = "ID"; // "ID";
+    $lang['subHeaderSubscript']         = "ABONNEMENT"; // "SUBSCRIPTION";
+    $lang['subHeaderExpires']           = "VERLOOPT"; // "EXPIRES";
+    $lang['subHeaderDPD']               = "DOWNLOADS PER DAG RESTEREND"; // "DOWNLOADS PER DAY/REMAINING";
+    $lang['subHeaderStatus']            = "STATUS"; // "STATUS";
+    $lang['downloads']                  = "Downloads"; // "Downloads";    
+    $lang['thankRequest']               = "Dank voor uw aanvraag. We zullen spoedig contact met u opnemen."; // "Thank you for your request. We will contact you shortly.";
+    $lang['pleaseContactForm']          = "Neem contact met ons op voor de prijs van dit bestand door het onderstaand formulier in te invullen"; // "Please contact us for pricing on this file by filling out the following form";
+    $lang['downWithSubscription']       = "Downloaden met abonnement"; // "Download Using Subscription";    
+    $lang['noInstantDownload']          = "Dit bestand is niet beschikbaar voor directe download. Het zal worden geleverd door de website beheerder via email wanneer het wordt aangevraagd of gekocht."; // "This file is not available for instant download. It will be delivered by the site admin via email when requested or purchased.";
+    
+    // Tickets
+    $lang['newTicketsMessage']          = "nieuwe of bijgewerkte tickets"; // "new or updated tickets";
+    $lang['emptyTicket']                = "Dit ticket is leeg."; // "This ticket is empty.";
+    $lang['messageID']                  = "Bericht ID"; // "Message ID";
+    $lang['ticketNoReplies']            = "Dit ticket is gesloten en kan geen nieuwe antwoorden aanvaarden."; // "This ticket is closed and cannot accept any new replies.";
+    $lang['ticketUpdated']              = "Dit ticket is bijgewerkt!"; // "This ticket has been updated!";
+    $lang['ticketClosed']               = "Dit ticket is gesloten!"; // "This ticket has been closed!";
+    $lang['closeTicket']                = "Sluit ticket"; // "Close Ticket";
+    $lang['newTicket']                  = "Nieuw support ticket"; // "New Support Ticket";
+    $lang['newTicketButton']            = "Nieuw ticket"; // "NEW TICKET";
+    $lang['ticketUnreadMes']            = "Ticket bevat ongelezen/nieuwe berichten"; // "Ticket contains unread/new messages";
+    $lang['ticketUnderAccount']         = "Er zijn geen support-tickets onder deze account"; // "There are no support tickets under this account";    
+    $lang['ticketSubmitted']            = "Uw support-ticket is ingediend. We zullen spoedig antwoorden."; // "Your support ticket has been submitted. We will reply shortly.";
+    
+    $lang['mediaNotElidgiblePack']      = "Deze media komt niet in aanmerking om te worden toegewezen aan een pakket!"; // "This media is not elidgible to be assigned to any packages!";
+    $lang['noBills']                    = "Er zijn geen facturen onder deze account."; // "There are no bills under this account.";    
+    $lang['lightbox']                   = "Lichttafel"; // "Lightbox";
+    $lang['noLightboxes']               = "U heeft geen lichttafels."; // "You have no lightboxes.";
+    $lang['lightboxDeleted']            = "Lichttafel is verwijderd."; // "Lightbox has been deleted.";
+    $lang['lbDeleteVerify']             = "Weet u zeker dat u deze lichttafel wil verwijderen?"; // "Are you sure that you would like to delete this lightbox?";
+    $lang['newLightbox']                = "NIEUWE LICHTTAFEL"; // "NEW LIGHTBOX";
+    $lang['lightboxCreated']            = "Uw nieuwe lichttafel is aangemaakt."; // "Your new lightbox has been created.";
+    $lang['addToLightbox']              = "Voeg toe aan lichttafel"; // "Add To Lightbox";
+    $lang['createNewLightbox']          = "Maak een nieuwe lichttafel aan"; // "Create A New Lightbox";
+    $lang['editLightbox']               = "Bewerk deze lichttafel"; // "Edit This Lightbox";
+    $lang['addNotes']                   = "Opmerkingen toevoegen"; // "Add Notes";
+    $lang['editLightboxItem']           = "Bewerk Lichttafel Artikel"; // "Edit Lightbox Item";
+    $lang['removeFromLightbox']         = "VERWIJDEREN VAN LICHTTAFEL"; // "REMOVE FROM LIGHTBOX";    
+    $lang['savedChangesMessage']        = "Uw wijzigingen zijn opgeslagen."; // "Your changes have been saved.";    
+    $lang['noSubs']                     = "Er zijn geen abonnementen onder dit account."; // "There are no subscriptions under this account.";    
+    $lang['unpaidBills']                = "onbetaalde facturen"; // "unpaid bills";    
+    $lang['notices']                    = "Aankondigingen"; // "Notices";    
+    $lang['subscription']               = "Abonnement"; // "Subscription";    
+    $lang['assignToPackage']            = "Toewijzen aan pakket"; // "Assign To Package";
+    $lang['startNewPackage']            = "Start een nieuw pakket"; // "Start a new package";
+    $lang['packagesInCart']             = "Paketten in uw winkelwagentje"; // "Packages in your cart";    
+    $lang['id']                         = "ID"; // "ID";
+    $lang['summary']                    = "Onderwerp"; // "Summary";
+    $lang['status']                     = "Status"; // "Status";
+    $lang['lastUpdated']                = "Laatst bijgewerkt"; // "Last Updated";
+    $lang['opened']                     = "Geopend"; // "Opened";
+    $lang['reply']                      = "Beantwoord"; // "Reply";    
+    $lang['required']                   = "Verplicht"; // "Required";    
+    $lang['bills']                      = "Facturen"; // "Bills";
+    $lang['orders']                     = "Bestellingen"; // "Orders";
+    $lang['downloadHistory']            = "Download geschiedenis"; // "Download History";
+    $lang['supportTickets']             = "Support tickets"; // "Support Tickets";
+    $lang['order']                      = "Bestel"; // "Order";    
+    $lang['packages']                   = "Paketten"; // "Packages";
+    $lang['featuredPackages']           = "Aanbevolen paketten"; // "Featured Packages";    
+    $lang['products']                   = "Artikelen"; // "Products";
+    $lang['featuredProducts']           = "Aanbevolen artikelen"; // "Featured Products";    
+    $lang['subscriptions']              = "Abonnementen"; // "Subscriptions";
+    $lang['featuredSubscriptions']      = "Aanbevolen abonnementen"; // "Featured Subscriptions";    
+    $lang['yourCredits']                = "UW<br />credits"; // "YOUR<br />CREDITS";
+    $lang['featuredCredits']            = "Aanbevolen creditpaketten"; // "Featured Credits Packages";    
+    $lang['media']                      = "MEDIA"; // "MEDIA";
+    $lang['mediaNav']                   = "Media"; // "Media";
+    $lang['featuredMedia']              = "Aanbevolen media"; // "Featured Media";    
+    $lang['featuredItems']              = "Aanbevolen"; // "Featured";    
+    $lang['showcasedContributors']      = "Tentoongestelde aanbieders"; // "Showcased Contributors";    
+    $lang['galleryLogin']               = "Galerij login"; // "Gallery Login";    
+    $lang['forum']                      = "Forum"; // "Forum";
+    $lang['randomMedia']                = "Willekeurige media"; // "Random Media";
+    $lang['language']                   = "Taal"; // "Language";    
+    $lang['priceCreditSep']             = "of"; // "or";    
+    $lang['viewCollection']             = "BEKIJK COLLECTIE"; // "VIEW COLLECTION";    
+    $lang['loggedInAs']                 = "U bent ingelogd als"; // "You are logged in as";    
+    $lang['editProfile']                = "ACCOUNT WIJZIGEN"; // "EDIT ACCOUNT";    
+    $lang['noItemCartWarning']          = "U moet een afbeelding selecteren alvorens u het kan toevoegen aan het winkelwagentje"; // "You must select a photo before you can add this item to your cart!";
+    $lang['cartTotalListWarning']       = "Deze waarden zijn slechts schattingen en kunnen enigszins wijzigen als gevolg van valuta-schommelingen en afronding."; // "These values are estimates only and may change slightly due to currency fluctuation and rounding.";
+    $lang['applyCouponCode']            = "Gebruik kortingscode"; // "Apply Coupon Code";
+    $lang['billMeLater']                = "Factureer mij later"; // "Bill Me Later";
+    $lang['billMeLaterDescription']     = "Wij zullen u maandelijks factureren voor uw aankopen."; // "We will bill you monthly for your purchases.";
+    $lang['shippingOptions']            = "Verzendopties"; // "Shipping Options";
+    $lang['paymentOptions']             = "Betalingsopties"; // "Payment Options";
+    $lang['chooseCountryFirst']         = "Kies eerst het land"; // "Choose Country First";
+    $lang['paymentCancelled']           = "Uw betaling is geannuleerd. Als u wilt kunt u opnieuw proberen af te rekenen."; // "Your payment has been cancelled. If you would like you can try to checkout again."; 
+    $lang['paymentDeclined']            = "Uw betaling is geweigerd. Als u wilt kunt u opnieuw proberen af te rekenen."; // "Your payment has been declined. If you would like you can try to checkout again.";         
+    $lang['generalInfo']                = "Persoonlijke info"; // "Personal Info";
+    $lang['membership']                 = "Lidmaatschap"; // "Membership";
+    $lang['preferences']                = "Voorkeuren"; // "Preferences";
+    $lang['address']                    = "Adres"; // "Address";
+    $lang['actions']                    = "Acties"; // "Actions";
+    $lang['changePass']                 = "Wachtwoord wijzigen"; // "Change Password";
+    $lang['changeAvatar']               = "Wijzig Avatar"; // "Change Avatar";
+    $lang['bio']                        = "Bio"; // "Bio";
+    $lang['contributorSettings']        = "Aanbieder Instellingen"; // "Contributor Settings";
+    $lang['edit']                       = "WIJZIG"; // "EDIT";    
+    $lang['leftToFill']                 = "Artikelen over om te vullen"; // "items left to fill";    // "items left TO FILL [your cart]" = "artikelen over om [uw winkelwagentje] TE VULLEN"
+    $lang['commissionMethod']           = "Commissie betaalmethode"; // "Commission Payment Method"; 
+    $lang['commission']                 = "Commissie"; // "Commission";    
+    $lang['signupDate']                 = "Lid sinds"; // "Member Since";
+    $lang['lastLogin']                  = "Laatst ingelogd"; // "Last Login";    
+    $lang['clientName']                 = "Naam klant"; // "Client Name";
+    $lang['eventCode']                  = "Code evenement"; // "Event Code";
+    $lang['eventDate']                  = "Datum evenement"; // "Event Date";
+    $lang['eventLocation']              = "Locatie evenement"; // "Event Location";    
+    $lang['viewPackOptions']            = "Bekijk inhoud van de verpakking & opties"; // "View Package Contents & Options";
+    $lang['viewOptions']                = "Bekijk opties"; // "View Options";    
+    $lang['remove']                     = "VERWIJDER"; // "REMOVE";
+    $lang['productShots']               = "Produkt opnames"; // "Product Shots";
+    $lang['currentPass']                = "Huidig wachtwoord"; // "Current Password";
+    $lang['newPass']                    = "Nieuw wachtwoord"; // "New Password";
+    $lang['vNewPass']                   = "Bevestig nieuw wachtwoord"; // "Verify New Password";
+    $lang['verifyPass']                 = "Bevestig wachtwoord"; // "Verify Password";
+    $lang['firstName']                  = "Voornaam"; // "First Name";
+    $lang['lastName']                   = "Achternaam"; // "Last Name";
+    $lang['location']                   = "Locatie"; // "Location";
+    $lang['memberSince']                = "Lid sinds"; // "Member Since";
+    $lang['portfolio']                  = "Portfolio"; // "PORTFOLIO";
+    $lang['profile']                    = "Profiel"; // "Profile";
+    $lang['address']                    = "Adres"; // "Address";
+    $lang['city']                       = "Stad/Dorp"; // "City";
+    $lang['state']                      = "Staat/Provincie"; // "State/Province";
+    $lang['zip']                        = "Postcode"; // "ZIP/Postal Code";
+    $lang['country']                    = "Land"; // "Country";
+    $lang['save']                       = "OPSLAAN"; //"SAVE";
+    $lang['add']                        = "TOEVOEGEN"; // "ADD";
+    $lang['companyName']                = "Bedrijfsnaam"; // "Company Name";
+    $lang['accountStatus']              = "Accountstatus"; // "Account Status";
+    $lang['website']                    = "Website"; // "Website";
+    $lang['phone']                      = "Telefoon"; // "Phone";
+    $lang['email']                      = "Email"; // "Email";
+    $lang['name']                       = "Naam"; // "Name";
+    $lang['submit']                     = "VERZENDEN"; // "SUBMIT";    
+    $lang['message']                    = "Bericht"; // "Message";    
+    $lang['question']                   = "Vraag"; // "Question";
+    $lang['password']                   = "Wachtwoord"; // "Password";    
+    $lang['members']                    = "Leden"; // "Members";
+    $lang['visits']                     = "Bekeken"; // "Visits";    
+    $lang['logout']                     = "Uitloggen"; // "Logout";
+    $lang['lightboxes']                 = "Lichttafels"; // "Lightboxes";
+    $lang['cart']                       = "Uw Winkelwagentje"; // "Your Cart";
+    $lang['cartItemAdded']              = "Een artikel is toegevoegd aan uw winkelwagentje."; // "An item has been added to your cart.";
+    $lang['includesTax']                = "Inclusief BTW"; // "Includes TAX/VAT";
+    $lang['addToCart']                  = "TOEVOEGEN aan WINKELWAGENTJE"; // "ADD TO CART";
+    $lang['items']                      = "Artikelen"; // "Items";
+    $lang['item']                       = "Artikel"; // "Item";
+    $lang['qty']                        = "Hoeveelheid"; // "Qty";
+    $lang['price']                      = "Prijs"; // "Price";
+    $lang['more']                       = "Meer"; // "More";
+    $lang['moreInfo']                   = "Meer info"; // "More Info";
+    $lang['back']                       = "Terug"; // "Back";
+    $lang['none']                       = "Geen"; // "None";
+    $lang['details']                    = "Details"; // "Details";
+    $lang['options']                    = "Opties"; // "Options";
+    $lang['page']                       = "Pagina"; // "Page";
+    $lang['ratingSubmitted']            = "Beoordeling is ingediend"; // "Rating Submitted";
+    $lang['noMedia']                    = "Deze galerij is leeg"; // "This gallery is empty";
+    $lang['itemsTotal']                 = "Artikelen in totaal"; // "items total";
+    $lang['of']                         = "van"; // "of";
+    $lang['view']                       = "BEKIJK"; // "VIEW";
+    $lang['apply']                      = "TOEPASSEN"; // "APPLY";
+    $lang['currency']                   = "Wijzig valuta"; // "change currency";
+    $lang['active']                     = "Actief"; // "Active";
+    $lang['pending']                    = "In afwachting"; // "Pending";
+    $lang['freeTrial']                  = "Gratis Proefversie"; // "Free Trial";
+    $lang['setupFee']                   = "Installatiekosten"; // "Setup Fee";
+    $lang['free']                       = "Gratis"; // "Free";
+    $lang['open']                       = "Open"; // "Open";
+    $lang['close']                      = "Sluit"; // "Close";
+    $lang['closed']                     = "Gesloten"; // "Closed";
+    $lang['by']                         = "Door"; // "By";
+    $lang['download']                   = "Download"; // "Download";
+    $lang['downloadUpper']              = "DOWNLOAD"; // "DOWNLOAD";
+    $lang['KB']                         = "K"; // "K";
+    $lang['MB']                         = "MB"; // "MB";
+    $lang['files']                      = "Bestanden"; // "Files";
+    $lang['unknown']                    = "Onbekend"; // "Unknown";
+    $lang['freeDownload']               = "Gratis download"; // "Free Download";
+    $lang['prevDown']                   = "Vorige download"; // "Previous Download";
+    $lang['pay']                        = "BETAAL"; // "PAY";
+    $lang['purchaseCredits']            = "KOOP Credit"; // "BUY CREDITS";
+    $lang['purchaseSub']                = "SCHAF EEN ABONNEMENT AAN"; // "PURCHASE A SUBSCRIPTION";
+    $lang['hour']                       = "Uur"; // "Hour";
+    $lang['slash']                      = "Schuine Streep"; // "Slash";
+    $lang['period']                     = "Punt"; // "Period";
+    $lang['dash']                       = "Streepje"; // "Dash";
+    $lang['gmt']                        = "GMT"; // "GMT";
+    $lang['avatar']                     = "Avatar"; // "Avatar";
+    $lang['delete']                     = "VERWIJDER"; // "DELETE";
+    $lang['uploadAvatar']               = "Upload avatar"; // "Upload Avatar";
+    $lang['welcome']                    = "Welkom"; // "Welcome";
+    $lang['expires']                    = "Verloopt"; // "Expires";
+    $lang['msExpired']                  = "Het volgende lidmaatschap is verlopen"; // "The following membership has expired";
+    $lang['newSales']                   = "nieuwe verkopen sinds u voor het laatst inlogde"; // "new sales since you last logged in";
+    $lang['never']                      = "Nooit"; // "Never";
+    $lang['yes']                        = "JA"; // "YES";
+    $lang['no']                         = "NEE"; // "NO";
+    $lang['create']                     = "MAAK AAN"; // "CREATE";
+    $lang['cancel']                     = "ANNULEER"; // "CANCEL";
+    $lang['notes']                      = "Opmerkingen"; // "Notes";
+    $lang['update']                     = "BIJWERKEN"; // "UPDATE";
+    $lang['each']                       = "elk"; // "each";
+    $lang['enterKeywords']              = "Voer zoekterm(en) in"; // "Enter Keyword(s)";
+    $lang['send']                       = "VERZEND"; // "SEND";
+    $lang['emailTo']                    = "Email Naar"; // "Email To";
+    $lang['yourName']                   = "Uw naam"; // "Your Name";
+    $lang['yourEmail']                  = "Uw email"; // "Your Email";
+    $lang['emailToFriend']              = "Stuur een link van deze afbeedling per email"; // "Email Link To This Media";
+    $lang['emailToFriendSent']          = "Een email is verstuurd! U kunt nog een email verzenden of dit venster sluiten."; // "An email has been sent! You can send another or close this window.";
+    $lang['linkSentBy']                 = "Een link naar een foto of video is aan u verzonden door"; // "A link to a photo or video has been sent to you by";
+    $lang['newPackageMessage']          = "Start een nieuw pakket hieronder of selecteer een soortgelijk pakket reeds in uw winkelwagentje"; // "Start a new package below or select a similar package already in your cart";
+    $lang['warning']                    = "Waarschuwing"; // "Warning!";
+    $lang['estimated']                  = "Geschat"; // "Estimated";
+    $lang['doneUpper']                  = "GEDAAN"; // "DONE";
+    $lang['returnToSiteUpper']          = "TERUG NAAR DE SITE"; // "RETURN TO SITE";
+    $lang['chooseCountryFirst']         = "Kies eerst het land"; // "Choose Country First";
+    $lang['advancedSearch']             = "Uitgebreid zoeken"; // "Advanced Search";
+    $lang['eventSearch']                = "Zoeken in evenement"; // "Event Search";    
+    $lang['AND']                        = "EN"; // "AND";
+    $lang['OR']                         = "OF"; // "OR";
+    $lang['NOT']                        = "NIET"; // "NOT";
+    $lang['noAccess']                   = "U heeft geen toegang om dit gebied te bekijken."; // "You do not have access to view this area.";    
+    $lang['siteStats']                  = "Websitestatistieken"; // "Site Stats";
+    $lang['membersOnline']              = "Leden Online"; // "Members Online";
+    $lang['minutesAgo']                 = "minuten geleden"; // "minutes ago";
+    $lang['seconds']                    = "Seconden"; // "Seconds";    
+    $lang['megabytesAbv']               = "MB"; // "MB";    
+    $lang['downWithSub']                = "Downloaden met abonnement"; // "Download Using Subscription";
+    $lang['downloadsRemaining']         = "Downloads resterend vandaag"; // "Downloads Remaining Today";
+    $lang['requestDownloadSuccess']     = "Wij hebben uw aanvraag voor dit bestand ontvangen en zullen spoedig contact met u opnemen."; // "We have received your request for this file and will contact you shortly.";    
+    $lang['mediaLicenseNFS']            = "Niet te koop"; // "Not For Sale";
+    $lang['mediaLicenseRF']             = "Rechten-vrij"; // "Royalty Free";
+    $lang['mediaLicenseRM']             = "Beheerde rechten"; // "Rights Managed";
+    $lang['mediaLicenseFR']             = "Gratis"; // "Free";
+    $lang['mediaLicenseCU']             = "Neem contact op"; // "Contact Us";    
+    $lang['original']                   = "Origineel"; // "Original";    
+    $lang['prevDownloaded']             = "U heeft dit bestand eerder gedownload. Er zijn geen kosten om het opnieuw te downloaden."; // "You have previously downloaded this file. There is no charge to download it again.";
+    $lang['instantDownload']            = "Directe download"; // "Instant Download";
+    $lang['requestDownload']            = "AANVRAAG DOWNLOAD"; // "REQUEST DOWNLOAD";
+    $lang['request']                    = "AANVRAAG"; // "REQUEST";
+    $lang['enterEmail']                 = "Vul uw email adres in"; // "Enter Your Email Address";    
+    $lang['license']                    = "Licentie"; // "License";
+    $lang['inches']                     = "Inches"; // "Inches";
+    $lang['centimeters']                = "Centimeters"; // "Centimeters";
+    $lang['dpi']                        = "dpi"; // "dpi";    
+    $lang['noSimilarMediaMessage']      = "Geen soortgelijke media gevonden."; // "No similar media was found.";
+    $lang['backUpper']                  = "TERUG"; // "BACK";
+    $lang['nextUpper']                  = "VOLGENDE"; // "NEXT";
+    $lang['prevUpper']                  = "VORIGE"; // "PREVIOUS";
+    $lang['curGalleryOnly']             = "Enkel in de huidige Gallerij "; // "Current Gallery Only";
+    $lang['sortBy']                     = "Sorteren op"; // "Sort By";
+    $lang['galSortColor']               = "Kleur"; // "Color";
+    $lang['galSortDate']                = "Datum toegevoegd"; // "Date Added";
+    $lang['galSortID']                  = "ID"; // "ID";
+    $lang['galSortTitle']               = "Titel"; // "Title";
+    $lang['galSortFilename']            = "Bestandsnaam"; // "Filename";
+    $lang['galSortFilesize']            = "Bestandsgrootte"; // "File Size";
+    $lang['galSortSortNum']             = "Sorteernummer"; // "Sort Number";
+    $lang['galSortBatchID']             = "Batch ID"; // "Batch ID";
+    $lang['galSortFeatured']            = "Aanbevolen"; // "Featured";
+    $lang['galSortWidth']               = "Breedte"; // "Width";
+    $lang['galSortHeight']              = "Hoogte"; // "Height";
+    $lang['galSortViews']               = "Bekeken"; // "Views";
+    $lang['galSortAsc']                 = "Oplopend"; // "Ascending";
+    $lang['galSortDesc']                = "Aflopend"; // "Descending";
+    $lang['mediaIncludedInColl']        = "Dit media bestand is inbegrepen in de volgende collecties."; // "This media file is included in the following collections.";    
+    $lang['billHeaderInvoice']          = "FACTUUR"; // "INVOICE";
+    $lang['billHeaderDate']             = "Factuurdatum"; // "BILL DATE";
+    $lang['billHeaderDueDate']          = "VERVALDAUTUM"; // "DUE DATE";
+    $lang['billHeaderTotal']            = "TOTAAL"; // "TOTAL";
+    $lang['billHeaderStatus']           = "STATUS"; // "STATUS";
+    
+    // Cart
+    $lang['creditsWarning']             = "U heeft niet genoeg Credits om af te rekenen. Gelieve in te loggen of Credits aan uw winkelwagentje toe te voegen."; // "You do not have enough credits to checkout. Please login or add credits to your cart.";
+    $lang['subtotalWarning']            = "Het minimale aankoop bedrag om af te rekenen is:"; // "The minimum purchase in order to checkout is:";
+    $lang['pleaseWait']                 = "Een moment geduld aub, wij verwerken uw aanvraag!"; // "Please wait while we process your request!"; // aanvraag
+    $lang['billMailinThanks']           = "Verstuur uw cheque of postwissel voor het volgende bedrag naar het vermelde adres. Zodra de betaling is ontvangen zullen wij uw factuur als betaald markeren."; // "Please mail your check or money order for the following amount to the address listed. Once payment is received we will mark your bill as paid.";
+    $lang['mailinRef']                  = "Gelieve te verwijzen naar het volgende nummer met uw betaling"; // "Please reference the following number with your payment";
+    $lang['subtotal']                   = "Subtotaal"; // "Subtotal";
+    $lang['shipping']                   = "Verzending"; // "Shipping";
+    $lang['discounts']                  = "Kortingen/coupons"; // "Discounts/Coupons";
+    $lang['total']                      = "Totaal"; // "Total";
+    $lang['creditsSubtotal']            = "Subtotaal credits"; // "Credits Subtotaal";
+    $lang['creditsDiscounts']           = "Credit kortingen"; // "Credit Discounts";
+    $lang['credits']                    = "Credits"; // "Credits";
+    $lang['reviewOrder']                = "Controleer uw bestelling"; // "Review Your Order";
+    $lang['payment']                    = "Betaling"; // "Payment";
+    $lang['cartNoItems']                = "U heeft geen artikelen in uw winkelwagen!"; // "You have no items in your cart!";
+    $lang['enterShipInfo']              = "Vul uw verzend en factuurgegevens hieronder in"; // "Please enter your shipping and billing info below";
+    $lang['sameAsShipping']             = "Hetzelfde als verzendadres"; // "Same as shipping address";
+    $lang['differentAddress']           = "Geef een ander adres op"; // "Provide a different address";
+    $lang['noShipMethod']               = "Geen verzendmethode om deze artikelen te leveren."; // "No shipping methods exist to ship these items.";    
+    $lang['choosePaymentMethod']        = "Kies een betalingsmethode"; // "Please Choose A Payment Method";    
+    $lang['discountCode']               = "KORTINGSCODE"; // "DISCOUNT CODE";
+    $lang['use']                        = "Gebruik"; // "Use";
+    $lang['continueNoAccount']          = "of ga onderstaand door zonder een account"; // "or continue without an account below";
+    
+    
+    // Order
+    $lang['yourOrder']                  = "Uw bestelling"; // "Your Order";
+    $lang['viewInvoice']                = "BEKIJK FACTUUR"; // "VIEW INVOICE";
+    $lang['totalsShown']                = "Totalen in"; // "Totals shown in";
+    $lang['downloadExpired']            = "Download verlopen"; // "Download Expired";
+    $lang['downloadExpiredMes']         = "Deze download link is verlopen. Neem contact met ons om het te reactiveren."; // "This download link has expired. Please contact us to have it reactivated.";
+    $lang['downloadMax']                = "Maximum downloads overschreden"; // "Max Downloads Exceeded";
+    $lang['downloadMaxMes']             = "U heeft het maximum aantal toegestaane downloads bereikt voor dit aangekochte bestand. Neem contact met ons om de download link te reactiveren."; // "You have reached the maximum number of downloads allowed for this purchased file. Please contact us to have the download link reactivated.";
+    $lang['downloadNotApproved']        = "Bestelling is niet goedgekeurd"; // "Order Not Approved";
+    $lang['downloadNotApprovedMes']     = "U kan dit bestand niet downloaden voordat uw bestelling is goedgekeurd. Probeer het later terug."; // "You cannot download this file until your order has been approved. Please check back shortly.";    
+    $lang['downloadNotAvail']           = "Directe download niet beschikbaar"; // "Instant Download Not Available";
+    $lang['downloadNotAvailMes']        = "Dit bestand is niet beschikbaar voor directe download. Gebruik de onderstaande Aanvraagknop om dit bestand naar u gemaild te krijgen."; // "This file is not available for instant download. Please use the request button below to have this file be emailed to you.";
+    $lang['orderNumber']                = "Bestelnummer"; // "Order Number";
+    $lang['orderPlaced']                = "Besteling geplaatst"; // "Order Placed"; 
+    $lang['orderStatus']                = "Bestelstatus"; // "Order Status";
+    $lang['paymentStatus']              = "Betalingsstatus"; // "Payment Status";
+    
+    
+    // IPTC
+    $lang['iptc']                       = "IPTC"; // "IPTC";
+    $lang['iptc_title']                 = "Titel"; // "Title";
+    $lang['iptc_description']           = "Beschrijving"; // "Description";
+    $lang['iptc_instructions']          = "Instructies"; // "Instructions";
+    $lang['iptc_date_created']          = "Aanmaakdatum"; // "Date Created";
+    $lang['iptc_author']                = "Auteur"; // "Author";
+    $lang['iptc_city']                  = "Stad"; // "City";
+    $lang['iptc_state']                 = "Staat/provincie"; // "State";
+    $lang['iptc_country']               = "Land"; // "Country";
+    $lang['iptc_job_identifier']        = "Job Identificatie"; // "Instructions";
+    $lang['iptc_headline']              = "Kop"; // "Job Identifier";
+    $lang['iptc_provider']              = "Leverancier"; // "Provider";
+    $lang['iptc_source']                = "Bron"; // "Source";
+    $lang['iptc_description_writer']    = "Beschrijvingsauteur"; // "Description Writer";
+    $lang['iptc_urgency']               = "Urgentie"; // "Urgency";
+    $lang['iptc_copyright_notice']      = "Auteursrecht"; // "Copyright Notice";
+    
+    // EXIF
+    $lang['exif']                       = "EXIF"; // "EXIF";
+    $lang['exif_FileName']              = "Bestandsnaam"; // "Filename";
+    $lang['exif_FileDateTime']          = "Datum/Tijd Bestand"; // "File Date/Time";
+    $lang['exif_FileSize']              = "Bestandsgrootte"; // "File Size";
+    $lang['exif_FileType']              = "Bestandstype"; // "File Type";
+    $lang['exif_MimeType']              = "Mime soort"; // "Mime Type";
+    $lang['exif_SectionsFound']         = "Secties gevonden"; // "Sections Found";
+    $lang['exif_ImageDescription']      = "Afbeelding omschrijving"; // "Image Description";
+    $lang['exif_Make']                  = "Merk"; // "Make";
+    $lang['exif_Model']                 = "Model"; // "Model";
+    $lang['exif_Orientation']           = "Orientatie"; // "Orientation";
+    $lang['exif_XResolution']           = "XResolutie"; // "XResolution";
+    $lang['exif_YResolution']           = "YResolutie"; // "YResolution";
+    $lang['exif_ResolutionUnit']        = "Resolutie eenheid"; // "Resolution Unit";
+    $lang['exif_Software']              = "Software"; // "Software";
+    $lang['exif_DateTime']              = "Datum/tijd"; // "Date/Time";
+    $lang['exif_YCbCrPositioning']      = "YCbCr positie"; // "YCbCr Positioning";
+    $lang['exif_Exif_IFD_Pointer']      = "Exif IFD aanwijzer"; // "Exif IFD Pointer";
+    $lang['exif_GPS_IFD_Pointer']       = "GPS IFD Aanwijzer"; // "GPS IFD Pointer";
+    $lang['exif_ExposureTime']          = "Belichtingstijd"; // "Exposure Time";
+    $lang['exif_FNumber']               = "F-Getalr"; // "FNumber";
+    $lang['exif_ExposureProgram']       = "Belichtingsprogramma"; // "Exposure Program";
+    $lang['exif_ISOSpeedRatings']       = "ISO waarde"; // "ISO Speed Ratings";
+    $lang['exif_ExifVersion']           = "Exif Versie"; // "Exif Version";
+    $lang['exif_DateTimeOriginal']      = "Datum/Tijd origineel"; // "Date/Time Original";
+    $lang['exif_DateTimeDigitized']     = "Datum/Tijd gedigitaliseerd"; // "Date/Time Digitized";
+    $lang['exif_ComponentsConfiguration'] = "Configuratie componenten"; // "Components Configuration";
+    $lang['exif_ShutterSpeedValue']     = "Sluitertijd waarde"; // "Shutter Speed Value";
+    $lang['exif_ApertureValue']         = "Diafragma waarde"; // "Aperture Value";
+    $lang['exif_MeteringMode']          = "Lichtmeetmethode"; // "Metering Mode";
+    $lang['exif_Flash']                 = "Flits"; // "Flash";
+    $lang['exif_FocalLength']           = "Focus afstand"; // "Focal Length";
+    $lang['exif_FlashPixVersion']       = "Flash Pix Versie"; // "Flash Pix Version";
+    $lang['exif_ColorSpace']            = "Kleurruimte"; // "Color Space";
+    $lang['exif_ExifImageWidth']        = "Exif afbeeldingsbreedte"; // "Exif Image Width";
+    $lang['exif_ExifImageLength']       = "Exif afbeeldingslengte "; // "Exif Image Length";
+    $lang['exif_SensingMethod']         = "Detectie methode"; // "Sensing Method";
+    $lang['exif_ExposureMode']          = "Belichtingsmodus"; // "Exposure Mode";
+    $lang['exif_WhiteBalance']          = "Witbalans"; // "White Balance";
+    $lang['exif_SceneCaptureType']      = "Scene opnamesoort"; // "Scene Capture Type";
+    $lang['exif_Sharpness']             = "Scherpte"; // "Sharpness";
+    $lang['exif_GPSLatitudeRef']        = "GPS Breedtegraad Ref."; // "GPS Latitude Ref";
+    $lang['exif_GPSLatitude_0']         = "GPS Breedtegraad 0"; // "GPSLatitude 0";
+    $lang['exif_GPSLatitude_1']         = "GPS Breedtegraad 1"; // "GPSLatitude 1";
+    $lang['exif_GPSLatitude_2']         = "GPS Breedtegraad 2"; // "GPSLatitude 2";
+    $lang['exif_GPSLongitudeRef']       = "GPS Lengtegraad Ref."; // "GPS Longitude Ref";
+    $lang['exif_GPSLongitude_0']        = "GPS Lengtegraad 0"; // "GPS Longitude 0";
+    $lang['exif_GPSLongitude_1']        = "GPS Lengtegraad 1"; // "GPS Longitude 1";
+    $lang['exif_GPSLongitude_2']        = "GPS Lengtegraad 2"; // "GPS Longitude 2";
+    $lang['exif_GPSTimeStamp_0']        = "GPS Tijdstempel 0"; // "GPS Timestamp 0";
+    $lang['exif_GPSTimeStamp_1']        = "GPS Tijdstempel 1"; // "GPS Timestamp 1";
+    $lang['exif_GPSTimeStamp_2']        = "GPS Tijdstempel 2"; // "GPS Timestamp 2";
+    $lang['exif_GPSImgDirectionRef']    = "GPS Afbeeldingsrichting Ref."; // "GPS Imgage Direction Reference";
+    $lang['exif_GPSImgDirection']       = "GPS Afbeeldingsrichting"; // "GPS Imgage Direction";
+    
+    // Media Labels
+    $lang['mediaLabelTitle']            = "Titel"; // "Title";
+    $lang['mediaLabelDesc']             = "Beschrijving"; // "Description";
+    $lang['mediaLabelCopyright']        = "Auteursrecht"; // "Copyright";
+    $lang['mediaLabelRestrictions']     = "Gebruiksbeperkingen"; // "Usage Restrictions";
+    $lang['mediaLabelRelease']          = "Model Release"; // "Model Release";
+    $lang['mediaLabelKeys']             = "Trefwoorden"; // "Keywords";
+    $lang['mediaLabelFilename']         = "Bestandsnaam"; // "Filename";
+    $lang['mediaLabelID']               = "ID"; // "ID";
+    $lang['mediaLabelDate']             = "Toegevoegd"; // "Added";
+    $lang['mediaLabelDateC']            = "Aangemaakt"; // "Created";
+    $lang['mediaLabelDownloads']        = "Downloads"; // "Downloads";
+    $lang['mediaLabelViews']            = "Aantal keren bekeken"; // "Views";
+    $lang['mediaLabelPurchases']        = "Aankopen"; // "Purchases";
+    $lang['mediaLabelColors']           = "Kleur"; // "Colors";
+    $lang['mediaLabelPrice']            = "Prijs"; // "Price";
+    $lang['mediaLabelCredits']          = "Credits"; // "Credits";
+    $lang['mediaLabelOwner']            = "Eigenaar"; // "Owner";
+    $lang['mediaLabelUnknown']          = "Onbekende"; // "Unknown";
+    $lang['mediaLabelResolution']       = "Beeldpunten"; // "Pixels";
+    $lang['mediaLabelFilesize']         = "Bestandsgrootte"; // "Filesize";
+    $lang['mediaLabelRunningTime']      = "Speelduur"; // "Running Time";
+    $lang['mediaLabelFPS']              = "Beelden per Seconde"; // "FPS";
+    $lang['mediaLabelFormat']           = "Formaat"; // "Format";
+    
+    // Search
+    $lang['search']                     = "Zoeken"; // "Search";
+    $lang['searchEnterKeyMessage']      = "Voer zoektermen in het zoekveld om uw zoekopdracht te starten."; // "Please enter keywords in the search field to start your search.";
+    $lang['searchNoResults']            = "Uw zoekopdracht leverde geen resultaten"; // "Your search did not return any results";
+    $lang['searchDateRange']            = "Zoeken in datumbereik"; // "Search In Date Range";
+    $lang['searchNarrow']               = "Zoekresultaten Verkleinen"; // "Narrow Search Results";
+    $lang['searchStart']                = "Start uw zoekopdracht hieronder!"; // "Start your search below!";
+    $lang['searchAll']                  = "Alles"; // "All";
+    $lang['searchClear']                = "Zoekopdracht wissen"; // "Clear Search";
+    $lang['searchKeywords']             = "Trefwoorden"; // "Keywords";
+    $lang['searchTitle']                = "Titel"; // "Title";
+    $lang['searchDescription']          = "Beschrijving"; // "Description";
+    $lang['searchFilename']             = "Bestandsnaam"; // "Filename";
+    $lang['searchPortrait']             = "Portret"; // "Portrait";
+    $lang['searchLandscape']            = "Landschap"; // "Landscape";
+    $lang['searchSquare']               = "Vierkant"; // "Square";
+    $lang['searchRoyaltyFree']          = "Rechtenvrij"; // "Royalty Free";
+    $lang['searchRightsManaged']        = "Rights Managed"; // "Rights Managed";
+    $lang['searchFree']                 = "Gratis"; // "Free";
+    $lang['searchContactUs']            = "Via Contact"; // "Contact Us";
+    $lang['searchHeaderKeywords']       = "Trefwoorden"; // "Keywords";
+    $lang['searchHeaderFields']         = "Velden"; // "Fields";
+    $lang['searchHeaderType']           = "Soort"; // "Type";
+    $lang['searchHeaderOrientation']    = "Oriëntatie"; // "Orientation";
+    $lang['searchHeaderColor']          = "Kleur"; // "Color";
+    $lang['searchHeaderGalleries']      = "Galerijen"; // "Galleries";    
+?>

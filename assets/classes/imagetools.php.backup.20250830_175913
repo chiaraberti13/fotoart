@@ -1,0 +1,441 @@
+<?php
+	class imagetools
+	{	
+		public $quality;
+		public $size;
+		public $source;
+		public $path;
+		public $prefix;
+		public $filename;
+		public $extension;
+		public $filename_wo_ext;
+		public $type;
+		public $cleanfilename;
+		public $config;
+		public $width;
+		public $height;
+		public $crop=NULL;
+		public $hcrop=NULL;
+		public $watermark=NULL;
+		public $sharpen=NULL;
+		public $debugMode=0;
+		public $startTime=0;
+		
+		public function __construct($source)
+		{
+			global $config;						
+			$this->quality = $this->setQuality($config['settings']['thumb_quality']);
+			$this->size = 150;
+			$this->source = $source;
+			$this->path = dirname($source);
+			$this->prefix = 'icon_';
+			$this->filename = basename($source);
+			$this->extension = $this->getExtension($this->filename);
+			$this->filename_wo_ext = $this->getFilenameWithoutExt($this->filename);
+			$this->type = 'jpg';
+			$this->cleanfilename = clean_filename($this->filename_wo_ext) . "." . $this->extension;
+			$this->config = $config;			
+			$this->getImageProcessor();
+		}
+				
+		/*
+		* Get the imjage processor that should be used
+		*/
+		private function getImageProcessor()
+		{
+			if(class_exists('Imagick') and $this->config['settings']['imageproc'] == 2)
+			{
+				$this->imageProcessor = 'im';
+			}
+			else
+			{
+				$this->imageProcessor = 'gd';
+			}
+		}
+		
+		/*
+		* Set quality
+		*/
+		public function setQuality($quality=90)
+		{
+			return $this->quality = $quality;			
+		}
+		
+		/*
+		* Set debugMode
+		*/
+		public function setDebugMode($debugMode=0,$startTime=0)
+		{
+			$this->debugMode = $debugMode;
+			$this->startTime = $startTime;
+		}
+		
+		/*
+		* Set size
+		*/
+		public function setSize($size=100)
+		{
+			return $this->size = $size;
+		}
+		
+		/*
+		* Set width directly
+		*/
+		public function setWidth($width)
+		{
+			return $this->width = $width;
+		}
+		
+		/*
+		* Set height directly
+		*/
+		public function setHeight($height)
+		{
+			return $this->height = $height;
+		}
+		
+		/*
+		* Set cropping - pass height;
+		*/
+		public function setCrop($crop)
+		{
+			return $this->crop = $crop;
+		}
+		
+		/*
+		* Set hcropping - pass width;
+		*/
+		public function setHCrop($hcrop)
+		{
+			return $this->hcrop = $hcrop;
+		}
+				
+		/*
+		* Set sharpen
+		*/
+		public function setSharpen($sharpen=NULL)
+		{
+			$this->sharpen = $sharpen;
+		}
+		
+		/*
+		* Set watermark
+		*/
+		public function setWatermark($watermark=NULL)
+		{
+			$this->watermark = $watermark;
+		}
+		
+		/*
+		* Find the extension of the file
+		*/
+		public function getExtension($filename)
+		{
+			$filename_array = explode(".",$filename);
+			return array_pop($filename_array);
+		}
+		
+		/*
+		* Get the filename without the extension
+		*/
+		public function getFilenameWithoutExt($filename)
+		{
+			$filename_array = explode(".",$filename);
+			array_pop($filename_array);
+			return implode($filename_array);
+		}
+				
+		/*
+		* Create the image
+		*/
+		public function createImage($display,$saveas)
+		{	
+			global $config;
+			
+			$icon_width = $this->size;
+				
+			$src = $this->source;
+			
+			if($this->imageProcessor == 'gd')
+			{
+				$size = getimagesize($src);	
+			}
+			else
+			{
+				$image = new Imagick($src);
+				$size[0] = $image->getImageWidth();
+				$size[1] = $image->getImageHeight();
+			}
+		
+			# Find the scale ratios	
+			if($size[0] >= $size[1] or $this->crop){
+				if($size[0] > $icon_width){
+					$width = $icon_width;
+				} else {
+					$width = $size[0];
+				}
+				$ratio = $width/$size[0];
+				$height = $size[1] * $ratio;				
+			} else {
+				if($size[1] > $icon_width){
+					$height = $icon_width;	
+				} else {
+					$height = $size[1];	
+				}
+				$ratio = $height/$size[1];
+				$width = $size[0] * $ratio;
+			}
+			
+			$height2 = $height; // Height of the new element
+			$width2 = $width; // Width of the new element
+			
+			if($this->width)
+			{
+				$width = $this->width; // Directly set the width of the new element if setWidth was used
+				$width2 = $this->width;
+			}
+			if($this->height)
+			{
+				$height = $this->height; // Directly set the height of the new element if setHeight was used
+				$height2 = $this->height; 
+			}
+			
+			if($this->crop)
+			{
+				if($height2 > $this->crop)
+					$height2 = $this->crop; // Change $height2 if getting cropped
+			}
+				
+			if($this->hcrop)
+				$width2 = $this->hcrop; // Change $width2 if getting cropped
+			
+			# Create using GD library
+			if($this->imageProcessor == 'gd')
+			{	
+				switch($size['mime'])
+				{
+					default;
+					case "image/jpeg":
+						$src_img = imagecreatefromjpeg($src);
+					break;
+					case "image/png":
+						$src_img = imagecreatefrompng($src);
+					break;
+					case "image/gif":
+						$src_img = imagecreatefromgif($src);
+					break;
+					case "image/x-ms-bmp":
+					case "image/bmp":
+						$src_img = imagecreatefromwbmp($src);
+					break;
+					case "image/jp2":
+					case "image/jpeg2000":
+					case "image/jpeg2000-image":
+					case "image/x-jpeg2000-image":
+						$src_img = imagecreatefromjpeg($src);
+					break;
+				}
+				
+				$dst_img = imagecreatetruecolor($width2, $height2);
+				
+				imagecopyresampled($dst_img, $src_img, 0, 0, 0, 0, $width, $height, imagesx($src_img), imagesy($src_img));
+				
+				# ADD WATERMARK
+				if($this->watermark and file_exists(BASE_PATH."/assets/watermarks/" . $this->watermark))
+				{
+					$watermarkinfo = getimagesize(BASE_PATH."/assets/watermarks/" . $this->watermark);		
+					$watermarkImage = imagecreatefrompng(BASE_PATH."/assets/watermarks/" . $this->watermark);		
+					
+					# DO NOT SCALE WATERMARK
+					$horizextra = $width2 - $watermarkinfo[0];
+					$vertextra = $height2 - $watermarkinfo[1];
+			
+					$horizmargin = round($horizextra/2);
+					$vertmargin = round($vertextra/2);		
+					imagecopy($dst_img, $watermarkImage, $horizmargin, $vertmargin, 0, 0, $watermarkinfo[0], $watermarkinfo[1]);
+
+					//kmail('mail@jonkent.com','test','mail@jonkent.com','jon kent','test',"stuff3 {$horizmargin}-{$vertmargin}");
+		
+					imagedestroy($watermarkImage);
+				}
+				
+				if($this->sharpen)
+				{
+					$sharpen_matrix = array(array(-1,-1,-1,),array(-1, 16,-1,),array(-1,-1,-1));
+					$divisor = 8;
+					$offset = 0;
+					if(function_exists('imageconvolution'))
+						imageconvolution($dst_img, $sharpen_matrix, $divisor, $offset);
+				}
+				
+				if($this->debugMode)
+				{
+					$pltime = microtime();
+					$pltime = explode(" ", $pltime);
+					$plfinish = $pltime[1] + $pltime[0];
+					$pltotaltime = round(($plfinish - $this->startTime),3);
+					
+					$white = imagecolorallocate($dst_img, 255, 255, 255);
+					$debugBG = imagecolorallocate($dst_img, 255, 249, 211);
+					$black = imagecolorallocate($dst_img, 0, 0, 0);
+					imagefilledrectangle($dst_img, 0, 0, 1000, 24, $debugBG);
+					imagestring($dst_img, 2, 5, 5, "Load Time: {$pltotaltime} sec", $black);
+				}
+				
+				# Output and destroy				
+				if($saveas)
+				{
+					imagejpeg($dst_img,$saveas, $this->quality); // Save this one
+				}
+				if($display)
+				{
+					header("Content-type: image/jpeg");
+					imagejpeg($dst_img,NULL, $this->quality); // Display this one
+				}
+				imagedestroy($src_img); 
+				imagedestroy($dst_img);
+			}
+			# Create using imagemagick
+			else
+			{
+				// Color profiles
+				if($this->config['colorProfile'])
+				{
+					$srgb = BASE_PATH.'/assets/colorprofiles/'.$config['colorProfile'];
+					$icc_srgb = file_get_contents($srgb);
+					$image->profileImage('icc', $icc_srgb);
+				}
+				
+				$image->setImageCompression(imagick::COMPRESSION_JPEG); 
+				$image->setImageCompressionQuality($this->quality);
+				
+				//$image->stripImage(); // Commented out when color profiles were added
+				
+				$image->thumbnailImage($width, $height);				
+				if($this->crop)
+					$image->cropImage($width2, $height2, 0, 0);				
+				$image->setImageFormat('jpg');
+				
+				/*
+				# ADD WATERMARK
+				if($this->watermark and file_exists("./assets/watermarks/" . $this->watermark))
+				{
+					$watermarkinfo = getimagesize("./assets/watermarks/" . $this->watermark);		
+					$watermarkImage = imagecreatefrompng("./assets/watermarks/" . $this->watermark);		
+					
+					# DO NOT SCALE WATERMARK
+					$horizextra = $width2 - $watermarkinfo[0];
+					$vertextra = $height2 - $watermarkinfo[1];
+			
+					$horizmargin = round($horizextra/2);
+					$vertmargin = round($vertextra/2);		
+					imagecopy($dst_img, $watermarkImage, $horizmargin, $vertmargin, 0, 0, $watermarkinfo[0], $watermarkinfo[1]);
+
+					//kmail('mail@jonkent.com','test','mail@jonkent.com','jon kent','test',"stuff3 {$horizmargin}-{$vertmargin}");
+		
+					imagedestroy($watermarkImage);
+				}
+				*/
+				
+				# ADD WATERMARK
+				if($this->watermark and file_exists(BASE_PATH."/assets/watermarks/" . $this->watermark)){
+					
+					$imwatermark = new Imagick(BASE_PATH."/assets/watermarks/" . $this->watermark);				
+	
+					$wwidth = round($imwatermark->getImageWidth());
+					$wheight = round($imwatermark->getImageHeight());
+					
+					//$imwatermark->thumbnailImage($wwidth, 0);
+					
+					$horizextra = $width2 - $wwidth;
+					$vertextra = $image->getImageHeight() - $wheight;
+							
+					$horizmargin = round($horizextra/2);
+					$vertmargin = round($vertextra/2);	
+				
+					$image->compositeImage($imwatermark,Imagick::COMPOSITE_OVER,$horizmargin,$vertmargin);					
+				}
+				
+				if($this->sharpen)
+				{
+					$image->sharpenImage(1,1);
+				}
+				
+				if($saveas)
+				{
+					$image->writeImages($saveas, true); // Save this one
+				}
+				if($display)
+				{
+					header("Content-type: image/jpeg");
+					echo $image; // Display this one
+				}
+				$image->destroy();
+			}
+		}
+		
+		/*
+		* Get the most common colors for an image to create a color palette - No longer used
+		*/
+		public function colorPaletteDEPRECATED($numColors, $granularity = 5)  
+		{  
+		   $granularity = max(1, abs((int)$granularity));  
+		   $colors = array();  
+		   $size = @getimagesize($this->source);  
+		   if($size === false)  
+		   {  
+			  user_error("Unable to get image size data");  
+			  return false;  
+		   }  
+		   //$img = @imagecreatefromjpeg($this->source);    
+		   $img = @imagecreatefromstring(file_get_contents($this->source));
+		 
+		   if(!$img)  
+		   {  
+			  user_error("Unable to open image file");  
+			  return false;  
+		   }
+		   
+		   $countedPixels=round(($size[0]*$size[1])/$granularity);
+		   
+		   for($x = 0; $x < $size[0]; $x += $granularity)  
+		   {  
+			  for($y = 0; $y < $size[1]; $y += $granularity)  
+			  {  
+				 $thisColor = imagecolorat($img, $x, $y);  
+				 $rgb = imagecolorsforindex($img, $thisColor);  
+				 $red = round(round(($rgb['red'] / 0x33)) * 0x33);  
+				 $green = round(round(($rgb['green'] / 0x33)) * 0x33);  
+				 $blue = round(round(($rgb['blue'] / 0x33)) * 0x33);  
+				 $thisRGB = sprintf('%02X%02X%02X', $red, $green, $blue);  
+				 
+				 $colorsRGB[$thisRGB]['red'] = $red; // Added this to get the RGB colors from the array as well as the hex colors
+				 $colorsRGB[$thisRGB]['green'] = $green;
+				 $colorsRGB[$thisRGB]['blue'] = $blue;
+				 $colorsRGB[$thisRGB]['thisColorCount']++;
+				 
+				 if(array_key_exists($thisRGB, $colors))
+					$colors[$thisRGB]++;
+				 else  
+					$colors[$thisRGB] = 1;
+			  }  
+		   }  
+		   arsort($colors);
+		  
+		  $colorArray = array_slice(array_keys($colors), 0, $numColors); 
+		   
+		   foreach($colorArray as $key => $color) // Added this to allow me to grab RGB also
+		   {
+			  $multiColorArray[$key]['hex'] = $color;
+			  $multiColorArray[$key]['rgb']['red'] = $colorsRGB[$color]['red'];
+			  $multiColorArray[$key]['rgb']['green'] = $colorsRGB[$color]['green'];
+			  $multiColorArray[$key]['rgb']['blue'] = $colorsRGB[$color]['blue'];
+			  $multiColorArray[$key]['countedPixels'] = $countedPixels;
+			  $multiColorArray[$key]['thisColorCount'] = $colorsRGB[$color]['thisColorCount'];
+			  $multiColorArray[$key]['colorPercentage'] = round($colorsRGB[$color]['thisColorCount']/$countedPixels,6);
+		   }
+		   
+		   return $multiColorArray;  
+		}
+	}
+?>

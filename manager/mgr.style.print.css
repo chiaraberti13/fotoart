@@ -1,0 +1,22 @@
+#header_b, #support_bar, #shortcuts_container, #debugger, #footer, #header_a, #title_bar, #content_container, #workbox{
+	display: none;
+}
+#print_window{
+	border: none;
+	display: block;
+	position: relative;
+	z-index: 99999;
+	border-right: 0;
+	border-bottom: 0;
+	background-color: #ffffff;
+	width: 100%;
+	margin: 0;
+}
+#print_window_inner{
+	border: 0px;
+	padding: 0;
+}
+#print_close{
+	display: none;
+	font-size: 12px;
+}

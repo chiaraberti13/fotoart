@@ -1,0 +1,843 @@
+<?php
+	/******************************************************************
+	*  ITALIAN
+	******************************************************************/
+	
+	# 4.7
+	$lang['featuredGalleries']		= "Gallerie in Primo piano";
+	
+	
+	# 4.6.3	
+	$lang['ccMessage']				= "Per favore, inserisci i dati della tua carta qui sotto.";
+	$lang['ccNumber']				= "Numero Carta";
+	$lang['ccCVC']					= "CVC";
+	$lang['ccExpiration']			= "Scadenza (MM/AAAA)";
+	
+	
+	# 4.6.1
+	$lang['passwordLeaveBlank']		= "Lasciare in bianco se non si vuole la password";
+	$lang['myAlbums']				= "I miei Album";
+	
+	# 4.5
+	$lang['dateDownloadUpper']		= "DATA DEL DOWNLOAD";
+	$lang['downloadTypeUpper']		= "TIPO DOWNLOAD";
+	$lang['rss']					= "RSS";
+	
+	# 4.4.8
+	$lang['uploadFile']				= "Caricamento file";
+	
+	# 4.4.7
+	$lang['contrSmallFileSize']		= "La dimensione del file è troppo piccola. Il file deve raggiugere la dimensione minima";
+	# plupload
+	$lang['plupSelectFiles']		=  "Seleziona file";
+	$lang['plupAddFilesToQueue']	=  "Aggiungi file alla coda di caricamento e clicca il pulsante di inizio.";
+	$lang['plupFilename']			=  "Nome file";
+	$lang['plupStatus']				=  "Stato";
+	$lang['plupSize']				=  "Dimensione";
+	$lang['plupAddFiles']			=  "Aggiungi file";
+	$lang['plupStartUplaod']		=  "Inizia caricamento";
+	$lang['plupStopUpload']			=  "Ferma il caricamento corrente";
+	$lang['plupStartQueue']			=  "Inizia il caricamento";
+	$lang['plupDragFilesHere']		=  "Trascina qui il file.";
+	
+	# 4.4.6
+	$lang['batchUploader']			= "Caricamento massivo";
+	$lang['uploader'][1]			= "Basato su Java";
+	$lang['uploader'][2]			= "Basato su HTML5 o Flash";
+	$lang['change']					= "Cambia";
+	
+	# 4.4.5
+	$lang['moreInfoPlus']			= "[Altre informazioni]";
+	
+	# 4.4.3
+	$lang['mediaLabelPropRelease']	= "Proprieta' della versione";
+	
+	# 4.4.2
+	$lang['go']						= "VAI";
+	
+	# 4.4.0
+	$lang['share'] 					= "Condividi";
+	$lang['bbcode'] 				= "BBCode";
+	$lang['html'] 					= "HTML";
+	$lang['link']					= "Link";
+	$lang['pricingCalculator']		= "Calcola prezzo";
+	$lang['noOptionsAvailable']		= "Non ci sono opzioni valide";
+	$lang['viewCartUpper']			= "VEDI CARRELLO";
+	
+	# 4.3
+	$lang['vatIDNumber']			= "Numero di Partita IVA";
+	
+	# 4.2.1
+	$lang['captchaError']			= "Il captcha inserito non è corretto. Il tuo messaggio non è stato inviato.";
+	
+	# 4.1.7
+	$lang['mediaLicenseEU'] 		= "Uso editoriale";
+	
+	# 4.1.6
+	$lang['yourBill'] 				= "La tua fattura";
+	$lang['invoiceNumber'] 			= "Numero fattura";
+	$lang['paymentThanks'] 			= "Grazie per il pagamento.";
+	$lang['msActive'] 				= "Il tuo abbonamento e' attivo.";
+	$lang['today'] 					= "Oggi";
+	$lang['downloadsRemainingB']	= "Download rimanenti";
+	
+	# 4.1.4
+	$lang['link'] 					= "Link";
+	$lang['optional'] 				= "Opzionale";
+	
+	# 4.1.3
+	$lang['keywordRelevancy'] 		= "Pertinenza parola chiave";
+	$lang['mediaLicenseEX'] 		= "Licenza estesa";
+	
+	# 4.1.1
+	$lang['editMediaDetails'] 		= "Modifica i dettagli dell immagine";
+	$lang['searchResults'] 			= "Risultati di ricerca";
+	$lang['width'] 					= "Larghezza";
+	$lang['height'] 				= "Altezza";
+	$lang['hd'] 					= "HD";
+	$lang['mediaProfile'] 			= "Profilo";
+	$lang['photo'] 					= "Foto";
+	$lang['video'] 					= "Video";
+	$lang['other'] 					= "Altro";
+	$lang['thumbnail'] 				= "Anteprima";
+	$lang['videoSample'] 			= "Esempio video";
+	$lang['attachFile'] 			= "Allega File";
+	$lang['fileAttached'] 			= "File allegato";
+	$lang['attachMessage'] 			= "Per favore seleziona un file da allegare a questo profilo";
+	$lang['browse'] 				= "Sfoglia";
+	$lang['uploadThumb'] 			= "Carica anteprima";
+	$lang['uploadVideo'] 			= "Anteprima caricamento video";
+	
+	# 4.1
+	$lang['importSuccessMes'] 		= "Importato con successo!";
+	$lang['forgotPassword'] 		= "Password dimenticata?";
+	$lang['passwordSent'] 			= "È stata inviata una email, verifica la tua posta in arrivo o la cartella spam per trovare il messaggio.";
+	$lang['passwordFailed'] 		= "Spiacente ma questa utenza non esiste, per favore prova di nuovo a inserire la tua email.";
+	$lang['photoProfiles']			= "Profili Foto";
+	$lang['videoProfiles']			= "Profili video";
+	$lang['otherProfiles']			= "Altri profili";
+	$lang['saving']					= "Salvataggio";
+	$lang['myAccount']				= "Mio account";
+	$lang['myGalleries']			= "Mie gallerie";
+	$lang['noMediaAlbum']			= "Non ci sono file da mostrare.";
+	$lang['editDetails']			= "Modifica Dettagli";
+	$lang['approvalStatus0']		= "In attesa di approvazione";
+	$lang['approvalStatus1']		= "Approvato";
+	$lang['approvalStatus2']		= "Approvazione fallita";
+	$lang['noDetailsMes']			= "Non sono stati forniti ulteriori dettagli!";	
+	$lang['orphanedMedia']			= "File orfano";
+	$lang['lastBatch']				= "Ultimo lotto aggiunto";
+	$lang['deleteAlbumMes']			= "Eliminare questo album e tutti i media che contiene?";
+	$lang['mailInMedia']			= "Spedito su CD o DVD";
+	$lang['deleteAlbum']			= "Elimina Album";
+	$lang['editAlbum']				= "Modifica Album";
+	$lang['albumName']				= "Nome Album";
+	$lang['makePublic']				= "Rendi pubblico";
+	$lang['deleteMedia']			= "Elimina Immagine";
+	$lang['deleteMediaMes']			= "Eliminare i file multimediali selezionati?";
+	$lang['selectAll']				= "Seleziona tutti";
+	$lang['selectNone']				= "Deseleziona tutti";
+	$lang['noImportFilesMessage']	= "Non ci sono file da importare!";
+	$lang['selectAlbumMes']			= "Selezionare album per aggiungervi questo questo media.";
+	$lang['selectGalleriesMes']		= "Selezionare le gallerie alle quali vuoi aggiungere questo media.";
+	$lang['chooseItemsMes']			= "Scegli gli articoli da vendere dalla lista seguente.";
+	$lang['ablum']					= "Album";
+	$lang['pricing']				= "Prezzo";
+	$lang['px']						= "px";	
+	$lang['noSales']				= "Non hai alcuna vendita.";
+	$lang['itemUpper']				= "ARTICOLO";
+	$lang['commissionUpper']		= "COMMISSIONE";
+	$lang['addUpper']				= "AGGIUNGI";	
+	$lang['cmDeleteVerify']			= "Sei sicuro che vuoi eliminare questo media";
+	$lang['waitingForImport']		= "Media in attesa di importazione";
+	$lang['importSelectedUpper']	= "IMPORTA SELEZIONATI";
+	$lang['addMediaDetails']		= "Aggiungi dettagli media";
+	$lang['uploadUpper']			= "CARICA";
+	$lang['noBioMessage']			= "Attualmente non sono presenti note biografiche per questo utente.";
+	$lang['collections']			= "Collezioni";
+	$lang['uploadMediaUpper']		= "CARICA NUOVO FILE";
+	$lang['startUpper']				= "INIZIA";
+	
+	# 4.0.9
+	$lang['displayName']			= "Mostra Nome";
+	$lang['newAlbum']				= "Nuovo Album";
+	$lang['albums']					= "Album";
+	$lang['viewAllMedia']			= "VISUALIZZA TUTTI I MEDIA";
+	$lang['signUpNow']				= "REGISTRATI ADESSO";
+	
+	# 4.0.8		
+	$lang['exactMatch']				= "Corrispondenza esatta";
+	$lang['mediaLabelMediaTypes']	= "Tipo di media";
+	
+	# 4.0.6
+	$lang['orderNumUpper']			= "NUMERO ORDINE";
+	$lang['orderDateUpper']			= "DATA ORDINE";
+	$lang['paymentUpper']			= "PAGAMENTO";	
+	
+	# 4.0.5
+	$lang['dateRange']				= "Intervallo date";
+	$lang['resolution']				= "Risoluzione";
+	$lang['continueShopUpper']		= "CONTINUA ACQUISTI";
+	$lang['votes']					= "voti";
+	$lang['moreNews']				= "altre info";
+	$lang['currentSearch']			= "Ricerca attuale";
+	$lang['dates']					= "Date";
+	$lang['licenseType']			= "Tipo di licenza";
+	$lang['searchUpper']			= "CERCA";
+	$lang['from']					= "Da";
+	$lang['to']						= "A";
+	$lang['lightboxUpper']			= "SELEZIONE";
+	$lang['itemsUpper']				= "ARTICOLI";
+	$lang['createdUpper']			= "CREATO";
+	$lang['na']						= "N/A"; 
+	$lang['galSortCDate']			= "Data creazione";
+	
+	# 4.0.4
+	$lang['digitalDownloads']		= "File Digitali";
+
+	$lang['copyright']				= "Copyright &copy; ".date("Y");
+	$lang['reserved']				= "Tutti diritti riservati.";
+	
+	$lang['days']					= "Giorni";
+	$lang['weeks']					= "Settimane";
+	$lang['months']					= "Mesi";
+	$lang['years']					= "Anni";
+	$lang['weekly']					= "Settimanale";
+	$lang['monthly']				= "Mensile";
+	$lang['quarterly']				= "Trimestrale";
+	$lang['semi-annually']			= "Semestrale";
+	$lang['annually']				= "Annuale";	
+	$lang['guest']					= "Ospite";	
+	$lang['login'] 					= "Accedi";	
+	$lang['loginCaps'] 				= "ACCEDI";
+	$lang['loginMessage']			= "Per favore inserisci di seguito il tuo indirizzo email e la tua password per accedere.";
+	$lang['loggedOutMessage']		= "Sei stato disconnesso.";
+	$lang['loginFailedMessage']		= "Accesso fallito: il tuo indirizzo email o la tua password non sono corretti.";
+	$lang['accountActivated']		= "l tuo account è stato attivato.";
+	$lang['activationEmail']		= "Una email di verifica è stata inviata. Per favore, usa il link ricevuto nell'email per attivare il tuo account.";
+	$lang['loginAccountClosed']		= "Questo account è chiuso o inattivo.";
+	$lang['loginPending']			= "Questo account non è verificato. Deve essere verificato prima di potere effettuare l'accesso.";
+	$lang['yesLogin']				= "Si, vorrei accedere.";
+	$lang['noCreateAccount']		= "No, vorrei creare un account.";
+	$lang['haveAccountQuestion']	= "Hai già un account presso di noi?";	
+	$lang['collections']			= "Collezioni digitali";
+	$lang['featuredCollections']	= "Collezioni digitali in evidenza";	
+	$lang['similarMedia']			= "Media simili";	
+	$lang['paypal']					= "PayPal";
+	$lang['checkMO']				= "Bonifico bancario";
+	$lang['paypalEmail']			= "Email PayPal";	
+	$lang['paid']					= "Pagato";
+	$lang['processing']				= "OK";
+	$lang['unpaid']					= "Non pagato";
+	$lang['refunded']				= "Rimborsato";
+	$lang['failed']					= "Fallito";
+	$lang['cancelled']				= "Cancellato";
+	$lang['approved']				= "Approvato";
+	$lang['incomplete']				= "Incompleto";
+	$lang['billLater']				= "Fattura in seguito";
+	$lang['expired']				= "Scaduto";
+	$lang['unlimited']				= "Illimitato";
+	$lang['quantityAvailable']		= "Quantità disponibile";	
+	$lang['shipped']				= "Spedito";
+	$lang['notShipped']				= "OK - In Lavorazione";
+	$lang['backordered']			= "In arretrato";	
+	$lang['taxIncMessage']			= "Imposte incluse";	
+	$lang['addTag']					= "Aggiungi Tag";
+	$lang['memberTags']				= "Tag utenti";
+	$lang['comments']				= "Commenti";
+	$lang['showMoreComments']		= "Mostra tutti i Commenti";
+	$lang['noComments']				= "Non ci sono commenti.";
+	$lang['noTags']					= "Non ci sono tag approvati.";
+	$lang['addNewComment']			= "Aggiungi nuovo commento";
+	$lang['commentPosted']			= "Il tuo commento è stato inserito.";
+	$lang['commentPending']			= "Il tuo commento è stato proposto e sarà approvato a breve.";
+	$lang['commentError']			= "Si è verificato un errore e il tuo commento non è stato proposto.";
+	$lang['tagPosted']				= "Il tuo tag e' stato inserito.";
+	$lang['tagPending']				= "Il tuo nuovo tag è stato proposto e sarà approvato a breve.";
+	$lang['tagError']				= "Si è verificato un errore e il tuo tag non è stato proposto.";
+	$lang['tagDuplicate']			= "Questo tag esiste già.";
+	$lang['tagNotAccepted']			= "Il tuo tag non è stato accettato dal nostro sistema.";	
+	$lang['preferredLang']			= "Lingua preferita";
+	$lang['dateTime']				= "Data/ora";
+	$lang['preferredCurrency']		= "Valuta preferita";	
+	$lang['longDate']				= "Data estesa";
+	$lang['shortDate']				= "Data breve";
+	$lang['numbDate']				= "Data numerica";	
+	$lang['daylightSavings']		= "Ora legale";
+	$lang['dateFormat']				= "Formato data";
+	$lang['timeZone']				= "Fuso orario";
+	$lang['dateDisplay']			= "Mostra data";
+	$lang['clockFormat']			= "Formato ora";
+	$lang['numberDateSep']			= "Separatore numeri data";	
+	$lang['renew']					= "RINNOVA";	
+	$lang['noOrders']				= "Non ci sono ordini per questo account.";
+	$lang['noDownloads']			= "Non ci sono stati download per questo account.";
+	$lang['noFeatured'] 			= "Non ci sono articoli in evidenza in questa area.";	
+	$lang['promotions']				= "Promozioni";
+	$lang['noPromotions']			= "Non sono presenti coupon o promozioni in questo momento.";	
+	$lang['autoApply']				= "Si applica automaticamente all'atto dell'acquisto.";
+	$lang['useCoupon']				= "Usa il seguente codice all'atto dell'acquisto o clicca il punsante Applica per usare questo coupon/promozione";	
+	$lang['couponApplied']			= "Un coupon o sconto è stato applicato al tuo carrello.";
+	$lang['couponFailed']			= "Questo coupon o sconto non è valido.";	
+	$lang['couponNeedsLogin']		= "Devi accedere per usare questo coupon o sconto.";
+	$lang['couponMinumumWarn']		= "Il tuo subtotale non soddisfa i parametri richiesti per utilizzare questo coupon o sconto.";
+	$lang['couponAlreadyUsed']		= "Puoi usare questo coupon o sconto solo una volta.";
+	$lang['couponLoginWarn']		= "Devi accedere per usare questo coupon o sconto.";	
+	$lang['checkout']				= "COMPLETA ACQUISTO";
+	$lang['continue']				= "CONTINUA";	
+	$lang['shipTo']					= "Spedisci a";
+	$lang['billTo']					= "Invia fattura a";
+	//$lang['mailTo']				= "Mail Payment To";	
+	$lang['galleries']				= "Gallerie";
+	$lang['chooseGallery']			= "Scegli una galleria nell'area sottostante per vederne il contenuto.";
+	$lang['galleryLogin']			= "Per favore inserisci la password per accedere a questa galleria.";
+	$lang['galleryWrongPass']		= "La password che hai inserito per questa galleria non è corretta.";	
+	$lang['newestMedia']			= "Immagini recenti";
+	$lang['popularMedia']			= "Immagini popolari";	
+	$lang['contributors']			= "Collaboratori";
+	$lang['contUploadNewMedia']		= "Aggiungi nuovo media";
+	$lang['contViewSales']			= "Visualizza vendite";
+	$lang['contPortfolio']			= "Mio Portfolio";
+	$lang['contGalleries']			= "Mie Gallerie";
+	$lang['contMedia']				= "Mie Immagini";	
+	$lang['aboutUs']				= "Chi siamo";	
+	$lang['news']					= "Informazioni";
+	$lang['noNews']					= "Attualmente non ci sono info.";
+	$lang['termsOfUse']				= "Termini di utilizzo";
+	$lang['privacyPolicy']			= "Politica sulla privacy";
+	$lang['purchaseAgreement']		= "Spedizioni e Pagamenti";	
+	$lang['iAgree']					= "Accetto gli";	
+	$lang['createAccount']			= "Crea un account";
+	$lang['createAccountMessage']	= "Per favore compila il modulo seguente per creare un nuovo account.";	
+	$lang['contactUs']				= "Contattaci";
+	$lang['contactMessage']			= "Grazie per averci contattato. Risponderemo a breve.";
+	$lang['contactError']			= "Il modulo di contatto non è stato compilato correttamente. Il tuo messaggio non è stato inviato";
+	$lang['contactIntro']			= "Per favore usa il modulo seguente per contattarci. Risponderemo il più presto possibile. Questo modulo è solo per richiesta informazioni, se ti serve assistenza su acquisti (pezzi mancanti o difetti) apri un TICKET dal tuo account o non saremo in grado di risponderti. Grazie";
+	$lang['contactEmailSubject']	= "Richiesta da modulo di contatto";
+	$lang['contactFromName']		= "Modulo di contatto";	
+	$lang['prints']					= "Stampe";
+	$lang['featuredPrints']			= "Stampe in evidenza";	
+	$lang['newBill']				= "Una nuova fattura è stata creata per questo abbonamento. Questo abbonamento non sarà attivo o rinnovato finchè la fattura non sarà pagata. Tutte le altre fatture per costi di abbonamento sono state cancellate.";
+	$lang['accountInfo']			= "Modifica Account";
+	$lang['accountUpdated']			= "Le informazioni del tuo account sono state aggiornate.";
+	$lang['editAccountInfo']		= "Modifica le informazioni del tuo account";
+	$lang['editAccountInfoMes']		= "Modifica le informazioni del tuo account di seguito e clicca il pulsante Salva.";	
+	$lang['accountInfoError1']		= "La password e la verifica non corrispondono!";
+	$lang['accountInfoError5']		= "La password che hai inserito non è corretta!";
+	$lang['accountInfoError2']		= "La tua password deve avere almeno 6 caratteri!";
+	$lang['accountInfoError12']		= "Questo indirizzo email è già in uso!";
+	$lang['accountInfoError13']		= "Il tuo indirizzo email non è stato accettato!";
+	$lang['accountInfoError3']		= "Inserisci le parole indicate sopra!";
+	$lang['accountInfoError4']		= "La parole del codice Captcha non sono corrette!";
+	$lang['readAgree']				= "Ho letto il";	
+	$lang['agreements']				= "Accordi";	
+	$lang['poweredBy']				= "Offerto da";
+	$lang['captchaAudio']			= "Inserisci i numeri che senti";
+	$lang['captchaIncorrect']		= "Non corretto per favore prova di nuovo";
+	$lang['captchaPlayAgain']		= "Ascolta di nuovo";
+	$lang['captchaDownloadMP3']		= "Scarica in formato MP3";
+	$lang['captcha']				= "Captcha";
+	$lang['subHeaderID']			= "ID";
+	$lang['subHeaderSubscript']		= "SOTTOSCRIZIONE";
+	$lang['subHeaderExpires']		= "SCADE";
+	$lang['subHeaderDPD']			= "DOWNLOAD GIORNALIERI/RIMANENTI";
+	$lang['subHeaderStatus']		= "STATO";
+	$lang['downloads']				= "Download";	
+	$lang['thankRequest']			= "Grazie per la tua richiesta. Ti contatteremo a breve.";
+	$lang['pleaseContactForm']		= "Per favore contattaci per conoscere il prezzo di questo file compilando il seguente modulo";
+	$lang['downWithSubscription']	= "Scarica usando sottoscrizione";	
+	$lang['noInstantDownload'] 		= "Questo file non è disponibile per il download immediato. Sarà inviato via email da un amministratore del sito ad acquisto terminato e in seguito alla verifica del pagamento effettuato.";
+	
+	// Tickets
+	$lang['newTicketsMessage']		= "Ticket nuovi o aggiornati";
+	$lang['emptyTicket']			= "Questo Ticket è vuoto.";
+	$lang['messageID']				= "ID messaggio";
+	$lang['ticketNoReplies']		= "Questo Ticket è chiuso e non sono accettate nuove repliche.";
+	$lang['ticketUpdated']			= "Questo Ticket è stato aggiornato!";
+	$lang['ticketClosed']			= "Questo Ticket è stato chiuso!";
+	$lang['closeTicket']			= "Chiudi ticket";
+	$lang['newTicket']				= "Nuovo Ticket di supporto";
+	$lang['newTicketButton']		= "NUOVO TICKET";
+	$lang['ticketUnreadMes']		= "Il Ticket contiene messaggi non letti o nuovi";
+	$lang['ticketUnderAccount']		= "Non ci sono ticket di supporto per questo account";	
+	$lang['ticketSubmitted']		= "Il tuo ticket di supporto è stato inoltrato. Risponderemo a breve";
+	
+	$lang['mediaNotElidgiblePack']	= "Questo file non può essere selezionato per essere assegnato a un pacchetto!";
+	$lang['noBills']				= "Non ci sono fatture per questo account.";	
+	$lang['lightbox']				= "Lista Preferiti";
+	$lang['noLightboxes']			= "Non hai ancora creato la Lista Preferiti.";
+	$lang['lightboxDeleted']		= "Le Liste sono state eliminate.";
+	$lang['lbDeleteVerify']			= "Sei sicuro di voler eliminare questa Lista?";
+	$lang['newLightbox']			= "NUOVA LISTA";
+	$lang['lightboxCreated']		= "La tua nuova lista è stata creata.";
+	$lang['addToLightbox']			= "Aggiungi alla Lista Preferiti";
+	$lang['createNewLightbox']		= "Crea una nuova Lista Preferiti";
+	$lang['editLightbox']			= "Modifica questa Lista Preferiti";
+	$lang['addNotes']				= "Aggiungi note";
+	$lang['editLightboxItem']		= "Modifica gli elementi della lista";
+	$lang['removeFromLightbox']		= "RIMUOVI DALLA LISTA";	
+	$lang['savedChangesMessage']	= "Le tue modifiche sono state salvate.";	
+	$lang['noSubs']					= "Non ci sono sottoscrizioni per questo account.";	
+	$lang['unpaidBills']			= "fatture non pagate";	
+	$lang['notices']				= "Avvisi";	
+	$lang['subscription']			= "Sottoscrizione";	
+	$lang['assignToPackage']		= "Assegna a un pacchetto";
+	$lang['startNewPackage']		= "Inizia un nuovo pacchetto";
+	$lang['packagesInCart']			= "Pacchetti nel tuo carrello";	
+	$lang['id']						= "ID";
+	$lang['summary']				= "Riepilogo";
+	$lang['status']					= "Stato";
+	$lang['lastUpdated']			= "Ultimo aggiornamento";
+	$lang['opened']					= "Aperto";
+	$lang['reply']					= "Rispondi";	
+	$lang['required']				= "Necessario";	
+	$lang['bills']					= "Fatture";
+	$lang['orders']					= "Ordini";
+	$lang['downloadHistory']		= "Storico dei download";
+	$lang['supportTickets']			= "Ticket di supporto";
+	$lang['order']					= "Ordine";	
+	$lang['packages']				= "Pacchetti";
+	$lang['featuredPackages']		= "Pacchetti in evidenza";	
+	$lang['products']				= "Prodotti";
+	$lang['featuredProducts']		= "Prodotti in evidenza";	
+	$lang['subscriptions']			= "Sottoscrizioni";
+	$lang['featuredSubscriptions']	= "Sottoscrizioni in evidenza";	
+	$lang['yourCredits']			= "TUOI<br />CREDITI";
+	$lang['featuredCredits']		= "Pacchetti di crediti in evidenza";	
+	$lang['media'] 					= "Immagini";
+	$lang['mediaNav'] 				= "Immagini";
+	$lang['featuredMedia']			= "Immagini in evidenza";	
+	$lang['featuredItems'] 			= "In evidenza";	
+	$lang['showcasedContributors'] 	= "Collaboratori in vetrina";	
+	$lang['galleryLogin']			= "Accesso galleria";	
+	$lang['forum'] 					= "Forum";
+	$lang['randomMedia'] 			= "Immagini casuali";
+	$lang['language'] 				= "Lingua";	
+	$lang['priceCreditSep']			= "o";	
+	$lang['viewCollection']			= "VEDI COLLEZIONE";	
+	$lang['loggedInAs']				= "Sei connesso come";	
+	$lang['editProfile']			= "MODIFICA ACCOUNT";	
+	$lang['noItemCartWarning']		= "Devi selezionare una foto prima di potere aggiungere questo articolo al tuo carrello!";
+	$lang['cartTotalListWarning']	= "Questi valori sono solo stime e possono variare leggermente a causa di fluttuazioni di valuta e di arrotondamento.";
+	$lang['applyCouponCode']		= "Applica codice coupon";
+	$lang['billMeLater']			= "Fattura in seguito";
+	$lang['billMeLaterDescription']	= "Emetteremo le fatture mensilmente per i tuoi acquisti.";
+	$lang['shippingOptions']		= "Opzioni di spedizione";
+	$lang['paymentOptions']			= "Opzioni di pagamento";
+	$lang['chooseCountryFirst']		= "Prima scegli la nazione";
+	$lang['paymentCancelled']		= "Il tuo pagamento è stato cancellato. Se vuoi puoi provare di nuovo a effettuare il pagamento."; 
+	$lang['paymentDeclined']		= "Il tuo pagamento è stato rifiutato. Se vuoi puoi provare di nuovo a effettuare il pagamento."; 		
+	$lang['generalInfo']			= "Informazioni personali";
+	$lang['membership']				= "Tipo di registrazione";
+	$lang['preferences']			= "Preferenze";
+	$lang['address']				= "Indirizzo";
+	$lang['actions']				= "Azioni";
+	$lang['changePass']				= "Cambia la password";
+	$lang['changeAvatar']			= "Cambia Avatar";
+	$lang['bio']					= "Note biografiche";
+	$lang['contributorSettings']	= "Impostazioni collaboratore";
+	$lang['edit']					= "MODIFICA";	
+	$lang['leftToFill']				= "Elementi ancora da compilare";	
+	$lang['commissionMethod']		= "Metodo pagamento commissioni"; 
+	$lang['commission']				= "Commissione";	
+	$lang['signupDate']				= "Utente da";
+	$lang['lastLogin']				= "Ultimo accesso";	
+	$lang['clientName']				= "Nome cliente";
+	$lang['eventCode']				= "Codice evento";
+	$lang['eventDate']				= "Data evento";
+	$lang['eventLocation']			= "Luogo evento";	
+	$lang['viewPackOptions']		= "Visualizza contenuti e opzioni del pacchetto";
+	$lang['viewOptions']			= "Visualizza opzioni";	
+	$lang['remove']					= "RIMUOVI";
+	$lang['productShots']			= "Immagine del prodotto";
+	$lang['currentPass']			= "Password attuale";
+	$lang['newPass']				= "Nuova Password";
+	$lang['vNewPass']				= "Verifica nuova password";
+	$lang['verifyPass']				= "Ripeti Password";
+	$lang['firstName']				= "Nome";
+	$lang['lastName']				= "Cognome";
+	$lang['location']				= "Luogo";
+	$lang['memberSince']			= "Utente da";
+	$lang['portfolio']				= "PORTFOLIO";
+	$lang['profile']				= "PROFILO";
+	$lang['address']				= "Indirizzo";
+	$lang['city']					= "Città";
+	$lang['state']					= "Stato/Provincia";
+	$lang['zip']					= "Codice postale";
+	$lang['country']				= "Nazione";
+	$lang['save'] 					= "SALVA";
+	$lang['add'] 					= "AGGIUNGI";
+	$lang['companyName']			= "Nome azienda";
+	$lang['accountStatus']			= "Stato account";
+	$lang['website']				= "Sito Web";
+	$lang['phone']					= "Telefono";
+	$lang['email'] 					= "Email";
+	$lang['name'] 					= "Nome";
+	$lang['submit'] 				= "INOLTRA";	
+	$lang['message'] 				= "Messaggio";	
+	$lang['question']				= "Richiesta";
+	$lang['password'] 				= "Password";	
+	$lang['members'] 				= "Richiesta";
+	$lang['visits'] 				= "Visite";	
+	$lang['logout'] 				= "Esci";
+	$lang['lightboxes']				= "Lista Preferiti";
+	$lang['cart']					= "Il tuo carrello";
+	$lang['cartItemAdded']			= "Un articolo è stato aggiunto al tuo carrello.";
+	$lang['includesTax']			= "Include imposte/IVA";
+	$lang['addToCart']				= "AGGIUNGI AL CARRELLO";
+	$lang['items']					= "Articoli";
+	$lang['item']					= "Articolo";
+	$lang['qty']					= "Qta";
+	$lang['price']					= "Prezzo";
+	$lang['more']					= "Più";
+	$lang['moreInfo']				= "Maggiori informazioni";
+	$lang['back']					= "Indietro";
+	$lang['none']					= "Nessuno";
+	$lang['details']				= "Dettagli";
+	$lang['options']				= "Opzioni";
+	$lang['page']					= "Pagina";
+	$lang['ratingSubmitted']		= "Valutazioni inoltrate";
+	$lang['noMedia']				= "Nessuna immagine disponibile";
+	$lang['itemsTotal']				= "articoli in totale";
+	$lang['of']						= "di";
+	$lang['view']					= "VISUALIZZA";
+	$lang['apply']					= "APPLICA";
+	$lang['currency']				= "Valuta";
+	$lang['active']					= "Attiva";
+	$lang['pending']				= "Da Approvare";
+	$lang['freeTrial']				= "Prova gratuita";
+	$lang['setupFee']				= "Costo di attivazione";
+	$lang['free']					= "Gratis";
+	$lang['open']					= "Aperto";
+	$lang['close']					= "CHIUDI";
+	$lang['closed']					= "Chiuso";
+	$lang['by']						= "Da";
+	$lang['download']				= "Download";
+	$lang['downloadUpper']			= "DOWNLOAD IMMAGINE";
+	$lang['KB']						= "KB";
+	$lang['MB']						= "MB";
+	$lang['files']					= "File";
+	$lang['unknown']				= "Sconosciuto";
+	$lang['freeDownload']			= "Download gratuito";
+	$lang['prevDown']				= "Download Precedente";
+	$lang['pay']					= "PAGA";
+	$lang['purchaseCredits']		= "ACQUISTA CREDITI";
+	$lang['purchaseSub']			= "ACQUISTA UNA SOTTOSCRIZIONE";
+	$lang['hour'] 					= "Ora";
+	$lang['slash'] 					= "Slash";
+	$lang['period'] 				= "Punto";
+	$lang['dash'] 					= "Trattino";
+	$lang['gmt'] 					= "GMT";
+	$lang['avatar'] 				= "Avatar";
+	$lang['delete'] 				= "ELIMINA";
+	$lang['uploadAvatar']			= "CARICA AVATAR";
+	$lang['welcome']				= "Benvenuto";
+	$lang['expires']				= "Scade";
+	$lang['msExpired']				= "La seguente registrazione è scaduta";
+	$lang['newSales']				= "Nuove vendite dal tuo ultimo accesso";
+	$lang['never']					= "Mai";
+	$lang['yes']					= "SI";
+	$lang['no']						= "NO";
+	$lang['create'] 				= "CREA";
+	$lang['cancel'] 				= "CANCELLA";
+	$lang['notes'] 					= "Note";
+	$lang['update'] 				= "AGGIORNA";
+	$lang['each'] 					= "ogni";
+	$lang['enterKeywords']			= "Inserisci una o più parole chiave";
+	$lang['send']					= "INVIA";
+	$lang['emailTo']				= "Invia email a";
+	$lang['yourName']				= "Il tuo nome";
+	$lang['yourEmail']				= "la tua Email";
+	$lang['emailToFriend']			= "Invia per email il link di questo media";
+	$lang['emailToFriendSent']		= "Un'email è stata inviata. Puoi inviarne una nuova o chiudere questa finestra.";
+	$lang['linkSentBy']				= "Un link di una foto o di un video ti è stato inviato da";
+	$lang['newPackageMessage']		= "Inizia un nuovo pacchetto qui sotto o seleziona un pacchetto simile già nel tuo carrello";
+	$lang['warning']				= "Attenzione!";
+	$lang['estimated']				= "Stimato";
+	$lang['doneUpper']				= "FATTO";
+	$lang['returnToSiteUpper']		= "RITORNA AL SITO";
+	$lang['chooseCountryFirst']		= "Prima scegli la nazione";
+	$lang['advancedSearch']			= "Ricerca avanzata";
+	$lang['eventSearch']			= "Ricerca evento";	
+	$lang['AND']					= "E";
+	$lang['OR']						= "O";
+	$lang['NOT']					= "NO";
+	$lang['noAccess']				= "Non hai accesso alla visualizzazione di questa area.";	
+	$lang['siteStats']				= "Statistiche sito";
+	$lang['membersOnline']			= "Utenti online";
+	$lang['minutesAgo']				= "minuti fa";
+	$lang['seconds']				= "Secondi";	
+	$lang['megabytesAbv']			= "MB";	
+	$lang['downWithSub']			= "Scarica usando sottoscrizione";
+	$lang['downloadsRemaining']		= "Download rimanenti oggi";
+	$lang['requestDownloadSuccess']	= "Abbiamo ricevuto la tua richiesta per questo file e ti contatteremo a breve.";	
+	$lang['mediaLicenseNFS']		= "Non in vendita";
+	$lang['mediaLicenseRF']			= "Royalty Free";
+	$lang['mediaLicenseRM']			= "Diritti gestiti";
+	$lang['mediaLicenseFR']			= "Gratis";
+	$lang['mediaLicenseCU']			= "Contattaci";	
+	$lang['original']				= "Download Originale";	
+	$lang['prevDownloaded']			= "Hai già scaricato questo file in precedenza. Non ci sono costi aggiuntivi per scaricarlo di nuovo.";
+	$lang['instantDownload']		= "Download immediato";
+	$lang['requestDownload']		= "RICHIESTA DOWNLOAD";
+	$lang['request']				= "RICHIEDI";
+	$lang['enterEmail']				= "Inserisci il tuo indirizzo email";	
+	$lang['license']				= "Licenza";
+	$lang['inches']					= "Pollici";
+	$lang['centimeters']			= "Centimetri";
+	$lang['dpi']					= "dpi";	
+	$lang['noSimilarMediaMessage']	= "Non sono stati trovati media simii.";
+	$lang['backUpper']				= "INDIETRO";
+	$lang['nextUpper']				= "SUCCESSIVO";
+	$lang['prevUpper']				= "PRECEDENTE";
+	$lang['curGalleryOnly']			= "Soltanto galleria attuale";
+	$lang['sortBy']					= "Ordina per";
+	$lang['galSortColor']			= "Colore";
+	$lang['galSortDate']			= "Data inserimento";
+	$lang['galSortID']				= "ID";
+	$lang['galSortTitle']			= "Artista";
+	$lang['galSortFilename']		= "Nome file";
+	$lang['galSortFilesize']		= "Dimensioni file";
+	$lang['galSortSortNum']			= "Numero d'ordine";
+	$lang['galSortBatchID']			= "ID lotto";
+	$lang['galSortFeatured']		= "In evidenza";
+	$lang['galSortWidth']			= "Larghezza";
+	$lang['galSortHeight']			= "Altezza";
+	$lang['galSortViews']			= "Visualizzazioni";
+	$lang['galSortAsc']				= "Crescente";
+	$lang['galSortDesc']			= "Decrescente";
+	$lang['mediaIncludedInColl']	= "Questo file multimediale ègià incluso nelle seguenti collezioni.";	
+	$lang['billHeaderInvoice']		= "RICEVUTA DI ACQUISTO";
+	$lang['billHeaderDate']			= "DATA RICEVUTA ACQUISTO";
+	$lang['billHeaderDueDate']		= "DATA DI SCADENZA";
+	$lang['billHeaderTotal']		= "TOTALE";
+	$lang['billHeaderStatus']		= "STATO";
+	
+	// Cart
+	$lang['creditsWarning']			= "Non hai sufficienti crediti per completare questo acquisto. Per favore accedi con il tuo account o aggiungi crediti al tuo carrello.";
+	$lang['subtotalWarning']		= "Ammontare minimo per poter terminare questo acquisto:";
+	$lang['pleaseWait']				= "Per favore attendi mentre elaboriamo la tua richiesta!";
+	$lang['billMailinThanks']		= "Per favore invia il tuo bonifico bancario per il seguente ammontare all'indirizzo indicato. Non appena ricevuto il pagamento la tua fattura sara' contrassegnata come pagata.";
+	$lang['mailinRef']				= "Per favore usa il seguente numero come referenza col tuo pagamento";
+	$lang['subtotal']				= "Subtotale";
+	$lang['shipping']				= "Spedizione";
+	$lang['discounts']				= "Sconti/coupon";
+	$lang['total']					= "Totale";
+	$lang['creditsSubtotal']		= "Subtotale crediti";
+	$lang['creditsDiscounts']		= "Sconti credito";
+	$lang['credits']				= "Crediti";
+	$lang['reviewOrder']			= "Rivedi il tuo ordine";
+	$lang['payment']				= "Pagamento";
+	$lang['cartNoItems']			= "Nessun articolo nel carrello!";
+	$lang['enterShipInfo']			= "Per favore inserisci sotto i tuoi dati di spedizione e le informazioni inerenti al pagamento";
+	$lang['sameAsShipping']			= "Coincide con l'indirizzo di spedizione";
+	$lang['differentAddress']		= "Indicare un indirizzo differente";
+	$lang['noShipMethod']			= "Non esiste alcun metodo di spedizione per questi articoli.";	
+	$lang['choosePaymentMethod']	= "Per favore scegliere un metodo di pagamento";	
+	$lang['discountCode']			= "CODICE SCONTO";
+	$lang['use']					= "Utilizza";
+	$lang['continueNoAccount']		= "o continua senza un account qui sotto";
+	
+	
+	// Order
+	$lang['yourOrder']				= "Il tuo ordine";
+	$lang['viewInvoice']			= "RICEVUTA DI ACQUISTO";
+	$lang['totalsShown']			= "Totali indicati in";
+	$lang['downloadExpired']		= "Download scaduto";
+	$lang['downloadExpiredMes']		= "Questo link per il download è scaduto. Per favore contattaci per riattivarlo.";
+	$lang['downloadMax']			= "Tetto massimo download oltrepassato";
+	$lang['downloadMaxMes']			= "Hai raggiunto il numero massimo di download consentiti per questo file acquistato. Per favore contattaci per la riattivazione del link.";
+	$lang['downloadNotApproved']	= "Ordine non approvato";
+	$lang['downloadNotApprovedMes']	= "Non puoi scaricare questo file finchè il tuo ordine non sarà approvato. Per favore riprova a breve.";	
+	$lang['downloadNotAvail']		= "Download immediato non disponibile";
+	$lang['downloadNotAvailMes']	= "Questo file non è disponibile per il download immediato. Per favore usa il pulsante di richiesta qui sotto per richiederlo tramite email.";
+	$lang['orderNumber']			= "Numero ordine";
+	$lang['orderPlaced']			= "Ordine effettuato"; 
+	$lang['orderStatus']			= "Stato ordine";
+	$lang['paymentStatus']			= "Stato pagamento";
+	
+	
+	// IPTC
+	$lang['iptc']					= "IPTC";
+	$lang['iptc_title']				= "Artista";
+	$lang['iptc_description']		= "Descrizione";
+	$lang['iptc_instructions']		= "Istruzioni";
+	$lang['iptc_date_created']		= "Data creazione";
+	$lang['iptc_author']			= "Autore";
+	$lang['iptc_city']				= "Città";
+	$lang['iptc_state']				= "Stato";
+	$lang['iptc_country']			= "Nazione";
+	$lang['iptc_job_identifier']	= "Identificatore processo";
+	$lang['iptc_headline']			= "Sommario";
+	$lang['iptc_provider']			= "Provider"; //Provider
+	$lang['iptc_source']			= "Fonte";
+	$lang['iptc_description_writer']= "Autore della descrizione";
+	$lang['iptc_urgency']			= "Urgenza";
+	$lang['iptc_copyright_notice']	= "Avviso di copyright";
+	
+	// EXIF
+	$lang['exif']							= "EXIF";
+	$lang['exif_FileName']					= "Nome file";
+	$lang['exif_FileDateTime']				= "Data/ora file";
+	$lang['exif_FileSize']					= "Dimensioni file";
+	$lang['exif_FileType']					= "Tipo file";
+	$lang['exif_MimeType']					= "Tipo MIME";
+	$lang['exif_SectionsFound']				= "Sezioni trovate";
+	$lang['exif_ImageDescription']			= "Descrizione immagine";
+	$lang['exif_Make']						= "Crea";
+	$lang['exif_Model']						= "Modello";
+	$lang['exif_Orientation']				= "Orientamento";
+	$lang['exif_XResolution']				= "Risoluzione orizzontale";
+	$lang['exif_YResolution']				= "Risoluzione verticale";
+	$lang['exif_ResolutionUnit']			= "Unità di risoluzione";
+	$lang['exif_Software']					= "Software";
+	$lang['exif_DateTime']					= "Data/ora";
+	$lang['exif_YCbCrPositioning']			= "Posizionamento YCbCr";
+	$lang['exif_Exif_IFD_Pointer']			= "Puntatore Exif IFD";
+	$lang['exif_GPS_IFD_Pointer']			= "Puntatore Exif GPS";
+	$lang['exif_ExposureTime']				= "Tempo esposizione";
+	$lang['exif_FNumber']					= "Rapporto focale";
+	$lang['exif_ExposureProgram']			= "Metodo esposizione";
+	$lang['exif_ISOSpeedRatings']			= "ISO";
+	$lang['exif_ExifVersion']				= "Versione Exif";
+	$lang['exif_DateTimeOriginal']			= "Data/ora originali";
+	$lang['exif_DateTimeDigitized']			= "Data/ora digitalizzazione";
+	$lang['exif_ComponentsConfiguration']	= "Configurazione componenti";
+	$lang['exif_ShutterSpeedValue']			= "Velocità otturatore";
+	$lang['exif_ApertureValue']				= "Valore apertura";
+	$lang['exif_MeteringMode']				= "Modalità misurazione";
+	$lang['exif_Flash']						= "Flash";
+	$lang['exif_FocalLength']				= "Lunghezza focale";
+	$lang['exif_FlashPixVersion']			= "Versione Flash Pix";
+	$lang['exif_ColorSpace']				= "Spazio colore";
+	$lang['exif_ExifImageWidth']			= "Larghezza immagine Exif";
+	$lang['exif_ExifImageLength']			= "Lunghezza immagine Exif";
+	$lang['exif_SensingMethod']				= "Metodo misurazione";
+	$lang['exif_ExposureMode']				= "Metodo esposizione";
+	$lang['exif_WhiteBalance']				= "Bilanciamento del bianco";
+	$lang['exif_SceneCaptureType']			= "Tipo di acquisizione scena";
+	$lang['exif_Sharpness']					= "Nitidezza";
+	$lang['exif_GPSLatitudeRef']			= "GPS Latitudine Rif";
+	$lang['exif_GPSLatitude_0']				= "GPS Latitudine 0";
+	$lang['exif_GPSLatitude_1']				= "GPS Latitudine 1";
+	$lang['exif_GPSLatitude_2']				= "GPS Latitudine 2";
+	$lang['exif_GPSLongitudeRef']			= "GPS Longitude Rif";
+	$lang['exif_GPSLongitude_0']			= "GPS Longitude 0";
+	$lang['exif_GPSLongitude_1']			= "GPS Longitude 1";
+	$lang['exif_GPSLongitude_2']			= "GPS Longitude 2";
+	$lang['exif_GPSTimeStamp_0']			= "GPS Timbro Data/ora 0";
+	$lang['exif_GPSTimeStamp_1']			= "GPS Timbro Data/ora 1";
+	$lang['exif_GPSTimeStamp_2']			= "GPS Timbro Data/ora 2";
+	$lang['exif_GPSImgDirectionRef']		= "GPS Riferimento direzione immagine";
+	$lang['exif_GPSImgDirection']			= "GPS Riferimento direzione immagine";
+	
+	// Media Labels
+	$lang['mediaLabelTitle']		= "Artista";
+	$lang['mediaLabelDesc']			= "Titolo";
+	$lang['mediaLabelCopyright']	= "Copyright";
+	$lang['mediaLabelRestrictions']	= "Data";
+	$lang['mediaLabelRelease']		= "Liberatoria";
+	$lang['mediaLabelKeys']			= "Parole chiave";
+	$lang['mediaLabelFilename']		= "Nome file";
+	$lang['mediaLabelID']			= "ID";
+	$lang['mediaLabelDate']			= "Aggiunto";
+	$lang['mediaLabelDateC']		= "Creato";
+	$lang['mediaLabelDownloads']	= "Download";
+	$lang['mediaLabelViews']		= "Visualizzazioni";
+	$lang['mediaLabelPurchases']	= "Acquisti";
+	$lang['mediaLabelColors']		= "Colori";
+	$lang['mediaLabelPrice']		= "Prezzo";
+	$lang['mediaLabelCredits']		= "Crediti";
+	$lang['mediaLabelOwner']		= "Inserito da";
+	$lang['mediaLabelUnknown']		= "Sconosciuto";
+	$lang['mediaLabelResolution']	= "Pixel";
+	$lang['mediaLabelFilesize']		= "Dimensioni file";
+	$lang['mediaLabelRunningTime']	= "Durata";
+	$lang['mediaLabelFPS']			= "FPS";
+	$lang['mediaLabelFormat']		= "Formato";
+	
+	// Search
+	$lang['search']					= "Ricerca";
+	$lang['searchEnterKeyMessage']	= "Per favore inserisci le parole chiave nel campo per iniziare la tua ricerca.";
+	$lang['searchNoResults']		= "La tua ricerca non ha prodotto alcun risultato.";
+	$lang['searchDateRange']		= "Ricerca in un intervallo di date";
+	$lang['searchNarrow']			= "Restringi risultati di ricerca";
+	$lang['searchStart']			= "Inizia la tua ricerca qui sotto!";
+	$lang['searchAll']				= "Tutti";
+	$lang['searchClear']			= "Azzera ricerca";
+	$lang['searchKeywords']			= "Parole chiave";
+	$lang['searchTitle']			= "Artista";
+	$lang['searchDescription']		= "Descrizione";
+	$lang['searchFilename']			= "Nome file";
+	$lang['searchPortrait']			= "Verticali";
+	$lang['searchLandscape']		= "Orizzontali";
+	$lang['searchSquare']			= "Quadrate";
+	$lang['searchRoyaltyFree']		= "Royalty Free";
+	$lang['searchRightsManaged']	= "Diritti gestiti";
+	$lang['searchFree']				= "Gratis";
+	$lang['searchContactUs']		= "Contattaci";
+	$lang['searchHeaderKeywords']	= "Parole chiave";
+	$lang['searchHeaderFields']		= "Campi";
+	$lang['searchHeaderType']		= "Tipo";
+	$lang['searchHeaderOrientation']= "Orientamento";
+	$lang['searchHeaderColor']		= "Colore";
+	$lang['searchHeaderGalleries']	= "Gallerie";
+	
+	$lang['viewGalleries']		= "Se provieni da Mondopuzzle.it e hai ordini in corso, qui puoi effettuare il pagamento dei soli Foto Puzzle.<br><br> Con gli articoli nel carrello, seleziona ORDINE COMBINATO. Non saranno applicate le spese di trasporto.";
+	$lang['orderInfoshipnotes']	= "A spedizione avvenuta qui trovi il codice tracking: ";
+	$lang['puzzleingalleries']	= " x Puzzle";
+	$lang['mediaNavCarica']	= "Carica Immagine";
+	
+	//FOOTER MOD
+	$lang['footercfunction']		= "Come funziona?";
+	$lang['footerinfoart']	  	    = "Info Art Puzzle";
+	$lang['footerinfofoto']	  	    = "Info Foto Puzzle";
+	$lang['footerfaq']	  	        = "FAQ - Domande frequenti";
+	$lang['footermissing']	  	    = "Assistenza Puzzle";
+	
+	//FP
+	$lang['fotopuzzleErr']			= "errore imprevisto, tornare in dietro e riprovare, grazie.";
+	$lang['fotopuzzleName']			= "Foto Puzzle";	
+	$lang['fotopuzzleDesc']			= "Usa questa immagine per creare un puzzle di alta qualità!";
+	$lang['TEXT_PP_TESTATA']		= "Foto Puzzle";
+	$lang['TEXT_PP_SCEGLI']			= 'Scegli i pezzi del puzzle e'; 
+	$lang['TEXT_PP_TAGLIA_O']		= 'taglia orizzontale'; 
+	$lang['TEXT_PP_TAGLIA_V']		= 'verticale';
+	$lang['TEXT_PP_INVIO_IMM']		= 'invio immagine in corso...';
+	$lang['TEXT_PP_CAMBIA_FOTO']	= '&larr; annulla/cambia foto';
+	$lang['TEXT_PP_CAMBIA_FORM']	= '&larr; cambia formato / foto';
+	$lang['TEXT_PP_AVANTI']			= 'avanti &rarr;';
+	$lang['TEXT_PP_RIEPILOGO']		= 'riepilogo';
+	$lang['TEXT_PP_CARICA']			= 'Carica la foto';
+	$lang['TEXT_PP_DESC_CARICA']	= 'file immagine valido di dimensioni massime pari a ';
+	$lang['TEXT_PP_MEGABYTE']		= ' Megabytes';
+	$lang['TEXT_PP_SELEZIONA']		= ' Seleziona';
+	$lang['TEXT_PP_RIEPILOGO_ORDINE']	= 'Riepilogo ordine';
+	$lang['TEXT_PP_CONTROLLO']		= 'Controlla che il testo, se inserito, sia visibile sulla scatola. Altrimenti chiudi questa anteprima e clicca il tasto giallo con la matita.';
+	$lang['TEXT_PP_VERIFICA']		= 'Verifica box e puzzle che saranno stampati esattamente in tutti i particolari (colori, sfondo, testo, immagini e miniature)';
+	$lang['TEXT_PP_VERIFICA_SCATOLA']	= 'La scatola che vedi sara\' stampata esattamente in tutti i particolari (colori, sfondo, testo, immagini e miniature)';
+	$lang['TEXT_PP_CONSENSO']			= '(consenso obbligatorio)';
+	$lang['TEXT_PP_CONSENSO_CONFERMA']	= 'Ho verificato il layout ed i testi. Comprendo che il puzzle sarà prodotto secondo l\'immagine qui visualizzata, e che non sarò in grado	di effettuare modifiche una volta eseguito l\'ordine. Tempo di produzione 7 gg';
+	$lang['TEXT_PP_ACCETTA_COND']	= 'è necessario accettare le condizioni per proseguire con l\'ordine';
+	//$lang['TEXT_PP_4PUNTI']			= '<img src="assets/images/icons/pp_home_puzzle_it.jpg" border="0" width="550"/>';
+	$lang['TEXT_PP_4PUNTI']			= '<img src="assets/images/icons/pp_home_puzzle_it.jpg" border="0" class="img-responsive" style="display: block; margin-left: auto; margin-right: auto;"/>';
+	$lang['TEXT_PP_JS_INVIATE']		= 'oppure puoi usare una delle immagini inviate precedentemente!';
+	$lang['TEXT_PP_JS_ELABORANDO']	= 'sto elaborando la scatola, attendi prego...';
+	$lang['TEXT_PP_INSERISCI_TESTO']	= 'inserisci qui il testo e.... premi il tasto giallo';
+	$lang['TEXT_PP_AGGIUNGI_CARR']	= 'Aggiungi al carrello';
+	$lang['TEXT_PP_PEZZI']	= 'Pezzi';
+	$lang['TEXT_PP_FORMATO']	= 'Formato';
+	$lang['TEXT_PP_PREZZO']	= 'Prezzo';
+	
+
+	$lang['TEXT_PP_SCELTA_OPZIONE'] = 'Seleziona un\'opzione...';
+	//$lang['TEXT_PP_OPZIONE_SCATOLA'] = 'Scatola personalizzata';
+	$lang['TEXT_PUZZLES_BOX_OPTION_NAME'] = 'Scatola personalizzata';
+	$lang['TEXT_PP_OPZIONE_SCATOLA_PREZZO'] = 'inclusa nel prezzo';
+	//$lang['TEXT_PUZZLES_BOX_OPTION_NAME'] = 'Preassemblato';
+	$lang['TEXT_PREASS_ATTR_NAME'] = 'Preassemblato';
+	$lang['TEXT_PP_SCELTA_OPZIONE_FOOT']	= 'Nota: non è possibile ordinare un puzzle preassemblato con scatola personalizzata';
+	$lang['TEXT_PP_SCELTA_OPZIONE_FOOT_WAIT']	= 'stiamo elaborando il tuo puzzle, attendi per favore. Potrebbero volerci diversi secondi a seconda del peso della foto...';
+	$lang['PPZL_BOX'] = 'Scatola';
+	$lang['PPZL_ALTRE_OPZIONI'] = 'Opzione';
+?>

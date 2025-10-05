@@ -9,8 +9,8 @@
         return;
     }
 
-    const config = parseConfig(wizard.getAttribute('data-config'));
-    const initialSummary = parseConfig(wizard.getAttribute('data-initial-summary'));
+    const config = parseConfig(wizard.dataset.config || wizard.getAttribute('data-config'));
+    const initialSummary = parseConfig(wizard.dataset.initialSummary || wizard.getAttribute('data-initial-summary'));
     const uploadUrl = wizard.dataset.uploadUrl;
     const previewUrl = wizard.dataset.previewUrl;
     const summaryUrl = wizard.dataset.summaryUrl;
@@ -465,8 +465,8 @@
         try {
             await validateImage(file);
             const response = await uploadFile(file);
-            state.file = response.file;
-            state.fileUrl = response.download_url;
+            state.file = typeof response.file === 'string' ? response.file : null;
+            state.fileUrl = response.download_url && isSafeUrl(response.download_url) ? response.download_url : null;
             state.fileName = file.name;
             state.uploading = false;
             state.previewUrl = null;
@@ -536,8 +536,9 @@
         renderStep();
 
         generatePreview().then(function (response) {
-            state.previewUrl = response.download_url || response.preview;
-            state.previewPath = response.preview;
+            const directUrl = response.download_url && isSafeUrl(response.download_url) ? response.download_url : null;
+            state.previewUrl = directUrl || (response.preview && isSafeUrl(response.preview) ? response.preview : null);
+            state.previewPath = typeof response.preview === 'string' ? response.preview : null;
             state.previewDirty = false;
             state.previewLoading = false;
             renderStep();

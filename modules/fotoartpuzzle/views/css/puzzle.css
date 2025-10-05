@@ -7,8 +7,249 @@
     border-color: #1976d2;
 }
 
+.fap-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.fap-modal.is-visible {
+    display: flex;
+}
+
+.fap-modal__backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.fap-modal__dialog {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    max-width: 720px;
+    width: calc(100% - 2rem);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+.fap-modal__title {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.fap-modal__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.fap-modal__content {
+    margin-bottom: 2rem;
+}
+
+.fap-modal__footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.fap-modal__footer .btn {
+    flex: 1 1 auto;
+}
+
+.fap-modal__footer .fap-modal__prev {
+    flex: 0 0 auto;
+}
+
+.fap-modal__footer .fap-modal__next.is-hidden,
+.fap-modal__footer .fap-modal__finish.is-hidden {
+    display: none;
+}
+
+.fap-field {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fap-field__label {
+    font-weight: 600;
+}
+
+.fap-status {
+    font-style: italic;
+}
+
+.fap-upload-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 6px;
+}
+
+.fap-upload-summary span {
+    color: #555;
+}
+
+.fap-format-list {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.fap-format-card {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: left;
+}
+
+.fap-format-card:hover {
+    border-color: #1976d2;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+}
+
+.fap-format-card.is-selected {
+    border-color: #1976d2;
+    box-shadow: 0 8px 20px rgba(25, 118, 210, 0.25);
+}
+
+.fap-format-card__name {
+    font-weight: 600;
+}
+
+.fap-format-card__pieces,
+.fap-format-card__size {
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.fap-box-options {
+    display: flex;
+    flex-direction: column;
+}
+
+.fap-char-counter {
+    color: #777;
+    font-size: 0.85rem;
+}
+
+.fap-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.fap-preview__image {
+    max-width: 100%;
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.fap-preview__details {
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.fap-preview__details strong {
+    margin-right: 0.25rem;
+}
+
+.fap-preview__refresh {
+    align-self: flex-start;
+}
+
+.fap-alert {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.fap-alert--error {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.fap-alert--success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.fap-selection-summary {
+    display: none;
+    margin-top: 1rem;
+    border: 1px solid #1976d2;
+    border-radius: 6px;
+    background: #e3f2fd;
+    padding: 1rem;
+}
+
+.fap-selection-summary.is-visible {
+    display: block;
+}
+
+.fap-selection-summary__content > strong {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.fap-summary-list {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.fap-summary-list span {
+    font-weight: 600;
+}
+
 .fap-cart-summary {
     border: 1px solid #ddd;
     padding: 1rem;
     margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .fap-modal__dialog {
+        padding: 1.5rem;
+        max-width: 95vw;
+    }
+
+    .fap-modal__footer {
+        flex-direction: column;
+    }
+
+    .fap-modal__footer .btn {
+        width: 100%;
+    }
 }

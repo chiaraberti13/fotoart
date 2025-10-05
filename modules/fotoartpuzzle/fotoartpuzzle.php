@@ -83,6 +83,10 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
+        if (!$this->installDatabase()) {
+            return false;
+        }
+
         return $this->installTab();
     }
 
@@ -93,7 +97,10 @@ class FotoArtPuzzle extends Module
      */
     public function uninstall()
     {
-        return parent::uninstall() && FAPConfiguration::removeDefaults() && $this->uninstallTab();
+        return parent::uninstall()
+            && FAPConfiguration::removeDefaults()
+            && $this->uninstallDatabase()
+            && $this->uninstallTab();
     }
 
     /**
@@ -490,6 +497,21 @@ class FotoArtPuzzle extends Module
 
         $order = $params['object'];
         FAPCustomizationService::finalizeOrderCustomizations($order);
+
+        $customizations = FAPCustomizationService::getOrderCustomizations((int) $order->id);
+        if (!$customizations) {
+            return;
+        }
+
+        $this->ensureProductionRecord($order);
+
+        if (Configuration::get(FAPConfiguration::EMAIL_CLIENT)) {
+            $this->sendCustomerEmail($order, $customizations);
+        }
+
+        if (Configuration::get(FAPConfiguration::EMAIL_ADMIN)) {
+            $this->sendAdminEmail($order, $customizations);
+        }
     }
 
     public function hookActionCartSave($params)
@@ -592,6 +614,291 @@ class FotoArtPuzzle extends Module
         }
 
         return null;
+    }
+
+    /**
+     * Create required database tables
+     *
+     * @return bool
+     */
+    private function installDatabase()
+    {
+        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'fap_production_order` (
+            `id_fap_production` INT(11) NOT NULL AUTO_INCREMENT,
+            `id_order` INT(11) NOT NULL,
+            `status` VARCHAR(32) NOT NULL,
+            `date_add` DATETIME NOT NULL,
+            `date_upd` DATETIME NOT NULL,
+            PRIMARY KEY (`id_fap_production`),
+            UNIQUE KEY `id_order` (`id_order`)
+        ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+    /**
+     * Drop module tables on uninstall
+     *
+     * @return bool
+     */
+    private function uninstallDatabase()
+    {
+        $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'fap_production_order`';
+
+        return Db::getInstance()->execute($sql);
+    }
+
+    /**
+     * Ensure a production record exists for the order
+     *
+     * @param Order $order
+     */
+    private function ensureProductionRecord(Order $order)
+    {
+        $now = date('Y-m-d H:i:s');
+
+        Db::getInstance()->insert(
+            'fap_production_order',
+            [
+                'id_order' => (int) $order->id,
+                'status' => pSQL('pending'),
+                'date_add' => pSQL($now),
+                'date_upd' => pSQL($now),
+            ],
+            false,
+            true,
+            Db::REPLACE
+        );
+    }
+
+    /**
+     * Send confirmation email to customer
+     *
+     * @param Order $order
+     * @param array $customizations
+     */
+    private function sendCustomerEmail(Order $order, array $customizations)
+    {
+        if (empty($order->id_customer)) {
+            return;
+        }
+
+        $customer = new Customer((int) $order->id_customer);
+        if (!Validate::isLoadedObject($customer)) {
+            return;
+        }
+
+        $idLang = (int) $order->id_lang ?: (int) Configuration::get('PS_LANG_DEFAULT');
+
+        $attachPreview = (bool) Configuration::get(FAPConfiguration::EMAIL_ATTACH_PREVIEW);
+        $attachments = $attachPreview ? $this->buildPreviewAttachments($customizations) : [];
+
+        $templateVars = array_merge(
+            [
+                '{firstname}' => $customer->firstname,
+                '{lastname}' => $customer->lastname,
+                '{order_reference}' => $order->reference,
+                '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
+            ],
+            [
+                'customizations' => $this->mapCustomizationsForEmail($customizations, [
+                    'attach_preview' => $attachPreview,
+                    'include_links' => true,
+                    'scope' => 'front',
+                ]),
+            ]
+        );
+
+        Mail::Send(
+            $idLang,
+            'fap_customer_notification',
+            $this->l('Your custom FotoArt puzzle order is confirmed'),
+            $templateVars,
+            $customer->email,
+            trim($customer->firstname . ' ' . $customer->lastname),
+            null,
+            null,
+            $attachments,
+            null,
+            _PS_MODULE_DIR_ . self::MODULE_NAME . '/mails/'
+        );
+    }
+
+    /**
+     * Send notification email to administrators
+     *
+     * @param Order $order
+     * @param array $customizations
+     */
+    private function sendAdminEmail(Order $order, array $customizations)
+    {
+        $recipients = $this->parseAdminRecipients(Configuration::get(FAPConfiguration::EMAIL_ADMIN_RECIPIENTS));
+        if (empty($recipients)) {
+            return;
+        }
+
+        $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $attachPreview = (bool) Configuration::get(FAPConfiguration::EMAIL_ATTACH_PREVIEW);
+        $attachments = $attachPreview ? $this->buildPreviewAttachments($customizations) : [];
+
+        $customer = new Customer((int) $order->id_customer);
+        $templateVars = array_merge(
+            [
+                '{order_reference}' => $order->reference,
+                '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
+                '{customer_name}' => $customer && Validate::isLoadedObject($customer)
+                    ? trim($customer->firstname . ' ' . $customer->lastname)
+                    : '',
+                'order_link' => $this->context->link->getAdminLink('AdminOrders', true, [], [
+                    'vieworder' => 1,
+                    'id_order' => (int) $order->id,
+                ]),
+            ],
+            [
+                'customizations' => $this->mapCustomizationsForEmail($customizations, [
+                    'attach_preview' => $attachPreview,
+                    'include_links' => true,
+                    'scope' => 'admin',
+                ]),
+            ]
+        );
+
+        foreach ($recipients as $email => $name) {
+            Mail::Send(
+                $idLang,
+                'fap_admin_notification',
+                $this->l('New custom FotoArt puzzle order'),
+                $templateVars,
+                $email,
+                $name,
+                null,
+                null,
+                $attachments,
+                null,
+                _PS_MODULE_DIR_ . self::MODULE_NAME . '/mails/'
+            );
+        }
+    }
+
+    /**
+     * Normalize customization data for email templates
+     *
+     * @param array $customizations
+     * @param array $options
+     *
+     * @return array
+     */
+    private function mapCustomizationsForEmail(array $customizations, array $options = [])
+    {
+        $includeLinks = !empty($options['include_links']);
+        $scope = isset($options['scope']) ? (string) $options['scope'] : 'front';
+        $attachPreview = !empty($options['attach_preview']);
+
+        $mapped = [];
+        foreach ($customizations as $customization) {
+            $metadata = is_array($customization['metadata']) ? $customization['metadata'] : [];
+            $displayMetadata = [];
+            if (!empty($metadata['format'])) {
+                $displayMetadata[$this->l('Format')] = $metadata['format'];
+            }
+            if (!empty($metadata['color'])) {
+                $displayMetadata[$this->l('Color')] = $metadata['color'];
+            }
+            if (!empty($metadata['font'])) {
+                $displayMetadata[$this->l('Font')] = $metadata['font'];
+            }
+
+            $previewPath = !empty($metadata['preview_path']) ? $metadata['preview_path'] : null;
+            $mapped[] = [
+                'id_customization' => $customization['id_customization'],
+                'text' => $customization['text'],
+                'metadata' => $displayMetadata,
+                'has_preview' => (bool) $previewPath,
+                'preview_link' => ($includeLinks && $previewPath)
+                    ? $this->getDownloadLink($previewPath, $scope, ['disposition' => 'inline'])
+                    : null,
+                'image_link' => ($includeLinks && !empty($customization['file']))
+                    ? $this->getDownloadLink($customization['file'], $scope, ['disposition' => 'inline'])
+                    : null,
+                'preview_attached' => $attachPreview && $previewPath,
+            ];
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * Build preview attachments for email notifications
+     *
+     * @param array $customizations
+     *
+     * @return array
+     */
+    private function buildPreviewAttachments(array $customizations)
+    {
+        $attachments = [];
+        foreach ($customizations as $customization) {
+            $metadata = is_array($customization['metadata']) ? $customization['metadata'] : [];
+            if (empty($metadata['preview_path']) || !file_exists($metadata['preview_path'])) {
+                continue;
+            }
+
+            $attachments[] = [
+                'content' => Tools::file_get_contents($metadata['preview_path']),
+                'name' => basename($metadata['preview_path']),
+                'mime' => $this->guessMimeType($metadata['preview_path']),
+            ];
+        }
+
+        return $attachments;
+    }
+
+    /**
+     * Guess mime type by file extension
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    private function guessMimeType($path)
+    {
+        $extension = Tools::strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($extension, ['jpg', 'jpeg'], true)) {
+            return 'image/jpeg';
+        }
+
+        if ($extension === 'png') {
+            return 'image/png';
+        }
+
+        if ($extension === 'gif') {
+            return 'image/gif';
+        }
+
+        return 'application/octet-stream';
+    }
+
+    /**
+     * Parse administrator email recipients
+     *
+     * @param string $value
+     *
+     * @return array
+     */
+    private function parseAdminRecipients($value)
+    {
+        $recipients = [];
+        $parts = preg_split('/[\s,;]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach ($parts as $part) {
+            $email = trim($part);
+            if (!Validate::isEmail($email)) {
+                continue;
+            }
+            $recipients[$email] = $email;
+        }
+
+        return $recipients;
     }
 
     /**

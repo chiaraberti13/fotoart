@@ -1,0 +1,22 @@
+A new custom FotoArt puzzle order has been placed.
+
+Order: {$order_reference}
+Customer: {$customer_name}
+
+Back office link: {$order_link}
+
+{if isset($customizations) && $customizations}
+{foreach from=$customizations item=item}
+Customization #{$item.id_customization}
+{if $item.text}- Box text: {$item.text}
+{/if}{if isset($item.metadata)}{foreach from=$item.metadata key=label item=value}- {$label}: {$value}
+{/foreach}{/if}{if $item.image_link}- Image download: {$item.image_link}
+{/if}{if $item.preview_link}- Preview download: {$item.preview_link}
+{/if}{if $item.preview_attached}- Preview image attached to this email.
+{/if}
+{/foreach}
+{else}
+No customization details were found.
+{/if}
+
+{$shop_name}

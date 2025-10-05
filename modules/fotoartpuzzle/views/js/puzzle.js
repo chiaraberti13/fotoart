@@ -589,6 +589,9 @@
             if (combinationInput && combinationInput.value) {
                 payload.append('id_product_attribute', combinationInput.value);
             }
+            if (state.previewPath) {
+                payload.append('preview_path', state.previewPath);
+            }
 
             const response = await fetch(summaryUrl, {
                 method: 'POST',

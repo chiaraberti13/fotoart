@@ -1,4 +1,6 @@
-<div id="fap-wizard" data-config="{$config|escape:'html':'UTF-8'}" data-upload-url="{$upload_url|escape:'html':'UTF-8'}"
+<div id="fap-wizard" data-config="{$config|escape:'htmlall':'UTF-8'}"
+    data-initial-summary="{$initial_summary|escape:'htmlall':'UTF-8'}"
+    data-upload-url="{$upload_url|escape:'html':'UTF-8'}"
     data-preview-url="{$preview_url|escape:'html':'UTF-8'}" data-summary-url="{$summary_url|escape:'html':'UTF-8'}"
     data-token-upload="{$module->getFrontToken('upload')|escape:'html':'UTF-8'}"
     data-token-preview="{$module->getFrontToken('preview')|escape:'html':'UTF-8'}"

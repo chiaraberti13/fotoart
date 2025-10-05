@@ -108,6 +108,13 @@ class FotoArtPuzzle extends Module
         if (Tools::isSubmit('submit' . $this->name)) {
             $formValues = $this->getConfigFormValues();
             foreach (array_keys($formValues) as $key) {
+                if ($key === FAPConfiguration::ENABLED_PRODUCTS) {
+                    $value = Tools::getValue($key, []);
+                    $ids = array_values(array_unique(array_map('intval', (array) $value)));
+                    Configuration::updateValue($key, json_encode($ids));
+                    continue;
+                }
+
                 $value = Tools::getValue($key);
                 Configuration::updateValue($key, is_array($value) ? json_encode($value) : $value);
             }
@@ -139,11 +146,64 @@ class FotoArtPuzzle extends Module
             . '&tab_module=' . $this->tab
             . '&module_name=' . $this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $values = $this->getConfigFormValues();
+        $fieldsValue = $values;
+        if (isset($values[FAPConfiguration::ENABLED_PRODUCTS])) {
+            $fieldsValue[FAPConfiguration::ENABLED_PRODUCTS . '[]'] = $values[FAPConfiguration::ENABLED_PRODUCTS];
+        }
+
         $helper->tpl_vars = [
-            'fields_value' => $this->getConfigFormValues(),
+            'fields_value' => $fieldsValue,
         ];
 
-        return $helper->generateForm([$this->getUploadFieldset(), $this->getFormatFieldset(), $this->getBoxFieldset(), $this->getEmailFieldset(), $this->getPrivacyFieldset(), $this->getLogFieldset()]);
+        return $helper->generateForm([
+            $this->getProductFieldset(),
+            $this->getUploadFieldset(),
+            $this->getFormatFieldset(),
+            $this->getBoxFieldset(),
+            $this->getEmailFieldset(),
+            $this->getPrivacyFieldset(),
+            $this->getLogFieldset(),
+        ]);
+    }
+
+    private function getProductFieldset()
+    {
+        $products = Product::getSimpleProducts($this->context->language->id) ?: [];
+        $options = [];
+        foreach ($products as $product) {
+            $name = $product['name'];
+            if (!empty($product['reference'])) {
+                $name .= ' [' . $product['reference'] . ']';
+            }
+
+            $options[] = [
+                'id' => (int) $product['id_product'],
+                'name' => sprintf('%s (ID: %d)', $name, $product['id_product']),
+            ];
+        }
+
+        return [
+            'form' => [
+                'legend' => ['title' => $this->l('Product availability')],
+                'input' => [
+                    [
+                        'type' => 'select',
+                        'name' => FAPConfiguration::ENABLED_PRODUCTS . '[]',
+                        'label' => $this->l('Enable puzzle customization for'),
+                        'multiple' => true,
+                        'class' => 'chosen',
+                        'options' => [
+                            'query' => $options,
+                            'id' => 'id',
+                            'name' => 'name',
+                        ],
+                        'desc' => $this->l('Select the products that can display the FotoArt puzzle wizard.'),
+                    ],
+                ],
+                'submit' => ['title' => $this->l('Save')],
+            ],
+        ];
     }
 
     /**
@@ -396,6 +456,7 @@ class FotoArtPuzzle extends Module
             FAPConfiguration::TEMP_TTL_HOURS => Configuration::get(FAPConfiguration::TEMP_TTL_HOURS),
             FAPConfiguration::ANONYMIZE_FILENAMES => (int) Configuration::get(FAPConfiguration::ANONYMIZE_FILENAMES),
             FAPConfiguration::LOG_LEVEL => Configuration::get(FAPConfiguration::LOG_LEVEL),
+            FAPConfiguration::ENABLED_PRODUCTS => json_decode((string) Configuration::get(FAPConfiguration::ENABLED_PRODUCTS), true) ?: [],
         ];
     }
 
@@ -440,11 +501,39 @@ class FotoArtPuzzle extends Module
             return '';
         }
 
+        $initialSummary = [];
+        $cart = $this->context->cart;
+        if ($cart && $cart->id) {
+            $customizations = FAPCustomizationService::getCartCustomizations($cart->id);
+            foreach ($customizations as $customization) {
+                if ((int) $customization['id_product'] !== (int) $product['id_product']) {
+                    continue;
+                }
+
+                $formatData = isset($customization['metadata']['format_data']) && is_array($customization['metadata']['format_data'])
+                    ? $customization['metadata']['format_data']
+                    : [];
+
+                $initialSummary = [
+                    'id_customization' => $customization['id_customization'],
+                    'fileName' => $customization['metadata']['filename'] ?? '',
+                    'boxText' => $customization['text'] ?? '',
+                    'boxColor' => $customization['metadata']['color'] ?? '',
+                    'boxFont' => $customization['metadata']['font'] ?? '',
+                    'format' => $customization['metadata']['format'] ?? '',
+                    'formatData' => $formatData,
+                ];
+
+                break;
+            }
+        }
+
         $this->context->smarty->assign([
             'upload_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'upload'),
             'preview_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'preview'),
             'summary_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'summary'),
-            'config' => json_encode(FAPConfiguration::getFrontConfig()),
+            'config' => Tools::jsonEncode(FAPConfiguration::getFrontConfig()),
+            'initial_summary' => $initialSummary ? Tools::jsonEncode($initialSummary) : '',
             'module' => $this,
         ]);
 

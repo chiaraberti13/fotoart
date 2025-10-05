@@ -38,10 +38,10 @@ class FAPCustomizationService
      */
     public static function getCartCustomizations($idCart)
     {
-        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`
-                FROM `' . _DB_PREFIX_ . "customization` c
-                INNER JOIN `' . _DB_PREFIX_ . "customized_data` cd ON cd.`id_customization` = c.`id_customization`
-                WHERE c.`id_cart` = ' . (int) $idCart;
+        $sql = 'SELECT c.`id_customization`, c.`id_product`, c.`id_product_attribute`, cd.`type`, cd.`value`, cd.`index`'
+            . ' FROM `' . _DB_PREFIX_ . 'customization` c'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'customized_data` cd ON cd.`id_customization` = c.`id_customization`'
+            . ' WHERE c.`id_cart` = ' . (int) $idCart;
 
         $rows = Db::getInstance()->executeS($sql) ?: [];
 
@@ -57,11 +57,11 @@ class FAPCustomizationService
      */
     public static function getOrderCustomizations($idOrder)
     {
-        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`
-                FROM `' . _DB_PREFIX_ . "customized_data` cd
-                INNER JOIN `' . _DB_PREFIX_ . "customization` c ON c.`id_customization` = cd.`id_customization`
-                INNER JOIN `' . _DB_PREFIX_ . "order_detail` od ON od.`id_customization` = c.`id_customization`
-                WHERE od.`id_order` = ' . (int) $idOrder;
+        $sql = 'SELECT c.`id_customization`, c.`id_product`, c.`id_product_attribute`, cd.`type`, cd.`value`, cd.`index`'
+            . ' FROM `' . _DB_PREFIX_ . 'customized_data` cd'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'customization` c ON c.`id_customization` = cd.`id_customization`'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'order_detail` od ON od.`id_customization` = c.`id_customization`'
+            . ' WHERE od.`id_order` = ' . (int) $idOrder;
 
         $rows = Db::getInstance()->executeS($sql) ?: [];
 
@@ -117,12 +117,12 @@ class FAPCustomizationService
     private static function getOrCreateCustomization($idCart, $idProduct, $idProductAttribute, $idShop)
     {
         $idCustomization = (int) Db::getInstance()->getValue(
-            'SELECT `id_customization`
-             FROM `' . _DB_PREFIX_ . 'customization`
-             WHERE `id_cart` = ' . (int) $idCart . '
-               AND `id_product` = ' . (int) $idProduct . '
-               AND `id_product_attribute` = ' . (int) $idProductAttribute
-             ORDER BY `id_customization` DESC'
+            'SELECT `id_customization`'
+            . ' FROM `' . _DB_PREFIX_ . 'customization`'
+            . ' WHERE `id_cart` = ' . (int) $idCart
+            . ' AND `id_product` = ' . (int) $idProduct
+            . ' AND `id_product_attribute` = ' . (int) $idProductAttribute
+            . ' ORDER BY `id_customization` DESC'
         );
 
         if ($idCustomization) {
@@ -176,6 +176,8 @@ class FAPCustomizationService
             if (!isset($customizations[$id])) {
                 $customizations[$id] = [
                     'id_customization' => $id,
+                    'id_product' => isset($row['id_product']) ? (int) $row['id_product'] : 0,
+                    'id_product_attribute' => isset($row['id_product_attribute']) ? (int) $row['id_product_attribute'] : 0,
                     'file' => null,
                     'text' => null,
                     'metadata' => [],

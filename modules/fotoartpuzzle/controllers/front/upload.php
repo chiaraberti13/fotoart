@@ -95,6 +95,38 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
         $processed = $this->fileProcessor->process($destination, $destination . '_processed');
         @unlink($destination);
 
+        $this->assertMinimumDimensions($processed);
+
         return $processed['path'];
+    }
+
+    private function assertMinimumDimensions(array $imageData)
+    {
+        $minWidth = (int) Configuration::get(FAPConfiguration::MIN_WIDTH);
+        $minHeight = (int) Configuration::get(FAPConfiguration::MIN_HEIGHT);
+
+        if ((!$minWidth && !$minHeight) || empty($imageData['width']) || empty($imageData['height'])) {
+            return;
+        }
+
+        $width = (int) $imageData['width'];
+        $height = (int) $imageData['height'];
+
+        if (($minWidth && $width < $minWidth) || ($minHeight && $height < $minHeight)) {
+            if (!empty($imageData['path']) && file_exists($imageData['path'])) {
+                @unlink($imageData['path']);
+            }
+
+            $requirements = trim(
+                ($minWidth ? $minWidth . 'px' : '')
+                . ($minWidth && $minHeight ? ' × ' : '')
+                . ($minHeight ? $minHeight . 'px' : '')
+            );
+
+            throw new Exception(sprintf(
+                $this->module->l('Uploaded image is too small. Minimum size is %s.'),
+                $requirements
+            ));
+        }
     }
 }

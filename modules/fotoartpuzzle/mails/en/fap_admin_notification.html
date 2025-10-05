@@ -1,0 +1,37 @@
+<html>
+  <body>
+    <p>A new custom FotoArt puzzle order has been placed.</p>
+    <p><strong>Order:</strong> {$order_reference}<br />
+       <strong>Customer:</strong> {$customer_name}</p>
+    <p>You can review the order in the back office: <a href="{$order_link}">open order</a>.</p>
+    {if isset($customizations) && $customizations}
+      {foreach from=$customizations item=item}
+        <h4>Customization #{$item.id_customization}</h4>
+        <ul>
+          {if $item.text}
+            <li><strong>Box text:</strong> {$item.text}</li>
+          {/if}
+          {if isset($item.metadata)}
+            {foreach from=$item.metadata key=label item=value}
+              <li><strong>{$label}:</strong> {$value}</li>
+            {/foreach}
+          {/if}
+        </ul>
+        <p>
+          {if $item.image_link}
+            <a href="{$item.image_link}">Download image</a>
+          {/if}
+          {if $item.preview_link}
+            {if $item.image_link} | {/if}<a href="{$item.preview_link}">Download preview</a>
+          {/if}
+        </p>
+        {if $item.preview_attached}
+          <p>The preview image is attached to this email.</p>
+        {/if}
+      {/foreach}
+    {else}
+      <p>No customization details were found.</p>
+    {/if}
+    <p>{$shop_name}</p>
+  </body>
+</html>

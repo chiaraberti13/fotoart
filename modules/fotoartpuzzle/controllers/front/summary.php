@@ -30,6 +30,7 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             $boxColor = (string) Tools::getValue('box_color', '#FFFFFF');
             $boxFont = (string) Tools::getValue('box_font', 'Roboto-Regular');
             $format = Tools::getValue('format');
+            $previewPath = (string) Tools::getValue('preview_path', '');
 
             if (!$idProduct || !$imagePath || !file_exists($imagePath)) {
                 throw new Exception($this->module->l('Missing data to create customization.'));
@@ -40,6 +41,10 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
                 'font' => $boxFont,
                 'format' => $format,
             ];
+
+            if ($previewPath && file_exists($previewPath)) {
+                $metadata['preview_path'] = $previewPath;
+            }
 
             $idCustomization = FAPCustomizationService::createCustomization($cart, $idProduct, $imagePath, $boxText, $metadata, $idProductAttribute);
 

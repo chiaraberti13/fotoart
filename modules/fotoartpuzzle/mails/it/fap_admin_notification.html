@@ -1,0 +1,37 @@
+<html>
+  <body>
+    <p>È stato ricevuto un nuovo ordine puzzle FotoArt personalizzato.</p>
+    <p><strong>Ordine:</strong> {$order_reference}<br />
+       <strong>Cliente:</strong> {$customer_name}</p>
+    <p>Puoi consultare l'ordine nel back office: <a href="{$order_link}">apri ordine</a>.</p>
+    {if isset($customizations) && $customizations}
+      {foreach from=$customizations item=item}
+        <h4>Personalizzazione #{$item.id_customization}</h4>
+        <ul>
+          {if $item.text}
+            <li><strong>Testo scatola:</strong> {$item.text}</li>
+          {/if}
+          {if isset($item.metadata)}
+            {foreach from=$item.metadata key=label item=value}
+              <li><strong>{$label}:</strong> {$value}</li>
+            {/foreach}
+          {/if}
+        </ul>
+        <p>
+          {if $item.image_link}
+            <a href="{$item.image_link}">Scarica immagine</a>
+          {/if}
+          {if $item.preview_link}
+            {if $item.image_link} | {/if}<a href="{$item.preview_link}">Scarica anteprima</a>
+          {/if}
+        </p>
+        {if $item.preview_attached}
+          <p>L'anteprima è allegata a questa e-mail.</p>
+        {/if}
+      {/foreach}
+    {else}
+      <p>Nessun dettaglio di personalizzazione disponibile.</p>
+    {/if}
+    <p>{$shop_name}</p>
+  </body>
+</html>

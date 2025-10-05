@@ -1,0 +1,20 @@
+Hello {$firstname} {$lastname},
+
+Thank you for ordering your custom FotoArt puzzle (order {$order_reference}).
+
+{if isset($customizations) && $customizations}
+{foreach from=$customizations item=item}
+Customization #{$item.id_customization}
+{if $item.text}- Box text: {$item.text}
+{/if}{if isset($item.metadata)}{foreach from=$item.metadata key=label item=value}- {$label}: {$value}
+{/foreach}{/if}{if $item.preview_attached}- Preview image attached to this email.
+{elseif $item.has_preview}- Preview download: {$item.preview_link}
+{/if}
+{/foreach}
+{else}
+No customization details were found.
+{/if}
+
+Our team will start producing your puzzle shortly. We will notify you as soon as it ships.
+
+{$shop_name}

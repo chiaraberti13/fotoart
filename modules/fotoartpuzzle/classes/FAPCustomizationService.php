@@ -38,10 +38,10 @@ class FAPCustomizationService
      */
     public static function getCartCustomizations($idCart)
     {
-        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`
-                FROM `' . _DB_PREFIX_ . "customization` c
-                INNER JOIN `' . _DB_PREFIX_ . "customized_data` cd ON cd.`id_customization` = c.`id_customization`
-                WHERE c.`id_cart` = ' . (int) $idCart;
+        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`'
+            . ' FROM `' . _DB_PREFIX_ . 'customization` c'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'customized_data` cd ON cd.`id_customization` = c.`id_customization`'
+            . ' WHERE c.`id_cart` = ' . (int) $idCart;
 
         $rows = Db::getInstance()->executeS($sql) ?: [];
 
@@ -57,11 +57,11 @@ class FAPCustomizationService
      */
     public static function getOrderCustomizations($idOrder)
     {
-        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`
-                FROM `' . _DB_PREFIX_ . "customized_data` cd
-                INNER JOIN `' . _DB_PREFIX_ . "customization` c ON c.`id_customization` = cd.`id_customization`
-                INNER JOIN `' . _DB_PREFIX_ . "order_detail` od ON od.`id_customization` = c.`id_customization`
-                WHERE od.`id_order` = ' . (int) $idOrder;
+        $sql = 'SELECT c.`id_customization`, cd.`type`, cd.`value`, cd.`index`'
+            . ' FROM `' . _DB_PREFIX_ . 'customized_data` cd'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'customization` c ON c.`id_customization` = cd.`id_customization`'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'order_detail` od ON od.`id_customization` = c.`id_customization`'
+            . ' WHERE od.`id_order` = ' . (int) $idOrder;
 
         $rows = Db::getInstance()->executeS($sql) ?: [];
 
@@ -81,27 +81,84 @@ class FAPCustomizationService
             @mkdir($orderPath, 0750, true);
         }
 
-        $query = new DbQuery();
-        $query->select('cd.value');
-        $query->from('customized_data', 'cd');
-        $query->innerJoin('customization', 'c', 'c.id_customization = cd.id_customization');
-        $query->innerJoin('cart_product', 'cp', 'cp.id_customization = c.id_customization');
-        $query->where('c.id_cart = ' . (int) $order->id_cart);
-        $query->where('cd.type = ' . (int) Product::CUSTOMIZE_FILE);
-
-        $files = Db::getInstance()->executeS($query);
-        if (!$files) {
+        $customizations = self::getCartCustomizations($order->id_cart);
+        if (!$customizations) {
             return;
         }
 
-        foreach ($files as $file) {
-            $source = $file['value'];
-            if (!file_exists($source)) {
-                continue;
+        foreach ($customizations as $customization) {
+            $metadata = is_array($customization['metadata']) ? $customization['metadata'] : [];
+
+            if (!empty($customization['file']) && file_exists($customization['file'])) {
+                $destination = self::copyAssetToOrder($customization['file'], $orderPath, 'asset', $customization['id_customization']);
+                self::saveCustomizationData($customization['id_customization'], Product::CUSTOMIZE_FILE, 0, $destination);
             }
-            $destination = $orderPath . '/' . basename($source);
-            Tools::copy($source, $destination);
+
+            if (!empty($metadata['preview_path']) && file_exists($metadata['preview_path'])) {
+                $previewDestination = self::copyAssetToOrder($metadata['preview_path'], $orderPath, 'preview', $customization['id_customization']);
+                $metadata['preview_path'] = $previewDestination;
+                self::saveCustomizationData($customization['id_customization'], Product::CUSTOMIZE_TEXTFIELD, 1, json_encode($metadata));
+            }
         }
+    }
+
+    /**
+     * Collect paths to assets associated with an order
+     *
+     * @param int $idOrder
+     *
+     * @return array
+     */
+    public static function getOrderAssets($idOrder)
+    {
+        $assets = [];
+        $customizations = self::getOrderCustomizations((int) $idOrder);
+
+        foreach ($customizations as $customization) {
+            if (!empty($customization['file']) && file_exists($customization['file'])) {
+                $assets[] = [
+                    'type' => 'image',
+                    'id_customization' => $customization['id_customization'],
+                    'path' => $customization['file'],
+                    'filename' => 'customization_' . (int) $customization['id_customization'] . '_image_' . basename($customization['file']),
+                ];
+            }
+
+            if (!empty($customization['metadata']['preview_path']) && file_exists($customization['metadata']['preview_path'])) {
+                $assets[] = [
+                    'type' => 'preview',
+                    'id_customization' => $customization['id_customization'],
+                    'path' => $customization['metadata']['preview_path'],
+                    'filename' => 'customization_' . (int) $customization['id_customization'] . '_preview_' . basename($customization['metadata']['preview_path']),
+                ];
+            }
+        }
+
+        return $assets;
+    }
+
+    /**
+     * Copy an asset into the order directory
+     *
+     * @param string $source
+     * @param string $orderPath
+     * @param string $prefix
+     * @param int $idCustomization
+     *
+     * @return string
+     */
+    private static function copyAssetToOrder($source, $orderPath, $prefix, $idCustomization)
+    {
+        $extension = pathinfo($source, PATHINFO_EXTENSION);
+        $filename = $prefix . '_' . (int) $idCustomization;
+        if ($extension) {
+            $filename .= '.' . $extension;
+        }
+
+        $destination = rtrim($orderPath, '/\\') . '/' . $filename;
+        Tools::copy($source, $destination);
+
+        return $destination;
     }
 
     /**
@@ -117,12 +174,12 @@ class FAPCustomizationService
     private static function getOrCreateCustomization($idCart, $idProduct, $idProductAttribute, $idShop)
     {
         $idCustomization = (int) Db::getInstance()->getValue(
-            'SELECT `id_customization`
-             FROM `' . _DB_PREFIX_ . 'customization`
-             WHERE `id_cart` = ' . (int) $idCart . '
-               AND `id_product` = ' . (int) $idProduct . '
-               AND `id_product_attribute` = ' . (int) $idProductAttribute
-             ORDER BY `id_customization` DESC'
+            'SELECT `id_customization`'
+            . ' FROM `' . _DB_PREFIX_ . 'customization`'
+            . ' WHERE `id_cart` = ' . (int) $idCart
+            . ' AND `id_product` = ' . (int) $idProduct
+            . ' AND `id_product_attribute` = ' . (int) $idProductAttribute
+            . ' ORDER BY `id_customization` DESC'
         );
 
         if ($idCustomization) {

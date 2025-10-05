@@ -13,10 +13,17 @@
                 {if $custom.text}
                     <p><strong>{l s='Box text:' mod='fotoartpuzzle'}</strong> {$custom.text|escape:'html':'UTF-8'}</p>
                 {/if}
+                {if isset($custom.metadata.preview_path)}
+                    <p>
+                        <a class="btn btn-default" href="{$module->getDownloadLink($custom.metadata.preview_path)|escape:'html':'UTF-8'}">{l s='Download preview' mod='fotoartpuzzle'}</a>
+                    </p>
+                {/if}
                 {if $custom.metadata}
                     <ul>
                         {foreach from=$custom.metadata key=metaKey item=metaValue}
-                            <li><strong>{$metaKey|escape:'html':'UTF-8'}:</strong> {$metaValue|escape:'html':'UTF-8'}</li>
+                            {if $metaKey != 'preview_path'}
+                                <li><strong>{$metaKey|escape:'html':'UTF-8'}:</strong> {$metaValue|escape:'html':'UTF-8'}</li>
+                            {/if}
                         {/foreach}
                     </ul>
                 {/if}

@@ -514,9 +514,18 @@ class FotoArtPuzzle extends Module
                     ? $customization['metadata']['format_data']
                     : [];
 
+                $filePath = !empty($customization['file']) && file_exists($customization['file']) ? $customization['file'] : '';
+                $fileUrl = $filePath ? $this->getDownloadLink($filePath, 'front', ['disposition' => 'inline']) : '';
+                $fileName = $customization['metadata']['filename'] ?? '';
+                if (!$fileName && $filePath) {
+                    $fileName = basename($filePath);
+                }
+
                 $initialSummary = [
                     'id_customization' => $customization['id_customization'],
-                    'fileName' => $customization['metadata']['filename'] ?? '',
+                    'file' => $filePath,
+                    'fileUrl' => $fileUrl,
+                    'fileName' => $fileName,
                     'boxText' => $customization['text'] ?? '',
                     'boxColor' => $customization['metadata']['color'] ?? '',
                     'boxFont' => $customization['metadata']['font'] ?? '',

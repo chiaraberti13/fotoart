@@ -233,6 +233,13 @@
     font-weight: 600;
 }
 
+.fap-summary-list a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+    word-break: break-word;
+}
+
 .fap-cart-summary {
     border: 1px solid #ddd;
     padding: 1rem;

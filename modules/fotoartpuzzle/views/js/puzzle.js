@@ -54,7 +54,11 @@
 
     if (initialSummary && Object.keys(initialSummary).length) {
         state.customizationId = initialSummary.id_customization || null;
-        state.fileName = initialSummary.fileName || '';
+        state.file = typeof initialSummary.file === 'string' && initialSummary.file ? initialSummary.file : state.file;
+        if (initialSummary.fileUrl && isSafeUrl(initialSummary.fileUrl)) {
+            state.fileUrl = initialSummary.fileUrl;
+        }
+        state.fileName = initialSummary.fileName || (state.file ? extractFileName(state.file) : state.fileName);
         state.boxText = initialSummary.boxText || '';
         if (initialSummary.boxColor) {
             state.boxColor = initialSummary.boxColor;
@@ -67,6 +71,7 @@
         } else if (initialSummary.format) {
             state.format = initialSummary.format;
         }
+        state.previewDirty = true;
 
         ensureCustomizationField(state.customizationId);
         updateSummaryPanel();
@@ -653,13 +658,29 @@
         }
     }
 
-    function appendSummaryItem(list, label, value) {
+    function appendSummaryItem(list, label, value, options) {
         if (value === null || value === undefined || value === '') {
             return;
         }
 
         const item = document.createElement('li');
-        item.innerHTML = '<span>' + sanitize(label) + ':</span> ' + sanitize(value);
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = label + ':';
+        item.appendChild(labelSpan);
+        item.appendChild(document.createTextNode(' '));
+
+        const linkUrl = options && options.url && isSafeUrl(options.url) ? options.url : null;
+        if (linkUrl) {
+            const link = document.createElement('a');
+            link.href = linkUrl;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = value;
+            item.appendChild(link);
+        } else {
+            item.appendChild(document.createTextNode(value));
+        }
+
         list.appendChild(item);
     }
 
@@ -675,7 +696,7 @@
             list.className = 'fap-summary-list';
 
             const fileLabel = state.fileName || translate('Image uploaded');
-            appendSummaryItem(list, translate('Image'), fileLabel);
+            appendSummaryItem(list, translate('Image'), fileLabel, state.fileUrl ? { url: state.fileUrl } : null);
             appendSummaryItem(list, translate('Format'), formatLabel(state.format));
             appendSummaryItem(list, translate('Text'), state.boxText);
             appendSummaryItem(list, translate('Color'), state.boxColor);
@@ -782,6 +803,28 @@
         const div = document.createElement('div');
         div.textContent = String(value || '');
         return div.innerHTML;
+    }
+
+    function isSafeUrl(url) {
+        if (!url) {
+            return false;
+        }
+
+        try {
+            const parsed = new URL(url, window.location.origin);
+            return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function extractFileName(path) {
+        if (!path) {
+            return '';
+        }
+
+        const segments = String(path).split('/');
+        return segments[segments.length - 1] || '';
     }
 
     function showToast(message) {

@@ -1,0 +1,170 @@
+.fap-root {
+    position: relative;
+}
+
+.fap-launch {
+    background-color: #1976d2;
+    border-color: #1976d2;
+}
+
+.fap-launch:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.fap-modal {
+    display: none;
+}
+
+.fap-modal.is-open {
+    display: block;
+}
+
+.fap-modal__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1050;
+}
+
+.fap-modal__dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    z-index: 1060;
+    max-width: 640px;
+    width: 90%;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.25);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.fap-modal__title {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.fap-modal__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    border: none;
+    background: transparent;
+    font-size: 2rem;
+    line-height: 1;
+    color: #444;
+    cursor: pointer;
+}
+
+.fap-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.fap-form--loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.fap-fieldset {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.fap-fieldset legend {
+    font-weight: 600;
+    padding: 0 0.25rem;
+}
+
+.fap-label {
+    display: block;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.fap-input,
+.fap-textarea,
+.fap-input select {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #c7c7c7;
+}
+
+.fap-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.fap-help {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 0.5rem;
+}
+
+.fap-preview {
+    border: 1px dashed #bbb;
+    padding: 1rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.fap-preview__figure[hidden] {
+    display: none;
+}
+
+.fap-preview__image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.fap-preview__caption {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.fap-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.fap-actions .btn {
+    min-width: 160px;
+}
+
+.fap-feedback {
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.fap-feedback--error {
+    background-color: #fdecea;
+    color: #c62828;
+    border: 1px solid #f5c6c6;
+}
+
+.fap-feedback--success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.fap-cart-summary {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+body.fap-modal-open {
+    overflow: hidden;
+}

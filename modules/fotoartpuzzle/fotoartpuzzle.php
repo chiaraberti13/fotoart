@@ -150,7 +150,15 @@ class FotoArtPuzzle extends Module
             'fields_value' => $this->getConfigFormValues(),
         ];
 
-        return $helper->generateForm([$this->getUploadFieldset(), $this->getFormatFieldset(), $this->getBoxFieldset(), $this->getEmailFieldset(), $this->getPrivacyFieldset(), $this->getLogFieldset()]);
+        return $helper->generateForm([
+            $this->getUploadFieldset(),
+            $this->getFormatFieldset(),
+            $this->getBoxFieldset(),
+            $this->getEmailFieldset(),
+            $this->getProductsFieldset(),
+            $this->getPrivacyFieldset(),
+            $this->getLogFieldset(),
+        ]);
     }
 
     /**
@@ -210,6 +218,58 @@ class FotoArtPuzzle extends Module
                     ],
                 ],
                 'submit' => ['title' => $this->l('Save')],
+            ],
+        ];
+    }
+
+    /**
+     * Product availability fieldset
+     *
+     * @return array
+     */
+    private function getProductsFieldset()
+    {
+        $idLang = (int) $this->context->language->id;
+        $idShop = (int) $this->context->shop->id;
+
+        $products = Db::getInstance()->executeS(
+            'SELECT p.id_product, pl.name '
+            . 'FROM ' . _DB_PREFIX_ . 'product p '
+            . 'INNER JOIN ' . _DB_PREFIX_ . 'product_lang pl '
+            . 'ON (p.id_product = pl.id_product '
+            . 'AND pl.id_lang = ' . $idLang . ' '
+            . 'AND pl.id_shop = ' . $idShop . ') '
+            . 'WHERE p.active = 1 '
+            . 'ORDER BY pl.name ASC'
+        );
+
+        $options = array_map(static function ($product) {
+            return [
+                'id' => (int) $product['id_product'],
+                'name' => $product['name'],
+            ];
+        }, $products ?: []);
+
+        return [
+            'form' => [
+                'legend' => ['title' => $this->l('Enabled products')],
+                'description' => $this->l('Choose the products that should expose the FotoArt Puzzle customization wizard.'),
+                'input' => [
+                    [
+                        'type' => 'select',
+                        'label' => $this->l('Products'),
+                        'name' => FAPConfiguration::ENABLED_PRODUCTS,
+                        'multiple' => true,
+                        'class' => 'chosen',
+                        'size' => 10,
+                        'options' => [
+                            'query' => $options,
+                            'id' => 'id',
+                            'name' => 'name',
+                        ],
+                        'hint' => $this->l('Only the selected products will show the puzzle creation wizard on the front-office.'),
+                    ],
+                ],
             ],
         ];
     }
@@ -403,6 +463,7 @@ class FotoArtPuzzle extends Module
             FAPConfiguration::TEMP_TTL_HOURS => Configuration::get(FAPConfiguration::TEMP_TTL_HOURS),
             FAPConfiguration::ANONYMIZE_FILENAMES => (int) Configuration::get(FAPConfiguration::ANONYMIZE_FILENAMES),
             FAPConfiguration::LOG_LEVEL => Configuration::get(FAPConfiguration::LOG_LEVEL),
+            FAPConfiguration::ENABLED_PRODUCTS => json_decode((string) Configuration::get(FAPConfiguration::ENABLED_PRODUCTS), true) ?: [],
         ];
     }
 

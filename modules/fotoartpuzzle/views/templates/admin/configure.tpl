@@ -349,6 +349,7 @@
             products: {if isset($puzzle_products)}{$puzzle_products|@json_encode nofilter}{else}[]{/if},
             combinations: {if isset($color_combinations)}{$color_combinations|@json_encode nofilter}{else}[]{/if},
             fonts: {if isset($fonts)}{$fonts|@json_encode nofilter}{else}[]{/if},
+            token: '{$token|escape:'javascript':'UTF-8'}',
             translations: {
                 remove: '{$translations.remove|escape:'javascript':'UTF-8'}',
                 error: '{l s='Si è verificato un errore.' mod='fotoartpuzzle' js=1}',

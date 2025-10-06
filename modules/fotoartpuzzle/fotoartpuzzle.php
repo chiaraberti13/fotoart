@@ -37,8 +37,8 @@ class FotoArtPuzzle extends Module
         'displayShoppingCartFooter',
         'displayBackOfficeHeader',
         'displayProductButtons',
-        'displayAdminProductsExtra',
-        'displayAdminProductsMainStepLeftColumnMiddle',
+        'displayAdminProductsMainStepLeftColumnMiddle',  // Compatibile con PS 1.7.6.9
+        'displayAdminProductsOptionsStepTop',  // Hook aggiuntivo per migliore visibilità
     ];
 
     /**
@@ -823,38 +823,35 @@ class FotoArtPuzzle extends Module
     }
 
     public function hookDisplayBackOfficeHeader()
-{
-    $controller = Tools::getValue('controller');
+    {
+        $controller = Tools::getValue('controller');
 
-    // Per la pagina di configurazione del modulo
-    if (Tools::getValue('configure') === $this->name) {
-        $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
-        $this->context->controller->addCSS($this->_path . 'views/css/admin-config.css');
+        // Per la pagina di configurazione del modulo
+        if (Tools::getValue('configure') === $this->name) {
+            $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
+            $this->context->controller->addCSS($this->_path . 'views/css/admin-config.css');
+            
+            // Registra il JavaScript con jQuery come dipendenza
+            $this->context->controller->addJquery();
+            $this->context->controller->addJS($this->_path . 'views/js/admin-config.js');
+        }
         
-        // Registra il JavaScript con jQuery come dipendenza
-        $this->context->controller->addJquery();
-        $this->context->controller->addJS($this->_path . 'views/js/admin-config.js');
-    }
-    
-    // Per la dashboard di produzione
-    if ($controller === 'AdminFotoArtPuzzle') {
-        $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
-    }
-
-        // Carica asset nel controller di produzione
+        // Per la dashboard di produzione
         if ($controller === 'AdminFotoArtPuzzle') {
             $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
         }
     }
 
+
     /**
-     * Hook for the Modules section in the admin product page
+     * Hook for the left column of the product page (PS 1.7.6+)
+     * Compatibile con PrestaShop 1.7.6.9
      *
      * @param array $params
      *
      * @return string
      */
-    public function hookDisplayAdminProductsExtra($params)
+    public function hookDisplayAdminProductsMainStepLeftColumnMiddle($params)
     {
         $idProduct = (int) Tools::getValue('id_product');
         if (!$idProduct) {
@@ -882,17 +879,41 @@ class FotoArtPuzzle extends Module
 
         return $this->fetch('module:' . self::MODULE_NAME . '/views/templates/admin/product_extra.tpl');
     }
-
     /**
-     * Alternative hook for the left column of the product page
+     * Hook per visualizzare nella sezione Options della pagina prodotto (PS 1.7.6+)
+     * Compatibile con PrestaShop 1.7.6.9
      *
      * @param array $params
      *
      * @return string
      */
-    public function hookDisplayAdminProductsMainStepLeftColumnMiddle($params)
+    public function hookDisplayAdminProductsOptionsStepTop($params)
     {
-        return $this->hookDisplayAdminProductsExtra($params);
+        $idProduct = (int) Tools::getValue('id_product');
+        if (!$idProduct) {
+            return '';
+        }
+
+        if (!FAPConfiguration::isProductEnabled($idProduct)) {
+            return $this->displayInfo(
+                $this->l('This product is not configured for custom puzzles.') . '<br>' .
+                $this->l('Go to the module configuration to enable it.')
+            );
+        }
+
+        $config = FAPConfiguration::getFrontConfig();
+
+        $this->context->smarty->assign([
+            'id_product' => $idProduct,
+            'config' => $config,
+            'formats' => $config['formats'] ?? [],
+            'module_name' => $this->name,
+            'module_display_name' => $this->displayName,
+            'configure_url' => $this->context->link->getAdminLink('AdminModules') .
+                              '&configure=' . $this->name,
+        ]);
+
+        return $this->fetch('module:' . self::MODULE_NAME . '/views/templates/admin/product_extra.tpl');
     }
 
     /**

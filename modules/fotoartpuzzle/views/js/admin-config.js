@@ -164,14 +164,26 @@
                 }).fail(handleAjaxError);
             });
 
+            // Flag per prevenire loop infiniti nella sincronizzazione dei colori
+            var colorSyncInProgress = false;
+
             function syncColorInputs(source, target) {
                 source.on('change input', function () {
+                    // Previeni loop infiniti
+                    if (colorSyncInProgress) {
+                        return;
+                    }
+                    
                     var value = sanitizeHex($(this).val());
                     if (!value) {
                         return;
                     }
+                    
+                    // Imposta il flag, sincronizza e aggiorna preview
+                    colorSyncInProgress = true;
                     target.val(value);
-                    target.trigger('change');
+                    updateColorPreviews();
+                    colorSyncInProgress = false;
                 });
             }
 
@@ -181,16 +193,19 @@
             syncColorInputs($textColorHex, $textColor);
 
             function updateColorPreviews() {
+                // Previeni loop infiniti
+                if (colorSyncInProgress) {
+                    return;
+                }
+                
                 var box = sanitizeHex($boxColorHex.val()) || '#FFFFFF';
                 var text = sanitizeHex($textColorHex.val()) || '#000000';
                 $('#fap-box-color-preview').css('background-color', box);
                 $('#fap-box-text-color-preview').css('background-color', text);
             }
 
-            $boxColor.on('change input', updateColorPreviews);
-            $boxColorHex.on('change input', updateColorPreviews);
-            $textColor.on('change input', updateColorPreviews);
-            $textColorHex.on('change input', updateColorPreviews);
+            // Chiamata iniziale per impostare i colori
+            updateColorPreviews();
 
             $('#fap-add-color-combination').on('click', function () {
                 var box = sanitizeHex($boxColorHex.val());
@@ -288,7 +303,6 @@
                 }).fail(handleAjaxError);
             });
 
-            updateColorPreviews();
             rebuildProductList();
             rebuildColorList();
             rebuildFontList();

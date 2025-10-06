@@ -1,32 +1,49 @@
 #fap-wizard {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     color: #2c3e50;
 }
 
 #fap-wizard .fap-launch {
-    background-color: #1976d2;
-    border-color: #1976d2;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #3498db 0%, #2c80d3 100%);
+    border: none;
     border-radius: 999px;
-    padding: 0.75rem 1.6rem;
-    box-shadow: 0 8px 18px rgba(25, 118, 210, 0.2);
+    padding: 0.85rem 1.8rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    box-shadow: 0 10px 25px rgba(41, 128, 185, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 #fap-wizard .fap-launch:hover,
 #fap-wizard .fap-launch:focus {
-    box-shadow: 0 12px 26px rgba(25, 118, 210, 0.28);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(41, 128, 185, 0.28);
+}
+
+#fap-wizard .fap-launch .material-icons {
+    font-size: 1.3rem;
+}
+
+#fap-wizard .fap-wizard-description {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    color: #637381;
+    font-size: 0.95rem;
 }
 
 .fap-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     display: none;
     align-items: center;
     justify-content: center;
+    padding: 2rem;
     z-index: 10000;
 }
 
@@ -36,57 +53,69 @@
 
 .fap-modal__backdrop {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    inset: 0;
+    background: rgba(22, 30, 46, 0.55);
 }
 
 .fap-modal__dialog {
     position: relative;
     background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
-    border: 1px solid #dce6f4;
-    border-radius: 14px;
-    max-width: 720px;
-    width: calc(100% - 2rem);
+    border-radius: 18px;
+    border: 1px solid #d8e5f5;
+    max-width: 760px;
+    width: min(100%, 760px);
     max-height: 90vh;
     overflow-y: auto;
-    padding: 2.25rem;
-    box-shadow: 0 22px 55px rgba(32, 52, 84, 0.22);
+    padding: 2.5rem 2.75rem;
+    box-shadow: 0 25px 65px rgba(44, 62, 80, 0.22);
     z-index: 1;
 }
 
 .fap-modal__title {
-    margin-top: 0;
-    margin-bottom: 1.75rem;
+    margin: 0 0 1.75rem;
+    padding-bottom: 1rem;
+    font-size: 1.6rem;
     font-weight: 600;
     color: #1f2c3d;
     border-bottom: 1px solid #e3ecf6;
-    padding-bottom: 0.75rem;
 }
 
 .fap-modal__close {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    background: transparent;
-    border: none;
-    font-size: 1.5rem;
+    top: 1.1rem;
+    right: 1.1rem;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(209, 224, 242, 0.8);
+    border-radius: 50%;
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.3rem;
     line-height: 1;
+    color: #4a5d75;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.fap-modal__close:hover,
+.fap-modal__close:focus {
+    background: #f0f6ff;
+    transform: rotate(90deg);
 }
 
 .fap-modal__content {
-    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .fap-modal__footer {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 1rem;
     padding-top: 1.25rem;
     border-top: 1px solid #e3ecf6;
@@ -97,18 +126,19 @@
     flex: 1 1 auto;
     border-radius: 999px;
     font-weight: 600;
-    padding: 0.7rem 1.4rem;
+    padding: 0.85rem 1.5rem;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .fap-modal__footer .btn:hover,
 .fap-modal__footer .btn:focus {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(52, 152, 219, 0.22);
+    box-shadow: 0 12px 24px rgba(52, 152, 219, 0.2);
 }
 
 .fap-modal__footer .btn:disabled {
     opacity: 0.6;
+    cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
@@ -120,95 +150,213 @@
     color: #4a5d75;
 }
 
+.fap-modal__footer .fap-modal__prev:hover,
+.fap-modal__footer .fap-modal__prev:focus {
+    border-color: #a8bbd6;
+    box-shadow: 0 10px 20px rgba(74, 93, 117, 0.15);
+}
+
+.fap-modal__footer .fap-modal__next,
+.fap-modal__footer .fap-modal__finish {
+    background: linear-gradient(135deg, #2f8fdf 0%, #1c6fcc 100%);
+    border: none;
+    color: #fff;
+}
+
 .fap-modal__footer .fap-modal__next.is-hidden,
 .fap-modal__footer .fap-modal__finish.is-hidden {
     display: none;
 }
 
+.fap-step {
+    background: rgba(244, 248, 253, 0.8);
+    border: 1px solid #e0e9f4;
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 18px 45px rgba(20, 35, 52, 0.08);
+}
+
+.fap-step__description {
+    margin: 0 0 1.25rem;
+    color: #637381;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
 .fap-field {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem 1.25rem;
-    background: rgba(244, 248, 253, 0.7);
-    border-radius: 10px;
+    gap: 0.75rem;
 }
 
 .fap-field__label {
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    color: #7a8ba6;
+    letter-spacing: 0.08em;
+    color: #8a9ab5;
+}
+
+.fap-step .form-control {
+    display: block;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #cad8eb;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    box-shadow: inset 0 1px 2px rgba(205, 217, 234, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fap-step .form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+    outline: none;
+}
+
+.fap-upload-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border: 2px dashed #b5c9e6;
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    background: #ffffff;
+    color: #5c6f87;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 24px rgba(32, 52, 84, 0.08);
+}
+
+.fap-upload-zone:hover,
+.fap-upload-zone:focus-within,
+.fap-upload-zone.is-dragover {
+    border-color: #3498db;
+    background: #f0f6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 16px 28px rgba(52, 152, 219, 0.18);
+}
+
+.fap-upload-zone__icon {
+    font-size: 3rem;
+    color: #9cb3d8;
+}
+
+.fap-upload-zone__helper {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.fap-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .fap-status {
-    font-style: italic;
+    font-style: normal;
+    font-size: 0.95rem;
     color: #1c6fcc;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
 }
 
 .fap-upload-summary {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
+    gap: 0.4rem;
+    padding: 1.25rem;
+    border-radius: 12px;
     background: rgba(52, 152, 219, 0.08);
-    border-radius: 10px;
     border: 1px solid rgba(52, 152, 219, 0.2);
+    color: #36506b;
 }
 
-.fap-upload-summary span {
-    color: #555;
+.fap-upload-summary strong {
+    font-size: 1rem;
+    color: #1f2c3d;
 }
 
 .fap-format-list {
     display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
 .fap-format-card {
-    border: 2px solid #d4e1f2;
-    border-radius: 12px;
-    padding: 1.1rem;
+    position: relative;
+    border: 1px solid #d4e1f2;
+    border-radius: 14px;
+    padding: 1.4rem 1.25rem;
     background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
     cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
     text-align: left;
+    min-height: 150px;
+}
+
+.fap-format-card:disabled {
+    cursor: not-allowed;
+    background: #f3f6fb;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.55;
 }
 
 .fap-format-card:hover {
-    border-color: #1976d2;
-    box-shadow: 0 6px 18px rgba(25, 118, 210, 0.18);
+    border-color: #3498db;
+    box-shadow: 0 16px 30px rgba(52, 152, 219, 0.18);
+    transform: translateY(-2px);
 }
 
 .fap-format-card.is-selected {
-    border-color: #1976d2;
-    box-shadow: 0 12px 26px rgba(25, 118, 210, 0.25);
+    border-color: #3498db;
+    box-shadow: 0 18px 36px rgba(52, 152, 219, 0.25);
+    transform: translateY(-3px);
 }
 
 .fap-format-card__name {
     font-weight: 600;
+    font-size: 1.05rem;
+    color: #1f2c3d;
 }
 
 .fap-format-card__pieces,
 .fap-format-card__size {
-    color: #555;
+    color: #60748c;
     font-size: 0.9rem;
 }
 
 .fap-box-options {
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e0e9f4;
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .fap-char-counter {
-    color: #777;
+    color: #7f8c9f;
     font-size: 0.85rem;
+    text-align: right;
 }
 
 .fap-preview {
@@ -218,88 +366,155 @@
 }
 
 .fap-preview__image {
-    max-width: 100%;
-    border-radius: 10px;
-    box-shadow: 0 18px 35px rgba(20, 35, 52, 0.18);
+    width: 100%;
+    border-radius: 18px;
+    box-shadow: 0 25px 55px rgba(23, 43, 77, 0.22);
+    border: 1px solid rgba(209, 224, 242, 0.6);
+    background: #fff;
 }
 
 .fap-preview__details {
     display: grid;
-    gap: 0.5rem;
-    font-size: 0.95rem;
+    gap: 0.65rem;
+    font-size: 0.97rem;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #e0e9f4;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+}
+
+.fap-preview__details p {
+    margin: 0;
+    color: #465b73;
 }
 
 .fap-preview__details strong {
-    margin-right: 0.25rem;
+    margin-right: 0.35rem;
+    color: #1f2c3d;
 }
 
 .fap-preview__refresh {
     align-self: flex-start;
+    border-radius: 999px;
+    border: 1px solid #2f8fdf;
+    color: #2f8fdf;
+    padding: 0.75rem 1.6rem;
+    font-weight: 600;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.fap-preview__refresh:hover,
+.fap-preview__refresh:focus {
+    background: #2f8fdf;
+    color: #fff;
+    box-shadow: 0 12px 26px rgba(47, 143, 223, 0.25);
 }
 
 .fap-alert {
-    padding: 0.75rem 1rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
+    padding: 0.85rem 1.2rem;
+    border-radius: 10px;
+    border-left: 4px solid transparent;
+    margin: 0;
+    font-weight: 500;
 }
 
 .fap-alert--error {
-    background: #ffebee;
-    color: #c62828;
+    background: #fdecea;
+    color: #8a1f11;
+    border-left-color: #e74c3c;
 }
 
 .fap-alert--success {
-    background: #e8f5e9;
-    color: #2e7d32;
+    background: #edf9f0;
+    color: #1e6f3d;
+    border-left-color: #2ecc71;
 }
 
 .fap-selection-summary {
     display: none;
-    margin-top: 1rem;
-    border: 1px solid #1976d2;
-    border-radius: 6px;
-    background: #e3f2fd;
-    padding: 1rem;
+    margin-top: 1.5rem;
+    border-radius: 14px;
+    border: 1px solid #d5e3f5;
+    border-left: 5px solid #2f8fdf;
+    background: linear-gradient(180deg, rgba(250, 253, 255, 0.98) 0%, rgba(241, 248, 255, 0.94) 100%);
+    padding: 1.4rem 1.6rem;
+    box-shadow: 0 16px 32px rgba(47, 143, 223, 0.12);
 }
 
 .fap-selection-summary.is-visible {
     display: block;
+    animation: fapFadeIn 0.3s ease;
 }
 
 .fap-selection-summary__content > strong {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
+    font-size: 1.05rem;
+    color: #1f2c3d;
 }
 
 .fap-summary-list {
     list-style: none;
-    margin: 0.5rem 0 0;
+    margin: 0;
     padding: 0;
     display: grid;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    color: #4b5f78;
+    font-size: 0.95rem;
 }
 
 .fap-summary-list span {
     font-weight: 600;
+    color: #1f2c3d;
 }
 
-.fap-cart-summary {
-    border: 1px solid #ddd;
-    padding: 1rem;
-    margin-top: 1rem;
+@keyframes fapFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .fap-modal {
+        padding: 1rem;
+    }
+
     .fap-modal__dialog {
-        padding: 1.5rem;
-        max-width: 95vw;
+        padding: 2rem 1.5rem;
+        max-height: 95vh;
     }
 
     .fap-modal__footer {
         flex-direction: column;
+        align-items: stretch;
     }
 
     .fap-modal__footer .btn {
         width: 100%;
+    }
+
+    .fap-format-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    #fap-wizard .fap-launch {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .fap-modal__dialog {
+        border-radius: 14px;
+    }
+
+    .fap-step {
+        padding: 1.25rem;
     }
 }

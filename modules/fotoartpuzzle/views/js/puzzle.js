@@ -140,18 +140,22 @@
             modal.content.appendChild(renderMessage(state.message));
         }
 
+        const stepWrapper = document.createElement('div');
+        stepWrapper.className = 'fap-step fap-step--' + step.key;
+        modal.content.appendChild(stepWrapper);
+
         switch (step.key) {
             case 'upload':
-                renderUploadStep();
+                renderUploadStep(stepWrapper);
                 break;
             case 'format':
-                renderFormatStep();
+                renderFormatStep(stepWrapper);
                 break;
             case 'box':
-                renderBoxStep();
+                renderBoxStep(stepWrapper);
                 break;
             case 'preview':
-                renderPreviewStep();
+                renderPreviewStep(stepWrapper);
                 break;
         }
 
@@ -178,34 +182,45 @@
         }
     }
 
-    function renderUploadStep() {
+    function renderUploadStep(container) {
         const info = document.createElement('p');
+        info.className = 'fap-step__description';
         const extensions = (config.extensions || ['jpg', 'jpeg', 'png']).map(function (ext) {
             return ext.trim().toUpperCase();
         }).filter(Boolean).join(', ');
-        
+
         info.textContent = translate('Seleziona un\'immagine JPEG o PNG fino a {max} MB. Estensioni consentite: {ext}')
             .replace('{max}', config.maxUploadMb || 25)
             .replace('{ext}', extensions);
-        modal.content.appendChild(info);
+        container.appendChild(info);
+
+        const dropzone = document.createElement('label');
+        dropzone.className = 'fap-upload-zone';
+        dropzone.setAttribute('for', 'fap-upload-input');
+        dropzone.setAttribute('tabindex', '0');
+
+        const icon = document.createElement('span');
+        icon.className = 'material-icons fap-upload-zone__icon';
+        icon.textContent = 'cloud_upload';
+        dropzone.appendChild(icon);
 
         const inputWrapper = document.createElement('div');
         inputWrapper.className = 'fap-field';
-        
+
         const label = document.createElement('label');
         label.className = 'fap-field__label';
         label.setAttribute('for', 'fap-upload-input');
         label.textContent = translate('Carica immagine');
-        
+
         const input = document.createElement('input');
         input.type = 'file';
         input.id = 'fap-upload-input';
-        input.className = 'form-control';
+        input.className = 'form-control fap-upload-input';
         input.accept = (config.extensions || ['jpg', 'jpeg', 'png']).map(function (ext) {
             ext = ext.trim();
             return ext ? (ext[0] === '.' ? ext : '.' + ext) : null;
         }).filter(Boolean).join(',');
-        
+
         input.addEventListener('change', function (event) {
             const file = event.target.files && event.target.files[0];
             if (!file) {
@@ -215,16 +230,50 @@
                 setMessage('error', error.message);
             });
         });
-        
+
+        dropzone.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                input.click();
+            }
+        });
+
+        dropzone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            dropzone.classList.add('is-dragover');
+        });
+
+        dropzone.addEventListener('dragleave', function () {
+            dropzone.classList.remove('is-dragover');
+        });
+
+        dropzone.addEventListener('drop', function (event) {
+            event.preventDefault();
+            dropzone.classList.remove('is-dragover');
+            const files = event.dataTransfer && event.dataTransfer.files;
+            if (files && files[0]) {
+                handleFileSelection(files[0]).catch(function (error) {
+                    setMessage('error', error.message);
+                });
+            }
+        });
+
+        const helper = document.createElement('span');
+        helper.className = 'fap-upload-zone__helper';
+        helper.textContent = translate('Trascina qui la tua immagine oppure clicca per selezionarla');
+        dropzone.appendChild(helper);
+
+        dropzone.appendChild(input);
+
         inputWrapper.appendChild(label);
-        inputWrapper.appendChild(input);
-        modal.content.appendChild(inputWrapper);
+        inputWrapper.appendChild(dropzone);
+        container.appendChild(inputWrapper);
 
         if (state.uploading) {
             const uploading = document.createElement('p');
             uploading.className = 'fap-status';
             uploading.innerHTML = '<i class="icon-spinner icon-spin"></i> ' + translate('Caricamento in corso...');
-            modal.content.appendChild(uploading);
+            container.appendChild(uploading);
         }
 
         if (state.file && state.fileName) {
@@ -235,21 +284,22 @@
             if (state.format) {
                 details.innerHTML += '<span>' + translate('Formato: ') + sanitize(formatLabel(state.format)) + '</span>';
             }
-            modal.content.appendChild(details);
+            container.appendChild(details);
         }
     }
 
-    function renderFormatStep() {
+    function renderFormatStep(container) {
         if (!Array.isArray(config.formats) || !config.formats.length) {
             const notice = document.createElement('p');
             notice.textContent = translate('Nessun formato puzzle configurato.');
-            modal.content.appendChild(notice);
+            container.appendChild(notice);
             return;
         }
 
         const intro = document.createElement('p');
+        intro.className = 'fap-step__description';
         intro.textContent = translate('Scegli il formato del puzzle in base alle dimensioni della tua immagine:');
-        modal.content.appendChild(intro);
+        container.appendChild(intro);
 
         const list = document.createElement('div');
         list.className = 'fap-format-list';
@@ -296,14 +346,14 @@
                     renderStep();
                 }
             });
-            
+
             list.appendChild(card);
         });
 
-        modal.content.appendChild(list);
+        container.appendChild(list);
     }
 
-    function renderBoxStep() {
+    function renderBoxStep(container) {
         const fieldset = document.createElement('div');
         fieldset.className = 'fap-box-options';
 
@@ -429,10 +479,10 @@
             fieldset.appendChild(fontField);
         }
 
-        modal.content.appendChild(fieldset);
+        container.appendChild(fieldset);
     }
 
-    function renderPreviewStep() {
+    function renderPreviewStep(container) {
         const wrapper = document.createElement('div');
         wrapper.className = 'fap-preview';
 
@@ -493,7 +543,7 @@
         regenerate.disabled = state.previewLoading;
         wrapper.appendChild(regenerate);
 
-        modal.content.appendChild(wrapper);
+        container.appendChild(wrapper);
     }
 
     function renderMessage(message) {
@@ -885,6 +935,7 @@
             'Il tuo puzzle personalizzato è stato aggiunto al carrello!': 'Il tuo puzzle personalizzato è stato aggiunto al carrello!',
             'Personalizzazione pronta': 'Personalizzazione pronta',
             'Impossibile leggere l\'immagine selezionata.': 'Impossibile leggere l\'immagine selezionata.',
+            'Trascina qui la tua immagine oppure clicca per selezionarla': 'Trascina qui la tua immagine oppure clicca per selezionarla',
         };
         return translations[text] || text;
     }

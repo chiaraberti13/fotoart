@@ -352,7 +352,8 @@
             translations: {
                 remove: '{$translations.remove|escape:'javascript':'UTF-8'}',
                 error: '{l s='Si è verificato un errore.' mod='fotoartpuzzle' js=1}',
-                success: '{l s='Operazione completata.' mod='fotoartpuzzle' js=1}'
+                success: '{l s='Operazione completata.' mod='fotoartpuzzle' js=1}',
+                invalidColorFormat: '{l s='Inserisci un colore valido nel formato #RRGGBB.' mod='fotoartpuzzle' js=1}'
             }
         };
     }

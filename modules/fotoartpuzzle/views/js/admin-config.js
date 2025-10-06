@@ -31,7 +31,7 @@
             if (!value) {
                 return '';
             }
-            var upper = value.toString().toUpperCase();
+            var upper = value.toString().trim().toUpperCase();
             if (upper.charAt(0) !== '#') {
                 upper = '#' + upper;
             }
@@ -51,6 +51,7 @@
             var $productList = $('#fap-product-list');
             var $productInput = $('#fap-product-id');
             var $productField = $('#fap-puzzle-products');
+            var $form = $('#fap-config-form');
 
             var $combinationField = $('#fap-box-color-combinations');
             var $colorList = $('#fap-color-combinations');
@@ -62,6 +63,10 @@
             var $fontList = $('#fap-font-list');
             var $fontInput = $('#fap-font-upload');
             var $fontField = $('#fap-custom-fonts');
+
+            if ($form.length) {
+                $form.attr('novalidate', 'novalidate');
+            }
 
             function rebuildProductList() {
                 $productList.empty();
@@ -164,48 +169,105 @@
                 }).fail(handleAjaxError);
             });
 
-            // Flag per prevenire loop infiniti nella sincronizzazione dei colori
-            var colorSyncInProgress = false;
+            var currentColors = {
+                box: sanitizeHex($boxColorHex.val()),
+                text: sanitizeHex($textColorHex.val())
+            };
+            var suppressColorEvents = false;
 
-            function syncColorInputs(source, target) {
-                source.on('change input', function () {
-                    // Previeni loop infiniti
-                    if (colorSyncInProgress) {
-                        return;
-                    }
-                    
-                    var value = sanitizeHex($(this).val());
-                    if (!value) {
-                        return;
-                    }
-                    
-                    // Imposta il flag, sincronizza e aggiorna preview
-                    colorSyncInProgress = true;
-                    target.val(value);
-                    updateColorPreviews();
-                    colorSyncInProgress = false;
-                });
+            function getDefaultColor(type) {
+                return type === 'box' ? '#FFFFFF' : '#000000';
             }
 
-            syncColorInputs($boxColor, $boxColorHex);
-            syncColorInputs($boxColorHex, $boxColor);
-            syncColorInputs($textColor, $textColorHex);
-            syncColorInputs($textColorHex, $textColor);
+            function applyColor(type, value) {
+                var sanitized = sanitizeHex(value)
+                    || sanitizeHex(currentColors[type])
+                    || getDefaultColor(type);
 
-            function updateColorPreviews() {
-                // Previeni loop infiniti
-                if (colorSyncInProgress) {
+                currentColors[type] = sanitized;
+
+                suppressColorEvents = true;
+                if (type === 'box') {
+                    $boxColorHex.val(sanitized);
+                    $boxColor.val(sanitized.toLowerCase());
+                    $('#fap-box-color-preview').css('background-color', sanitized);
+                } else {
+                    $textColorHex.val(sanitized);
+                    $textColor.val(sanitized.toLowerCase());
+                    $('#fap-box-text-color-preview').css('background-color', sanitized);
+                }
+                suppressColorEvents = false;
+            }
+
+            function handleColorInput(type, rawValue) {
+                var sanitized = sanitizeHex(rawValue);
+                if (!sanitized) {
+                    applyColor(type, currentColors[type]);
                     return;
                 }
-                
-                var box = sanitizeHex($boxColorHex.val()) || '#FFFFFF';
-                var text = sanitizeHex($textColorHex.val()) || '#000000';
-                $('#fap-box-color-preview').css('background-color', box);
-                $('#fap-box-text-color-preview').css('background-color', text);
+                applyColor(type, sanitized);
             }
 
-            // Chiamata iniziale per impostare i colori
-            updateColorPreviews();
+            function enforceValidColor(type) {
+                var $input = type === 'box' ? $boxColorHex : $textColorHex;
+                var sanitized = sanitizeHex($input.val());
+
+                if (!sanitized) {
+                    showMessage('error', config.translations.invalidColorFormat || config.translations.error);
+                    $input.focus();
+                    return false;
+                }
+
+                applyColor(type, sanitized);
+
+                return true;
+            }
+
+            $boxColor.on('change input', function () {
+                if (suppressColorEvents) {
+                    return;
+                }
+                handleColorInput('box', $(this).val());
+            });
+
+            $boxColorHex.on('change input', function () {
+                if (suppressColorEvents) {
+                    return;
+                }
+                handleColorInput('box', $(this).val());
+            });
+
+            $textColor.on('change input', function () {
+                if (suppressColorEvents) {
+                    return;
+                }
+                handleColorInput('text', $(this).val());
+            });
+
+            $textColorHex.on('change input', function () {
+                if (suppressColorEvents) {
+                    return;
+                }
+                handleColorInput('text', $(this).val());
+            });
+
+            applyColor('box', currentColors.box);
+            applyColor('text', currentColors.text);
+
+            if ($form.length) {
+                $form.on('submit', function (event) {
+                    var boxValid = enforceValidColor('box');
+                    var textValid = enforceValidColor('text');
+
+                    if (!boxValid || !textValid) {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
 
             $('#fap-add-color-combination').on('click', function () {
                 var box = sanitizeHex($boxColorHex.val());

@@ -37,6 +37,8 @@ class FotoArtPuzzle extends Module
         'displayShoppingCartFooter',
         'displayBackOfficeHeader',
         'displayProductButtons',
+        'displayAdminProductsExtra',
+        'displayAdminProductsMainStepLeftColumnMiddle',
     ];
 
     /**
@@ -805,7 +807,7 @@ class FotoArtPuzzle extends Module
     public function hookDisplayBackOfficeHeader()
 {
     $controller = Tools::getValue('controller');
-    
+
     // Per la pagina di configurazione del modulo
     if (Tools::getValue('configure') === $this->name) {
         $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
@@ -825,6 +827,54 @@ class FotoArtPuzzle extends Module
         if ($controller === 'AdminFotoArtPuzzle') {
             $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
         }
+    }
+
+    /**
+     * Hook for the Modules section in the admin product page
+     *
+     * @param array $params
+     *
+     * @return string
+     */
+    public function hookDisplayAdminProductsExtra($params)
+    {
+        $idProduct = (int) Tools::getValue('id_product');
+        if (!$idProduct) {
+            return '';
+        }
+
+        if (!FAPConfiguration::isProductEnabled($idProduct)) {
+            return $this->displayInfo(
+                $this->l('This product is not configured for custom puzzles.') . '<br>' .
+                $this->l('Go to the module configuration to enable it.')
+            );
+        }
+
+        $config = FAPConfiguration::getFrontConfig();
+
+        $this->context->smarty->assign([
+            'id_product' => $idProduct,
+            'config' => $config,
+            'formats' => $config['formats'] ?? [],
+            'module_name' => $this->name,
+            'module_display_name' => $this->displayName,
+            'configure_url' => $this->context->link->getAdminLink('AdminModules') .
+                              '&configure=' . $this->name,
+        ]);
+
+        return $this->fetch('module:' . self::MODULE_NAME . '/views/templates/admin/product_extra.tpl');
+    }
+
+    /**
+     * Alternative hook for the left column of the product page
+     *
+     * @param array $params
+     *
+     * @return string
+     */
+    public function hookDisplayAdminProductsMainStepLeftColumnMiddle($params)
+    {
+        return $this->hookDisplayAdminProductsExtra($params);
     }
 
     /**

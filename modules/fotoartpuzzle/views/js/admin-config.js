@@ -224,30 +224,22 @@
             }
 
             $boxColor.on('change input', function () {
-                if (suppressColorEvents) {
-                    return;
-                }
+                if (suppressColorEvents) { return; }
                 handleColorInput('box', $(this).val());
             });
 
             $boxColorHex.on('change input', function () {
-                if (suppressColorEvents) {
-                    return;
-                }
+                if (suppressColorEvents) { return; }
                 handleColorInput('box', $(this).val());
             });
 
             $textColor.on('change input', function () {
-                if (suppressColorEvents) {
-                    return;
-                }
+                if (suppressColorEvents) { return; }
                 handleColorInput('text', $(this).val());
             });
 
             $textColorHex.on('change input', function () {
-                if (suppressColorEvents) {
-                    return;
-                }
+                if (suppressColorEvents) { return; }
                 handleColorInput('text', $(this).val());
             });
 

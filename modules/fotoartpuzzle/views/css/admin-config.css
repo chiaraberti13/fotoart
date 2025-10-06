@@ -1,0 +1,111 @@
+.fap-admin-config {
+    margin-top: 20px;
+}
+
+.fap-admin-config .panel {
+    margin-bottom: 20px;
+}
+
+.fap-products-add {
+    display: flex;
+    gap: 10px;
+}
+
+.fap-product-list,
+.fap-font-list,
+.fap-color-combinations {
+    margin-top: 15px;
+}
+
+.fap-product-item,
+.fap-font-item,
+.fap-color-combination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #fff;
+    margin-bottom: 8px;
+}
+
+.fap-product-item span,
+.fap-font-item span,
+.fap-color-label {
+    font-weight: 500;
+}
+
+.fap-product-item .fap-product-name {
+    flex: 1;
+    margin-left: 10px;
+}
+
+.fap-font-item .fap-font-name {
+    flex: 1;
+}
+
+.fap-font-upload,
+.fap-products-add {
+    align-items: center;
+}
+
+.fap-color-pickers {
+    margin-top: 15px;
+}
+
+.fap-color-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fap-color-picker input[type="color"] {
+    width: 60px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.fap-color-preview {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.fap-color-actions {
+    margin: 15px 0;
+}
+
+.fap-color-combination {
+    gap: 10px;
+}
+
+.fap-color-combination .fap-color-chip {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.fap-color-combination .btn-link,
+.fap-product-item .btn-link,
+.fap-font-item .btn-link {
+    color: #f44336;
+}
+
+.fap-color-combination .btn-link:hover,
+.fap-product-item .btn-link:hover,
+.fap-font-item .btn-link:hover {
+    color: #d32f2f;
+}
+
+.fap-font-upload input[type="file"] {
+    max-width: 260px;
+}
+
+.fap-admin-config .panel-footer {
+    text-align: right;
+}

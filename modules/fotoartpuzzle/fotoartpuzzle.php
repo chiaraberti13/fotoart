@@ -803,16 +803,23 @@ class FotoArtPuzzle extends Module
     }
 
     public function hookDisplayBackOfficeHeader()
-    {
-        $controller = Tools::getValue('controller');
-        $configure = Tools::getValue('configure');
-
-        // Carica asset nella pagina di configurazione del modulo
-        if ($configure === $this->name) {
-            $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
-            $this->context->controller->addCSS($this->_path . 'views/css/admin-config.css');
-            $this->context->controller->addJS($this->_path . 'views/js/admin-config.js');
-        }
+{
+    $controller = Tools::getValue('controller');
+    
+    // Per la pagina di configurazione del modulo
+    if (Tools::getValue('configure') === $this->name) {
+        $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
+        $this->context->controller->addCSS($this->_path . 'views/css/admin-config.css');
+        
+        // Registra il JavaScript con jQuery come dipendenza
+        $this->context->controller->addJquery();
+        $this->context->controller->addJS($this->_path . 'views/js/admin-config.js');
+    }
+    
+    // Per la dashboard di produzione
+    if ($controller === 'AdminFotoArtPuzzle') {
+        $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
+    }
 
         // Carica asset nel controller di produzione
         if ($controller === 'AdminFotoArtPuzzle') {

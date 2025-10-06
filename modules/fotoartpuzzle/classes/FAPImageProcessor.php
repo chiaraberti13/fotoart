@@ -5,17 +5,15 @@ class FAPImageProcessor
     /**
      * @var bool
      */
-    private $stripExif;
+    private $stripExif = true;
 
     /**
      * @var bool
      */
-    private $forceReencode;
+    private $forceReencode = true;
 
     public function __construct()
     {
-        $this->stripExif = (bool) Configuration::get(FAPConfiguration::STRIP_EXIF);
-        $this->forceReencode = (bool) Configuration::get(FAPConfiguration::FORCE_REENCODE);
     }
 
     /**
@@ -60,14 +58,10 @@ class FAPImageProcessor
         $destinationExt = $mime === 'image/png' ? 'png' : 'jpg';
         $destination = $destinationPath . '.' . $destinationExt;
 
-        if ($mime === 'image/png' && !$this->forceReencode) {
-            Tools::copy($sourcePath, $destination);
+        if ($destinationExt === 'jpg') {
+            imagejpeg($image, $destination, 95);
         } else {
-            if ($destinationExt === 'jpg') {
-                imagejpeg($image, $destination, 95);
-            } else {
-                imagepng($image, $destination, 6);
-            }
+            imagepng($image, $destination, 6);
         }
 
         imagedestroy($image);

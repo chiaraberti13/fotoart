@@ -211,19 +211,27 @@ class FotoArtPuzzle extends Module
 
     private function isAjaxConfigurationRequest()
     {
-        return Tools::getIsset('ajax')
-            && Tools::getValue('ajax')
-            && Tools::getValue('configure') === $this->name;
+        if (Tools::getValue('configure') !== $this->name) {
+            return false;
+        }
+
+        if (!Tools::getIsset('ajax') || !Tools::getValue('ajax')) {
+            return false;
+        }
+
+        return (bool) Tools::getValue('fap_action');
     }
 
     private function handleAjaxRequest()
     {
         header('Content-Type: application/json');
 
-        $action = Tools::getValue('action');
+        $action = Tools::getValue('fap_action');
         $response = ['success' => false];
 
         try {
+            $this->assertValidAdminToken();
+
             switch ($action) {
                 case 'addProduct':
                     $response = $this->ajaxAddProduct();
@@ -257,6 +265,16 @@ class FotoArtPuzzle extends Module
 
         echo json_encode($response);
         exit;
+    }
+
+    private function assertValidAdminToken()
+    {
+        $token = (string) Tools::getValue('token');
+        $expected = Tools::getAdminTokenLite('AdminModules');
+
+        if (!$token || $token !== $expected) {
+            throw new Exception($this->l('Invalid security token.'));
+        }
     }
 
     private function processConfigurationSave()

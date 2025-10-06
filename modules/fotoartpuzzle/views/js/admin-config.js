@@ -113,12 +113,24 @@
                 $fontField.val(JSON.stringify(fonts));
             }
 
-            function handleAjaxError(xhr) {
-                var message = config.translations.error;
-                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
-                    message = xhr.responseJSON.message;
+            function resolveErrorMessage(payload) {
+                if (!payload) {
+                    return config.translations.error;
                 }
-                showMessage('error', message);
+
+                if (payload.responseJSON && payload.responseJSON.message) {
+                    return payload.responseJSON.message;
+                }
+
+                if (payload.message) {
+                    return payload.message;
+                }
+
+                return config.translations.error;
+            }
+
+            function handleAjaxError(payload) {
+                showMessage('error', resolveErrorMessage(payload));
             }
 
             $('#fap-add-product').on('click', function () {
@@ -128,11 +140,17 @@
                     return;
                 }
 
-                $.post(ajaxUrl, {
+                var requestData = {
                     ajax: 1,
-                    action: 'addProduct',
+                    fap_action: 'addProduct',
                     productId: id
-                }).done(function (response) {
+                };
+
+                if (config.token) {
+                    requestData.token = config.token;
+                }
+
+                $.post(ajaxUrl, requestData).done(function (response) {
                     if (!response || !response.success) {
                         handleAjaxError(response);
                         return;
@@ -149,11 +167,17 @@
                 if (!id) {
                     return;
                 }
-                $.post(ajaxUrl, {
+                var requestData = {
                     ajax: 1,
-                    action: 'removeProduct',
+                    fap_action: 'removeProduct',
                     productId: id
-                }).done(function (response) {
+                };
+
+                if (config.token) {
+                    requestData.token = config.token;
+                }
+
+                $.post(ajaxUrl, requestData).done(function (response) {
                     if (!response || !response.success) {
                         handleAjaxError(response);
                         return;

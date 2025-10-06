@@ -120,7 +120,18 @@ class FotoArtPuzzle extends Module
             $output .= $this->processConfigurationSave();
         }
 
-        return $output . $this->renderForm();
+        try {
+            $form = $this->renderForm();
+            return $output . $form;
+        } catch (Exception $e) {
+            FAPLogger::create()->error('Error rendering configuration form', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $output . $this->displayError(
+                $this->l('An error occurred while loading the configuration page: ') . $e->getMessage()
+            );
+        }
     }
 
     /**
@@ -231,9 +242,13 @@ class FotoArtPuzzle extends Module
                     $response = $this->ajaxRemoveFont();
                     break;
                 default:
-                    throw new Exception($this->l('Azione non riconosciuta.'));
+                    throw new Exception($this->l('Unknown action.'));
             }
         } catch (Exception $exception) {
+            FAPLogger::create()->error('AJAX request failed', [
+                'action' => $action,
+                'error' => $exception->getMessage()
+            ]);
             $response['success'] = false;
             $response['message'] = $exception->getMessage();
         }
@@ -293,7 +308,7 @@ class FotoArtPuzzle extends Module
         $products = $this->sanitizeProductCsv(Tools::getValue(FAPConfiguration::PUZZLE_PRODUCTS, ''));
         $this->persistPuzzleProducts($products);
 
-        return $this->displayConfirmation($this->l('Impostazioni aggiornate correttamente.'));
+        return $this->displayConfirmation($this->l('Settings updated successfully.'));
     }
 
     private function sanitizeUploadFolder($value)
@@ -423,7 +438,7 @@ class FotoArtPuzzle extends Module
         foreach ($ids as $id) {
             $result[] = [
                 'id_product' => (int) $id,
-                'name' => $names[(int) $id] ?? '',
+                'name' => $names[(int) $id] ?? $this->l('Product not found'),
             ];
         }
 
@@ -433,40 +448,40 @@ class FotoArtPuzzle extends Module
     private function getAdminTranslations()
     {
         return [
-            'products_heading' => $this->l('PRODOTTI PUZZLE'),
-            'product_id_label' => $this->l('ID Prodotto'),
-            'add_product' => $this->l('Aggiungi'),
-            'configuration_upload' => $this->l('CONFIGURAZIONE UPLOAD'),
-            'max_upload' => $this->l('Dimensione massima upload (MB)'),
-            'allowed_extensions' => $this->l('Formati immagini consentiti'),
-            'min_width' => $this->l('Larghezza minima (px)'),
-            'min_height' => $this->l('Altezza minima (px)'),
-            'upload_folder' => $this->l('Cartella di upload immagini'),
-            'box_heading' => $this->l('PERSONALIZZAZIONE SCATOLA'),
-            'box_default_text' => $this->l('Testo predefinito scatola'),
-            'box_default_text_desc' => $this->l('Inserisci il testo predefinito per la scatola'),
-            'box_max_chars' => $this->l('Lunghezza massima testo scatola'),
-            'box_max_chars_desc' => $this->l('Imposta la lunghezza massima del testo (es. 30)'),
-            'box_color' => $this->l('Colore scatola'),
-            'box_text_color' => $this->l('Colore testo'),
-            'add_combination' => $this->l('AGGIUNGI'),
-            'color_combinations' => $this->l('Combinazioni colori preimpostate'),
-            'fonts_heading' => $this->l('FONT PERSONALIZZATI'),
-            'upload_font' => $this->l('Carica Font TTF'),
-            'add_font' => $this->l('Aggiungi Font'),
-            'functionality_heading' => $this->l('FUNZIONALITÀ'),
-            'enable_orientation' => $this->l('Abilita orientamento'),
-            'enable_crop' => $this->l('Abilita crop interattivo'),
-            'email_heading' => $this->l('NOTIFICHE EMAIL E PDF'),
-            'email_user' => $this->l('Invia preview a utente via email'),
-            'email_admin' => $this->l('Invia preview a admin via email'),
-            'email_admin_recipients' => $this->l('Email amministratore'),
-            'enable_pdf_user' => $this->l('Abilita PDF per utente'),
-            'enable_pdf_admin' => $this->l('Abilita PDF per admin'),
-            'save' => $this->l('Salva'),
-            'remove' => $this->l('Rimuovi'),
-            'error' => $this->l('Si è verificato un errore.'),
-            'success' => $this->l('Operazione completata.'),
+            'products_heading' => $this->l('PUZZLE PRODUCTS'),
+            'product_id_label' => $this->l('Product ID'),
+            'add_product' => $this->l('Add'),
+            'configuration_upload' => $this->l('UPLOAD CONFIGURATION'),
+            'max_upload' => $this->l('Maximum upload size (MB)'),
+            'allowed_extensions' => $this->l('Allowed image formats'),
+            'min_width' => $this->l('Minimum width (px)'),
+            'min_height' => $this->l('Minimum height (px)'),
+            'upload_folder' => $this->l('Image upload folder'),
+            'box_heading' => $this->l('BOX CUSTOMIZATION'),
+            'box_default_text' => $this->l('Default box text'),
+            'box_default_text_desc' => $this->l('Enter the default text for the box'),
+            'box_max_chars' => $this->l('Maximum text length'),
+            'box_max_chars_desc' => $this->l('Set the maximum text length (e.g. 30)'),
+            'box_color' => $this->l('Box color'),
+            'box_text_color' => $this->l('Text color'),
+            'add_combination' => $this->l('ADD'),
+            'color_combinations' => $this->l('Preset color combinations'),
+            'fonts_heading' => $this->l('CUSTOM FONTS'),
+            'upload_font' => $this->l('Upload TTF Font'),
+            'add_font' => $this->l('Add Font'),
+            'functionality_heading' => $this->l('FEATURES'),
+            'enable_orientation' => $this->l('Enable orientation'),
+            'enable_crop' => $this->l('Enable interactive crop'),
+            'email_heading' => $this->l('EMAIL NOTIFICATIONS AND PDF'),
+            'email_user' => $this->l('Send preview to user via email'),
+            'email_admin' => $this->l('Send preview to admin via email'),
+            'email_admin_recipients' => $this->l('Administrator email'),
+            'enable_pdf_user' => $this->l('Enable PDF for user'),
+            'enable_pdf_admin' => $this->l('Enable PDF for admin'),
+            'save' => $this->l('Save'),
+            'remove' => $this->l('Remove'),
+            'error' => $this->l('An error occurred.'),
+            'success' => $this->l('Operation completed.'),
         ];
     }
 
@@ -474,7 +489,7 @@ class FotoArtPuzzle extends Module
     {
         $productId = (int) Tools::getValue('productId');
         if ($productId <= 0) {
-            throw new Exception($this->l('ID prodotto non valido.'));
+            throw new Exception($this->l('Invalid product ID.'));
         }
 
         $exists = (bool) Db::getInstance()->getValue(
@@ -482,7 +497,7 @@ class FotoArtPuzzle extends Module
         );
 
         if (!$exists) {
-            throw new Exception($this->l('Prodotto non trovato.'));
+            throw new Exception($this->l('Product not found.'));
         }
 
         $ids = FAPConfiguration::getEnabledProductIds();
@@ -502,7 +517,7 @@ class FotoArtPuzzle extends Module
     {
         $productId = (int) Tools::getValue('productId');
         if ($productId <= 0) {
-            throw new Exception($this->l('ID prodotto non valido.'));
+            throw new Exception($this->l('Invalid product ID.'));
         }
 
         $ids = array_filter(FAPConfiguration::getEnabledProductIds(), static function ($id) use ($productId) {
@@ -524,7 +539,7 @@ class FotoArtPuzzle extends Module
         $text = $this->sanitizeColor(Tools::getValue('textColor'));
 
         if (!$box || !$text) {
-            throw new Exception($this->l('Colori non validi.'));
+            throw new Exception($this->l('Invalid colors.'));
         }
 
         $combinations = $this->decodeColorCombinations(Configuration::get(FAPConfiguration::BOX_COLOR_COMBINATIONS));
@@ -543,7 +558,7 @@ class FotoArtPuzzle extends Module
         $combinations = $this->decodeColorCombinations(Configuration::get(FAPConfiguration::BOX_COLOR_COMBINATIONS));
 
         if (!isset($combinations[$index])) {
-            throw new Exception($this->l('Combinazione non trovata.'));
+            throw new Exception($this->l('Combination not found.'));
         }
 
         unset($combinations[$index]);
@@ -559,17 +574,17 @@ class FotoArtPuzzle extends Module
     private function ajaxUploadFont()
     {
         if (empty($_FILES['font']) || !is_uploaded_file($_FILES['font']['tmp_name'])) {
-            throw new Exception($this->l('Nessun file caricato.'));
+            throw new Exception($this->l('No file uploaded.'));
         }
 
         $file = $_FILES['font'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception($this->l('Errore durante il caricamento del font.'));
+            throw new Exception($this->l('Error uploading font.'));
         }
 
         $extension = Tools::strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
         if ($extension !== 'ttf') {
-            throw new Exception($this->l('Sono supportati solo file TTF.'));
+            throw new Exception($this->l('Only TTF files are supported.'));
         }
 
         $fontsDir = _PS_MODULE_DIR_ . self::MODULE_NAME . '/fonts';
@@ -586,7 +601,7 @@ class FotoArtPuzzle extends Module
         $targetPath = rtrim($fontsDir, '/\\') . '/' . $targetName;
 
         if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-            throw new Exception($this->l('Impossibile salvare il font caricato.'));
+            throw new Exception($this->l('Unable to save the uploaded font.'));
         }
 
         $fonts = $this->decodeFonts(Configuration::get(FAPConfiguration::CUSTOM_FONTS));
@@ -604,7 +619,7 @@ class FotoArtPuzzle extends Module
     {
         $fontName = trim((string) Tools::getValue('fontName'));
         if ($fontName === '') {
-            throw new Exception($this->l('Nome font non valido.'));
+            throw new Exception($this->l('Invalid font name.'));
         }
 
         $fonts = $this->decodeFonts(Configuration::get(FAPConfiguration::CUSTOM_FONTS));
@@ -673,7 +688,7 @@ class FotoArtPuzzle extends Module
     }
 
     /**
-     * Product page hook
+     * Product page hook - displayProductAdditionalInfo
      *
      * @param array $params
      *
@@ -681,26 +696,41 @@ class FotoArtPuzzle extends Module
      */
     public function hookDisplayProductAdditionalInfo($params)
     {
-        return $this->renderProductWizard($params);
+        // Non renderizzare in questo hook per evitare duplicati
+        // Il wizard verrà mostrato solo tramite displayProductButtons
+        return '';
     }
 
+    /**
+     * Product page hook - displayProductButtons (prioritario)
+     *
+     * @param array $params
+     *
+     * @return string
+     */
     public function hookDisplayProductButtons($params)
     {
-        return $this->renderProductWizard($params);
-    }
-
-    private function renderProductWizard($params)
-    {
         $product = $params['product'] ?? null;
-        if (!$product || !FAPConfiguration::isProductEnabled($product['id_product'])) {
+        if (!$product || !isset($product['id_product'])) {
             return '';
         }
+
+        if (!FAPConfiguration::isProductEnabled($product['id_product'])) {
+            return '';
+        }
+
+        $config = FAPConfiguration::getFrontConfig();
 
         $this->context->smarty->assign([
             'upload_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'upload'),
             'preview_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'preview'),
             'summary_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'summary'),
-            'config' => json_encode(FAPConfiguration::getFrontConfig()),
+            'ajax_url' => $this->context->link->getModuleLink(self::MODULE_NAME, 'ajax'),
+            'config' => json_encode($config),
+            'id_product' => (int) $product['id_product'],
+            'token_upload' => $this->getFrontToken('upload'),
+            'token_preview' => $this->getFrontToken('preview'),
+            'token_summary' => $this->getFrontToken('summary'),
             'module' => $this,
         ]);
 
@@ -715,6 +745,10 @@ class FotoArtPuzzle extends Module
     public function hookDisplayShoppingCartFooter($params)
     {
         $cart = isset($params['cart']) ? $params['cart'] : $this->context->cart;
+        if (!$cart || !$cart->id) {
+            return '';
+        }
+
         $customizations = FAPCustomizationService::getCartCustomizations($cart->id);
         $this->context->smarty->assign([
             'customizations' => $customizations,
@@ -770,10 +804,19 @@ class FotoArtPuzzle extends Module
 
     public function hookDisplayBackOfficeHeader()
     {
-        if (Tools::getValue('configure') === $this->name) {
+        $controller = Tools::getValue('controller');
+        $configure = Tools::getValue('configure');
+
+        // Carica asset nella pagina di configurazione del modulo
+        if ($configure === $this->name) {
             $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
             $this->context->controller->addCSS($this->_path . 'views/css/admin-config.css');
             $this->context->controller->addJS($this->_path . 'views/js/admin-config.js');
+        }
+
+        // Carica asset nel controller di produzione
+        if ($controller === 'AdminFotoArtPuzzle') {
+            $this->context->controller->addCSS($this->_path . 'views/css/admin.css');
         }
     }
 
@@ -786,11 +829,30 @@ class FotoArtPuzzle extends Module
      */
     public function getFrontToken($scope)
     {
-        $customerKey = $this->context->customer->isLogged()
-            ? $this->context->customer->secure_key
-            : (string) ($this->context->cookie->id_guest ?: $this->context->cookie->id_cart ?: session_id());
+        $key = $this->getCustomerSecureKey();
+        return hash('sha256', $scope . $key . _COOKIE_KEY_ . date('Ymd'));
+    }
 
-        return Tools::getToken($scope . $customerKey);
+    /**
+     * Get customer secure key for token generation
+     *
+     * @return string
+     */
+    private function getCustomerSecureKey()
+    {
+        if ($this->context->customer->isLogged()) {
+            return $this->context->customer->secure_key;
+        }
+
+        if (isset($this->context->cookie->id_guest) && $this->context->cookie->id_guest) {
+            return 'guest_' . $this->context->cookie->id_guest;
+        }
+
+        if (isset($this->context->cart->id) && $this->context->cart->id) {
+            return 'cart_' . $this->context->cart->id;
+        }
+
+        return session_id() ?: 'anonymous';
     }
 
     /**
@@ -996,7 +1058,7 @@ class FotoArtPuzzle extends Module
                 '{shop_name}' => Configuration::get('PS_SHOP_NAME'),
                 '{customer_name}' => $customer && Validate::isLoadedObject($customer)
                     ? trim($customer->firstname . ' ' . $customer->lastname)
-                    : '',
+                    : $this->l('Guest'),
                 'order_link' => $this->context->link->getAdminLink('AdminOrders', true, [], [
                     'vieworder' => 1,
                     'id_order' => (int) $order->id,
@@ -1074,31 +1136,6 @@ class FotoArtPuzzle extends Module
     }
 
     /**
-     * Guess mime type by file extension
-     *
-     * @param string $path
-     *
-     * @return string
-     */
-    private function guessMimeType($path)
-    {
-        $extension = Tools::strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
-        if (in_array($extension, ['jpg', 'jpeg'], true)) {
-            return 'image/jpeg';
-        }
-
-        if ($extension === 'png') {
-            return 'image/png';
-        }
-
-        if ($extension === 'gif') {
-            return 'image/gif';
-        }
-
-        return 'application/octet-stream';
-    }
-
-    /**
      * Parse administrator email recipients
      *
      * @param string $value
@@ -1139,7 +1176,7 @@ class FotoArtPuzzle extends Module
         $tab->module = $this->name;
         $tab->active = 1;
         foreach (Language::getLanguages(false) as $language) {
-            $tab->name[$language['id_lang']] = $this->l('Puzzle production');
+            $tab->name[$language['id_lang']] = $this->l('Puzzle Production');
         }
 
         return (bool) $tab->add();

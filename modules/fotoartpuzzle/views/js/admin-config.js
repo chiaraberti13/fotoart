@@ -31,7 +31,7 @@
             if (!value) {
                 return '';
             }
-            var upper = value.toString().toUpperCase();
+            var upper = value.toString().trim().toUpperCase();
             if (upper.charAt(0) !== '#') {
                 upper = '#' + upper;
             }

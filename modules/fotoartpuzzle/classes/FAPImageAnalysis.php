@@ -14,7 +14,7 @@ class FAPImageAnalysis
     {
         $this->qualityService = $qualityService ?: new FAPQualityService();
     }
-
+  
     private const QUALITY_EXCELLENT = 4;
     private const QUALITY_GREAT = 3;
     private const QUALITY_GOOD = 2;
@@ -39,7 +39,6 @@ class FAPImageAnalysis
     {
         $orientation = $width >= $height ? 'landscape' : 'portrait';
         $evaluations = $this->qualityService->evaluateFormats($width, $height, $formats);
-
         $evaluations = [];
 
         foreach ($formats as $format) {
@@ -76,7 +75,6 @@ class FAPImageAnalysis
                 ],
             ]);
         }
-
         return [
             'orientation' => $orientation,
             'width' => $width,

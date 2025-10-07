@@ -16,6 +16,7 @@
     const uploadUrl = wizard.dataset.uploadUrl;
     const previewUrl = wizard.dataset.previewUrl;
     const summaryUrl = wizard.dataset.summaryUrl;
+    const ajaxUrl = wizard.dataset.ajaxUrl || '';
     const tokens = {
         upload: wizard.dataset.tokenUpload || '',
         preview: wizard.dataset.tokenPreview || '',
@@ -55,8 +56,11 @@
         fileHeight: 0,
         orientation: null,
         formats: [],
+        puzzles: [],
+        boxes: [],
         printable: false,
         format: null,
+        selectedBox: null,
         boxText: config.box && config.box.defaultText ? config.box.defaultText : 'Il mio puzzle',
         boxColor: (config.box && config.box.colors && config.box.colors[0]) || '#FFFFFF',
         boxFont: (config.box && config.box.fonts && config.box.fonts[0]) || 'Roboto',
@@ -92,6 +96,8 @@
     });
     modal.nextButton.addEventListener('click', handleStepForward);
     modal.finishButton.addEventListener('click', finalizeCustomization);
+
+    preloadReferenceData();
 
     let escapeHandler = null;
 
@@ -185,6 +191,79 @@
         if (state.currentStepIndex === steps.length - 1) {
             modal.finishButton.disabled = !state.file || !state.format || isLoading;
         }
+    }
+
+    function preloadReferenceData() {
+        const fallbackPuzzles = Array.isArray(config.puzzles) && config.puzzles.length
+            ? config.puzzles
+            : (Array.isArray(config.formats) ? config.formats : []);
+        const fallbackBoxes = Array.isArray(config.boxes) ? config.boxes : [];
+
+        if (!state.puzzles.length && fallbackPuzzles.length) {
+            state.puzzles = fallbackPuzzles;
+        }
+
+        if (!state.boxes.length && fallbackBoxes.length) {
+            state.boxes = fallbackBoxes;
+        }
+
+        if (!state.selectedBox && state.boxes.length) {
+            state.selectedBox = state.boxes[0];
+        }
+
+        if (!ajaxUrl) {
+            return;
+        }
+
+        requestAjax('getPuzzles').then(function (response) {
+            if (response && response.success && Array.isArray(response.puzzles)) {
+                state.puzzles = response.puzzles;
+                if (state.currentStepIndex === 1) {
+                    renderStep();
+                }
+            }
+        });
+
+        requestAjax('getBoxes').then(function (response) {
+            if (response && response.success && Array.isArray(response.boxes)) {
+                var previousId = state.selectedBox && state.selectedBox.id ? String(state.selectedBox.id) : null;
+                var nextSelection = null;
+                if (previousId) {
+                    nextSelection = response.boxes.find(function (item) {
+                        return String(item.id) === previousId;
+                    }) || null;
+                }
+                state.boxes = response.boxes;
+                if (!nextSelection && state.boxes.length) {
+                    nextSelection = state.boxes[0];
+                }
+                state.selectedBox = nextSelection;
+                if (state.currentStepIndex === 2) {
+                    renderStep();
+                }
+            }
+        });
+    }
+
+    function requestAjax(action) {
+        if (!ajaxUrl) {
+            return Promise.resolve(null);
+        }
+
+        const separator = ajaxUrl.indexOf('?') === -1 ? '?' : '&';
+        const url = ajaxUrl + separator + 'action=' + encodeURIComponent(action);
+
+        return fetch(url, { credentials: 'same-origin' })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .catch(function (error) {
+                console.warn('FotoArt Puzzle: richiesta AJAX fallita', error);
+                return null;
+            });
     }
 
     function renderUploadStep(container) {
@@ -296,6 +375,7 @@
     function renderFormatStep(container) {
         const availableFormats = Array.isArray(state.formats) && state.formats.length
             ? state.formats
+            : (state.puzzles && state.puzzles.length ? state.puzzles : (Array.isArray(config.formats) ? config.formats : []));
             : (Array.isArray(config.formats) ? config.formats : []);
 
         if (!availableFormats.length) {
@@ -318,7 +398,10 @@
             card.type = 'button';
             card.className = 'fap-format-card';
 
+            if (state.format && ((state.format.id && item.id && String(state.format.id) === String(item.id)) || state.format.name === item.name)) {
+
             if (state.format && state.format.name === item.name) {
+
                 card.classList.add('is-selected');
             }
 
@@ -415,6 +498,60 @@
         counter.className = 'fap-char-counter';
         textField.appendChild(counter);
         fieldset.appendChild(textField);
+
+        if (Array.isArray(state.boxes) && state.boxes.length) {
+            const boxField = document.createElement('div');
+            boxField.className = 'fap-field fap-field--box-selection';
+
+            const boxLabel = document.createElement('span');
+            boxLabel.className = 'fap-field__label';
+            boxLabel.textContent = translate('Seleziona la scatola');
+            boxField.appendChild(boxLabel);
+
+            const boxList = document.createElement('div');
+            boxList.className = 'fap-box-list';
+
+            state.boxes.forEach(function (box) {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'fap-box-card';
+
+                const isSelected = state.selectedBox && ((state.selectedBox.id && box.id && String(state.selectedBox.id) === String(box.id)) || (state.selectedBox.reference && box.reference && state.selectedBox.reference === box.reference));
+                if (isSelected) {
+                    card.classList.add('is-selected');
+                }
+
+                const name = document.createElement('span');
+                name.className = 'fap-box-card__name';
+                name.textContent = box.name || translate('Scatola');
+                card.appendChild(name);
+
+                if (box.preview) {
+                    const preview = document.createElement('img');
+                    preview.className = 'fap-box-card__preview';
+                    preview.src = box.preview;
+                    preview.alt = box.name || '';
+                    card.appendChild(preview);
+                } else if (box.color) {
+                    const swatch = document.createElement('span');
+                    swatch.className = 'fap-box-card__swatch';
+                    swatch.style.backgroundColor = box.color;
+                    card.appendChild(swatch);
+                }
+
+                card.addEventListener('click', function () {
+                    state.selectedBox = box;
+                    state.previewDirty = true;
+                    state.message = null;
+                    renderStep();
+                });
+
+                boxList.appendChild(card);
+            });
+
+            boxField.appendChild(boxList);
+            fieldset.appendChild(boxField);
+        }
 
         function updateCounter() {
             const max = (config.box && config.box.maxChars) || 0;
@@ -538,6 +675,11 @@
             const formatRow = document.createElement('p');
             formatRow.innerHTML = '<strong>' + translate('Formato:') + '</strong> ' + sanitize(formatLabel(state.format));
             details.appendChild(formatRow);
+        }
+        if (state.selectedBox) {
+            const boxRow = document.createElement('p');
+            boxRow.innerHTML = '<strong>' + translate('Scatola:') + '</strong> ' + sanitize(state.selectedBox.name || '-');
+            details.appendChild(boxRow);
         }
         if (state.boxText) {
             const textRow = document.createElement('p');
@@ -714,6 +856,18 @@
         payload.append('box_text', state.boxText || '');
         payload.append('box_color', state.boxColor || '');
         payload.append('box_font', state.boxFont || '');
+        if (state.format && state.format.id) {
+            payload.append('format_id', state.format.id);
+        }
+        if (state.format && state.format.reference) {
+            payload.append('format_reference', state.format.reference);
+        }
+        if (state.selectedBox && state.selectedBox.id) {
+            payload.append('box_id', state.selectedBox.id);
+        }
+        if (state.selectedBox && state.selectedBox.reference) {
+            payload.append('box_reference', state.selectedBox.reference);
+        }
         
         return fetch(previewUrl, {
             method: 'POST',
@@ -775,15 +929,29 @@
             payload.append('box_text', state.boxText || '');
             payload.append('box_color', state.boxColor || '');
             payload.append('box_font', state.boxFont || '');
+            if (state.format && state.format.id) {
+                payload.append('format_id', state.format.id);
+            }
+            if (state.format && state.format.reference) {
+                payload.append('format_reference', state.format.reference);
+            }
             payload.append('format', state.format.name || '');
+            if (state.selectedBox && state.selectedBox.id) {
+                payload.append('box_id', state.selectedBox.id);
+            }
+            if (state.selectedBox && state.selectedBox.reference) {
+                payload.append('box_reference', state.selectedBox.reference);
+            }
+            if (state.selectedBox && state.selectedBox.name) {
+                payload.append('box_name', state.selectedBox.name);
+            }
             payload.append('id_product', idProduct);
-            
-            // Gestione combinazione prodotto
+
             const combinationInput = addToCartForm.querySelector('input[name="id_product_attribute"]');
             if (combinationInput && combinationInput.value) {
                 payload.append('id_product_attribute', combinationInput.value);
             }
-            
+
             if (state.previewPath) {
                 payload.append('preview_path', state.previewPath);
             }
@@ -797,17 +965,16 @@
 
             state.summaryLoading = false;
             state.customizationId = response.id_customization;
-            
+
             ensureCustomizationField(state.customizationId);
             updateSummaryPanel();
             closeModal();
-            
-            // Aspetta un momento prima di aggiungere al carrello
+
             setTimeout(function() {
                 triggerAddToCart();
                 showToast(translate('Il tuo puzzle personalizzato è stato aggiunto al carrello!'));
             }, 300);
-            
+
         } catch (error) {
             state.summaryLoading = false;
             setMessage('error', error.message);
@@ -869,6 +1036,13 @@
                     qualityItem.innerHTML = '<span>' + translate('Qualità:') + '</span> ' + sanitize(qualityLabelForScore(state.format.quality));
                     list.appendChild(qualityItem);
                 }
+            }
+
+            if (state.selectedBox) {
+                const boxItem = document.createElement('li');
+                boxItem.innerHTML = '<span>' + translate('Scatola:') + '</span> ' + sanitize(state.selectedBox.name || '-');
+                list.appendChild(boxItem);
+
             }
 
             if (state.boxText) {
@@ -1058,6 +1232,9 @@
             'Non adatto alla stampa': 'Non adatto alla stampa',
             'La qualità della foto inviata non è idonea alla stampa.': 'La qualità della foto inviata non è idonea alla stampa.',
             'Trascina qui la tua immagine oppure clicca per selezionarla': 'Trascina qui la tua immagine oppure clicca per selezionarla',
+            'Seleziona la scatola': 'Seleziona la scatola',
+            'Scatola': 'Scatola',
+            'Scatola:': 'Scatola:',
         };
         return translations[text] || text;
     }

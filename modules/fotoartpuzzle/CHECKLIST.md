@@ -2,7 +2,7 @@
 
 ## Backend
 - [x] Implementare entry point pubblico nel controller front (`controllers/front/index.php`) per gestire il wizard del prodotto puzzle.
-- [ ] Ampliare l'endpoint di upload per calcolare orientamento, qualità, coordinate di crop e generare preview/thumb delle immagini caricate.
+- [x] Ampliare l'endpoint di upload per calcolare orientamento, qualità, coordinate di crop e generare preview/thumb delle immagini caricate.
 - [ ] Introdurre un servizio di qualità (`FAPQualityService`) che replichi gli algoritmi `getQuality`, `setCoordinates`, `getLandscapeSelection`, ecc.
 - [ ] Gestire elenchi puzzle e box tramite nuove strutture dati/tabelle, esponendo endpoint dedicati (`getPuzzles`, `getBoxes`, ecc.).
 - [ ] Estendere `FAPCustomizationService` per persistere metadati completi: ID puzzle, coordinate crop, qualità, ID box, note PDF, ecc.

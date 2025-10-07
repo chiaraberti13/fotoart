@@ -53,12 +53,17 @@
         fileName: '',
         fileWidth: 0,
         fileHeight: 0,
+        orientation: null,
+        formats: [],
+        printable: false,
         format: null,
         boxText: config.box && config.box.defaultText ? config.box.defaultText : 'Il mio puzzle',
         boxColor: (config.box && config.box.colors && config.box.colors[0]) || '#FFFFFF',
         boxFont: (config.box && config.box.fonts && config.box.fonts[0]) || 'Roboto',
         previewUrl: null,
         previewPath: null,
+        thumbnailUrl: null,
+        thumbnailPath: null,
         previewDirty: false,
         uploading: false,
         previewLoading: false,
@@ -289,7 +294,11 @@
     }
 
     function renderFormatStep(container) {
-        if (!Array.isArray(config.formats) || !config.formats.length) {
+        const availableFormats = Array.isArray(state.formats) && state.formats.length
+            ? state.formats
+            : (Array.isArray(config.formats) ? config.formats : []);
+
+        if (!availableFormats.length) {
             const notice = document.createElement('p');
             notice.textContent = translate('Nessun formato puzzle configurato.');
             container.appendChild(notice);
@@ -304,40 +313,52 @@
         const list = document.createElement('div');
         list.className = 'fap-format-list';
 
-        config.formats.forEach(function (item) {
+        availableFormats.forEach(function (item) {
             const card = document.createElement('button');
             card.type = 'button';
             card.className = 'fap-format-card';
-            
+
             if (state.format && state.format.name === item.name) {
                 card.classList.add('is-selected');
             }
 
             let html = '<span class="fap-format-card__name">' + sanitize(item.name) + '</span>';
-            
+
             if (item.pieces) {
                 html += '<span class="fap-format-card__pieces">' + sanitize(item.pieces + ' ' + translate('pezzi')) + '</span>';
             }
-            
-            if (item.width && item.height) {
-                html += '<span class="fap-format-card__size">' + sanitize(item.width + ' x ' + item.height + ' px') + '</span>';
+
+            const sizeLabel = formatSizeLabel(item);
+            if (sizeLabel) {
+                html += '<span class="fap-format-card__size">' + sanitize(sizeLabel) + '</span>';
             }
 
-            // Verifica compatibilità con immagine caricata
-            if (state.fileWidth && state.fileHeight && item.width && item.height) {
+            if (typeof item.quality !== 'undefined') {
+                const quality = parseInt(item.quality, 10);
+                const qualityLabel = qualityLabelForScore(quality);
+                if (qualityLabel) {
+                    const qualityColor = quality > 1 ? '#2e7d32' : (quality === 1 ? '#f57c00' : '#d32f2f');
+                    html += '<span class="fap-format-card__quality" style="display:block;color:' + qualityColor + ';font-size:0.85em;">'
+                        + sanitize(qualityLabel) + '</span>';
+                }
+                if (quality <= 0) {
+                    card.disabled = true;
+                    card.style.opacity = '0.5';
+                }
+            } else if (state.fileWidth && state.fileHeight && item.width && item.height) {
                 if (state.fileWidth < item.width || state.fileHeight < item.height) {
-                    html += '<span class="fap-format-card__warning" style="color: #d32f2f; font-size: 0.85em;">' + 
-                            translate('⚠ Immagine troppo piccola') + '</span>';
+                    html += '<span class="fap-format-card__warning" style="color: #d32f2f; font-size: 0.85em;">' +
+                        translate('⚠ Immagine troppo piccola') + '</span>';
                     card.disabled = true;
                     card.style.opacity = '0.5';
                 } else {
-                    html += '<span class="fap-format-card__success" style="color: #2e7d32; font-size: 0.85em;">' + 
-                            translate('✓ Compatibile') + '</span>';
+                    html += '<span class="fap-format-card__success" style="color: #2e7d32; font-size: 0.85em;">' +
+                        translate('✓ Compatibile') + '</span>';
                 }
             }
 
             card.innerHTML = html;
-            
+
             card.addEventListener('click', function () {
                 if (!card.disabled) {
                     state.format = item;
@@ -568,14 +589,27 @@
             const dimensions = await validateImage(file);
             state.fileWidth = dimensions.width;
             state.fileHeight = dimensions.height;
-            
+
             const response = await uploadFile(file);
-            state.file = response.file;
-            state.fileUrl = response.download_url;
+            state.file = response.file || null;
+            state.fileUrl = response.download_url || null;
             state.fileName = file.name;
+            state.fileWidth = response.width || state.fileWidth;
+            state.fileHeight = response.height || state.fileHeight;
+            state.orientation = response.orientation || (state.fileWidth >= state.fileHeight ? 'landscape' : 'portrait');
+            state.formats = Array.isArray(response.formats) ? response.formats : [];
+            state.printable = !!response.printable;
+            state.previewUrl = response.preview_url || null;
+            state.previewPath = response.preview || null;
+            state.thumbnailUrl = response.thumbnail_url || null;
+            state.thumbnailPath = response.thumbnail || null;
+            state.previewDirty = !state.previewUrl;
             state.uploading = false;
-            state.previewUrl = null;
-            
+
+            if (!state.printable) {
+                throw new Error(translate('La qualità della foto inviata non è idonea alla stampa.'));
+            }
+
             setMessage('success', translate('Immagine caricata con successo.'));
         } catch (error) {
             state.uploading = false;
@@ -584,7 +618,13 @@
             state.fileName = '';
             state.fileWidth = 0;
             state.fileHeight = 0;
+            state.orientation = null;
+            state.formats = [];
+            state.printable = false;
             state.previewUrl = null;
+            state.previewPath = null;
+            state.thumbnailUrl = null;
+            state.thumbnailPath = null;
             state.previewDirty = false;
             throw error;
         }
@@ -810,10 +850,25 @@
             fileItem.innerHTML = '<span>' + translate('Immagine:') + '</span> ' + sanitize(state.fileName);
             list.appendChild(fileItem);
 
+            if (state.orientation) {
+                const orientationItem = document.createElement('li');
+                const orientationLabel = state.orientation === 'landscape'
+                    ? translate('Orizzontale')
+                    : translate('Verticale');
+                orientationItem.innerHTML = '<span>' + translate('Orientamento:') + '</span> ' + sanitize(orientationLabel);
+                list.appendChild(orientationItem);
+            }
+
             if (state.format) {
                 const formatItem = document.createElement('li');
                 formatItem.innerHTML = '<span>' + translate('Formato:') + '</span> ' + sanitize(formatLabel(state.format));
                 list.appendChild(formatItem);
+
+                if (typeof state.format.quality !== 'undefined') {
+                    const qualityItem = document.createElement('li');
+                    qualityItem.innerHTML = '<span>' + translate('Qualità:') + '</span> ' + sanitize(qualityLabelForScore(state.format.quality));
+                    list.appendChild(qualityItem);
+                }
             }
 
             if (state.boxText) {
@@ -879,6 +934,63 @@
         return { element: element, content: content };
     }
 
+    function formatSizeLabel(format) {
+        if (!format) {
+            return null;
+        }
+
+        const width = parseFloat(format.width);
+        const height = parseFloat(format.height);
+
+        if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) {
+            return null;
+        }
+
+        const widthDisplay = normaliseDimension(width);
+        const heightDisplay = normaliseDimension(height);
+
+        if (!widthDisplay || !heightDisplay) {
+            return null;
+        }
+
+        return widthDisplay.value + ' x ' + heightDisplay.value + ' ' + widthDisplay.unit;
+    }
+
+    function normaliseDimension(value) {
+        if (!isFinite(value) || value <= 0) {
+            return null;
+        }
+
+        let numeric = value;
+        let unit = 'cm';
+
+        if (value > 100) {
+            numeric = value / 100;
+        }
+
+        const rounded = Math.round(numeric * 10) / 10;
+        const display = Math.abs(rounded - Math.round(rounded)) < 0.05
+            ? String(Math.round(rounded))
+            : rounded.toFixed(1);
+
+        return { value: display, unit: unit };
+    }
+
+    function qualityLabelForScore(score) {
+        switch (score) {
+            case 4:
+                return translate('Qualità eccellente');
+            case 3:
+                return translate('Qualità ottima');
+            case 2:
+                return translate('Buona qualità');
+            case 1:
+                return translate('Qualità scarsa');
+            default:
+                return translate('Non adatto alla stampa');
+        }
+    }
+
     function formatLabel(format) {
         const pieces = format.pieces ? format.pieces + ' ' + translate('pezzi') : '';
         return format.name + (pieces ? ' (' + pieces + ')' : '');
@@ -921,10 +1033,14 @@
             'Anteprima della scatola puzzle personalizzata': 'Anteprima della scatola puzzle personalizzata',
             'Immagine:': 'Immagine:',
             'Formato:': 'Formato:',
+            'Qualità:': 'Qualità:',
             'Testo:': 'Testo:',
             'Colore:': 'Colore:',
             'Font:': 'Font:',
             'Rigenera anteprima': 'Rigenera anteprima',
+            'Orientamento:': 'Orientamento:',
+            'Orizzontale': 'Orizzontale',
+            'Verticale': 'Verticale',
             'Carica prima un\'immagine.': 'Carica prima un\'immagine.',
             'Scegli un formato puzzle.': 'Scegli un formato puzzle.',
             'Risposta del server non valida.': 'Risposta del server non valida.',
@@ -935,6 +1051,12 @@
             'Il tuo puzzle personalizzato è stato aggiunto al carrello!': 'Il tuo puzzle personalizzato è stato aggiunto al carrello!',
             'Personalizzazione pronta': 'Personalizzazione pronta',
             'Impossibile leggere l\'immagine selezionata.': 'Impossibile leggere l\'immagine selezionata.',
+            'Qualità eccellente': 'Qualità eccellente',
+            'Qualità ottima': 'Qualità ottima',
+            'Buona qualità': 'Buona qualità',
+            'Qualità scarsa': 'Qualità scarsa',
+            'Non adatto alla stampa': 'Non adatto alla stampa',
+            'La qualità della foto inviata non è idonea alla stampa.': 'La qualità della foto inviata non è idonea alla stampa.',
             'Trascina qui la tua immagine oppure clicca per selezionarla': 'Trascina qui la tua immagine oppure clicca per selezionarla',
         };
         return translations[text] || text;

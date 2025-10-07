@@ -401,7 +401,6 @@
             if (state.format && ((state.format.id && item.id && String(state.format.id) === String(item.id)) || state.format.name === item.name)) {
 
             if (state.format && state.format.name === item.name) {
-
                 card.classList.add('is-selected');
             }
 
@@ -936,6 +935,34 @@
                 payload.append('format_reference', state.format.reference);
             }
             payload.append('format', state.format.name || '');
+          
+            if (typeof state.format.quality !== 'undefined' && state.format.quality !== null) {
+                payload.append('quality', state.format.quality);
+            }
+            if (typeof state.format.pieces !== 'undefined' && state.format.pieces !== null) {
+                payload.append('pieces', state.format.pieces);
+            }
+            if (state.format && state.format.coordinates) {
+                try {
+                    payload.append('coordinates', JSON.stringify(state.format.coordinates));
+                } catch (error) {
+                    console.error('Unable to serialise coordinates', error);
+                }
+            }
+            if (state.format && state.format.payload) {
+                try {
+                    payload.append('format_payload', JSON.stringify(state.format.payload));
+                } catch (error) {
+                    console.error('Unable to serialise format payload', error);
+                }
+            }
+            if (state.format) {
+                try {
+                    payload.append('format_details', JSON.stringify(state.format));
+                } catch (error) {
+                    console.error('Unable to serialise format details', error);
+                }
+            }
             if (state.selectedBox && state.selectedBox.id) {
                 payload.append('box_id', state.selectedBox.id);
             }
@@ -944,6 +971,13 @@
             }
             if (state.selectedBox && state.selectedBox.name) {
                 payload.append('box_name', state.selectedBox.name);
+            }
+            if (state.selectedBox) {
+                try {
+                    payload.append('box_payload', JSON.stringify(state.selectedBox));
+                } catch (error) {
+                    console.error('Unable to serialise box payload', error);
+                }
             }
             payload.append('id_product', idProduct);
 
@@ -954,6 +988,37 @@
 
             if (state.previewPath) {
                 payload.append('preview_path', state.previewPath);
+            }
+            if (state.previewUrl) {
+                payload.append('preview_url', state.previewUrl);
+            }
+            if (state.thumbnailPath) {
+                payload.append('thumbnail_path', state.thumbnailPath);
+            }
+            if (state.thumbnailUrl) {
+                payload.append('thumbnail_url', state.thumbnailUrl);
+            }
+            if (typeof state.printable !== 'undefined') {
+                payload.append('printable', state.printable ? '1' : '0');
+            }
+            if (state.orientation) {
+                payload.append('orientation', state.orientation);
+            }
+            if (state.fileWidth) {
+                payload.append('image_width', state.fileWidth);
+            }
+            if (state.fileHeight) {
+                payload.append('image_height', state.fileHeight);
+            }
+            if (state.fileUrl) {
+                payload.append('download_url', state.fileUrl);
+            }
+            if (state.cropSelection) {
+                try {
+                    payload.append('crop', JSON.stringify(state.cropSelection));
+                } catch (error) {
+                    console.error('Unable to serialise crop selection', error);
+                }
             }
 
             const response = await fetch(summaryUrl, {
@@ -1042,7 +1107,6 @@
                 const boxItem = document.createElement('li');
                 boxItem.innerHTML = '<span>' + translate('Scatola:') + '</span> ' + sanitize(state.selectedBox.name || '-');
                 list.appendChild(boxItem);
-
             }
 
             if (state.boxText) {

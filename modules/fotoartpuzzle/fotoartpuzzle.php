@@ -1353,11 +1353,28 @@ class FotoArtPuzzle extends Module
             if (!empty($metadata['format'])) {
                 $displayMetadata[$this->l('Format')] = $metadata['format'];
             }
+            if (!empty($metadata['box_name'])) {
+                $displayMetadata[$this->l('Box')] = $metadata['box_name'];
+            }
             if (!empty($metadata['color'])) {
                 $displayMetadata[$this->l('Color')] = $metadata['color'];
             }
             if (!empty($metadata['font'])) {
                 $displayMetadata[$this->l('Font')] = $metadata['font'];
+            }
+            if (!empty($metadata['pieces'])) {
+                $displayMetadata[$this->l('Pieces')] = (int) $metadata['pieces'];
+            }
+
+            $qualityLabel = $this->resolveQualityLabel($metadata);
+            if ($qualityLabel) {
+                $displayMetadata[$this->l('Quality')] = $qualityLabel;
+            }
+
+            if (!empty($metadata['orientation'])) {
+                $displayMetadata[$this->l('Orientation')] = $metadata['orientation'] === 'portrait'
+                    ? $this->l('Portrait')
+                    : $this->l('Landscape');
             }
 
             $previewPath = !empty($metadata['preview_path']) ? $metadata['preview_path'] : null;
@@ -1377,6 +1394,82 @@ class FotoArtPuzzle extends Module
         }
 
         return $mapped;
+    }
+
+    /**
+     * Resolve a translated quality label from customization metadata.
+     *
+     * @param array $metadata
+     *
+     * @return string|null
+     */
+    private function resolveQualityLabel(array $metadata)
+    {
+        if (!empty($metadata['print_info']) && is_array($metadata['print_info'])) {
+            if (!empty($metadata['print_info']['quality_label'])) {
+                return $this->translateQualityKey($metadata['print_info']['quality_label']);
+            }
+            if (isset($metadata['print_info']['quality'])) {
+                return $this->translateQualityKey($this->qualityKeyFromScore((int) $metadata['print_info']['quality']));
+            }
+        }
+
+        if (array_key_exists('quality', $metadata)) {
+            return $this->translateQualityKey($this->qualityKeyFromScore((int) $metadata['quality']));
+        }
+
+        return null;
+    }
+
+    /**
+     * Map a score to a quality keyword.
+     *
+     * @param int $score
+     *
+     * @return string
+     */
+    private function qualityKeyFromScore($score)
+    {
+        switch ((int) $score) {
+            case 4:
+                return 'excellent';
+            case 3:
+                return 'great';
+            case 2:
+                return 'good';
+            case 1:
+                return 'poor';
+            default:
+                return 'insufficient';
+        }
+    }
+
+    /**
+     * Translate a quality keyword into the current language.
+     *
+     * @param string|null $key
+     *
+     * @return string|null
+     */
+    private function translateQualityKey($key)
+    {
+        if (!$key) {
+            return null;
+        }
+
+        switch ((string) $key) {
+            case 'excellent':
+                return $this->l('Excellent');
+            case 'great':
+                return $this->l('Great');
+            case 'good':
+                return $this->l('Good');
+            case 'poor':
+                return $this->l('Fair');
+            case 'insufficient':
+            default:
+                return $this->l('Insufficient');
+        }
     }
 
     /**

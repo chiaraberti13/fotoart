@@ -36,6 +36,23 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             $boxReference = Tools::getValue('box_reference', '');
             $boxName = Tools::getValue('box_name', '');
             $previewPath = (string) Tools::getValue('preview_path', '');
+            $previewUrl = (string) Tools::getValue('preview_url', '');
+            $thumbnailPath = (string) Tools::getValue('thumbnail_path', '');
+            $thumbnailUrl = (string) Tools::getValue('thumbnail_url', '');
+            $downloadUrl = (string) Tools::getValue('download_url', '');
+            $orientation = (string) Tools::getValue('orientation', '');
+            $imageWidth = (int) Tools::getValue('image_width');
+            $imageHeight = (int) Tools::getValue('image_height');
+            $printable = Tools::getValue('printable', null);
+            $qualityScore = Tools::getValue('quality', null);
+            $pieces = Tools::getValue('pieces', null);
+            $coordinatesPayload = $this->decodeJsonField('coordinates');
+            $formatPayload = $this->decodeJsonField('format_payload');
+            $formatDetailsPayload = $this->decodeJsonField('format_details');
+            $boxPayload = $this->decodeJsonField('box_payload');
+            $cropPayload = $this->decodeJsonField('crop');
+            $pdfNote = $this->sanitizeNote(Tools::getValue('pdf_note', ''));
+            $downloadNote = $this->sanitizeNote(Tools::getValue('download_note', ''));
 
             if (!$idProduct || !$imagePath || !file_exists($imagePath)) {
                 throw new Exception($this->module->l('Missing data to create customization.'));
@@ -80,6 +97,78 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
 
             if ($previewPath && file_exists($previewPath)) {
                 $metadata['preview_path'] = $previewPath;
+            }
+
+            if ($previewUrl !== '') {
+                $metadata['preview_url'] = $previewUrl;
+            }
+
+            if ($thumbnailPath !== '' && file_exists($thumbnailPath)) {
+                $metadata['thumbnail_path'] = $thumbnailPath;
+            }
+
+            if ($thumbnailUrl !== '') {
+                $metadata['thumbnail_url'] = $thumbnailUrl;
+            }
+
+            if ($downloadUrl !== '') {
+                $metadata['download_url'] = $downloadUrl;
+            }
+
+            if ($orientation !== '') {
+                $metadata['orientation'] = $orientation;
+            }
+
+            if ($imageWidth > 0) {
+                $metadata['image_width'] = $imageWidth;
+            }
+
+            if ($imageHeight > 0) {
+                $metadata['image_height'] = $imageHeight;
+            }
+
+            if ($pieces !== null && $pieces !== '') {
+                $metadata['pieces'] = (int) $pieces;
+            }
+
+            if ($printable !== null && $printable !== '') {
+                $metadata['printable'] = (bool) (int) $printable;
+            }
+
+            if ($qualityScore !== null && $qualityScore !== '') {
+                $metadata['quality'] = (int) $qualityScore;
+            }
+
+            if (!empty($coordinatesPayload)) {
+                $metadata['coordinates'] = $coordinatesPayload;
+            }
+
+            if (!empty($formatPayload)) {
+                $metadata['format_payload'] = $formatPayload;
+            }
+
+            if (!empty($formatDetailsPayload)) {
+                $metadata['format_details'] = $formatDetailsPayload;
+            }
+
+            if (!empty($boxPayload)) {
+                $metadata['box_payload'] = $boxPayload;
+            }
+
+            if (!empty($cropPayload)) {
+                $metadata['crop'] = $cropPayload;
+            }
+
+            if ($pdfNote !== '') {
+                $metadata['pdf_note'] = $pdfNote;
+            }
+
+            if ($downloadNote !== '') {
+                $metadata['download_note'] = $downloadNote;
+            }
+
+            if (!isset($metadata['pieces']) && isset($selectedFormat['pieces'])) {
+                $metadata['pieces'] = (int) $selectedFormat['pieces'];
             }
 
             $idCustomization = FAPCustomizationService::createCustomization($cart, $idProduct, $imagePath, $boxText, $metadata, $idProductAttribute);
@@ -151,6 +240,33 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
         return '#' . Tools::strtoupper(ltrim($color, '#'));
     }
 
+    private function decodeJsonField($name)
+    {
+        $value = Tools::getValue($name);
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+
+        return null;
+    }
+
+    private function sanitizeNote($value)
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $value = strip_tags($value);
+        $value = preg_replace('/[\r\n]+/', "\n", $value);
+
+        return Tools::substr($value, 0, 1000);
+    }
     private function validateFormat($format, $imagePath, $formatId = null)
     {
         $config = FAPConfiguration::getFrontConfig();

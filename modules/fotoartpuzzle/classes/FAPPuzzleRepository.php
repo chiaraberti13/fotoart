@@ -83,6 +83,66 @@ class FAPPuzzleRepository
     }
 
     /**
+     * Retrieve a single format by identifier.
+     *
+     * @param int $idFormat
+     *
+     * @return array|null
+     */
+    public function getFormatById($idFormat)
+    {
+        $query = new DbQuery();
+        $query->select('*')
+            ->from('fap_puzzle_format')
+            ->where('id_fap_puzzle_format = ' . (int) $idFormat)
+            ->limit(1);
+
+        $row = Db::getInstance()->getRow($query);
+        if (!$row) {
+            return null;
+        }
+
+        $formats = $this->getFormats(false);
+        foreach ($formats as $format) {
+            if ((int) $format['id'] === (int) $idFormat) {
+                return $format;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieve a single box template by identifier.
+     *
+     * @param int $idBox
+     *
+     * @return array|null
+     */
+    public function getBoxById($idBox)
+    {
+        $query = new DbQuery();
+        $query->select('*')
+            ->from('fap_puzzle_box')
+            ->where('id_fap_puzzle_box = ' . (int) $idBox)
+            ->limit(1);
+
+        $row = Db::getInstance()->getRow($query);
+        if (!$row) {
+            return null;
+        }
+
+        $boxes = $this->getBoxes(false);
+        foreach ($boxes as $box) {
+            if ((int) $box['id'] === (int) $idBox) {
+                return $box;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Decode a JSON string and ensure an array is always returned.
      *
      * @param string $json

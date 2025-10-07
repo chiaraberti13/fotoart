@@ -70,4 +70,22 @@ class FAPCleanupService
             }
         }
     }
+
+    /**
+     * Cleanup stale session payloads.
+     */
+    public function cleanupSessions()
+    {
+        $service = new FAPSessionService();
+        $service->cleanup();
+    }
+
+    /**
+     * Execute full housekeeping routine.
+     */
+    public function runHousekeeping()
+    {
+        $this->cleanupTemporary();
+        $this->cleanupSessions();
+    }
 }

@@ -15,6 +15,9 @@ class FAPPathBuilder
             self::getOrdersPath(),
             self::getPreviewPath(),
             self::getLogPath(),
+            self::getSessionsPath(),
+            self::getCropsPath(),
+            self::getBoxesPath(),
         ];
 
         foreach ($paths as $path) {
@@ -46,6 +49,16 @@ class FAPPathBuilder
         return self::getBasePath() . '/previews';
     }
 
+    public static function getCropsPath()
+    {
+        return self::getBasePath() . '/crops';
+    }
+
+    public static function getBoxesPath()
+    {
+        return self::getBasePath() . '/boxes';
+    }
+
     public static function getOrdersPath()
     {
         return self::getBasePath() . '/orders';
@@ -54,6 +67,11 @@ class FAPPathBuilder
     public static function getLogPath()
     {
         return self::getBasePath() . '/logs';
+    }
+
+    public static function getSessionsPath()
+    {
+        return self::getBasePath() . '/sessions';
     }
 
     /**

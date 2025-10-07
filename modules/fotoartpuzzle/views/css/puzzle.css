@@ -198,6 +198,180 @@
     color: #8a9ab5;
 }
 
+.fap-cropper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fap-cropper__viewport {
+    display: flex;
+    justify-content: center;
+    background: #0f1f31;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.fap-cropper__canvas {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 24px 50px rgba(15, 31, 49, 0.35);
+}
+
+.fap-cropper__info {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #f0f6ff;
+    margin-top: 0.5rem;
+}
+
+.fap-crop-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-top: 1.5rem;
+}
+
+.fap-crop-controls__group {
+    flex: 1 1 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fap-crop-controls__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a9ab5;
+}
+
+.fap-crop-controls__buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.fap-crop-controls__slider {
+    width: 100%;
+}
+
+.fap-crop-controls__value {
+    font-size: 0.85rem;
+    color: #4a5d75;
+}
+
+.fap-quality-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: #f0f6ff;
+    color: #1f2c3d;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.fap-quality-indicator--inline {
+    margin-bottom: 1rem;
+}
+
+.fap-quality-indicator--score0 {
+    background: #fdecea;
+    color: #c62828;
+}
+
+.fap-quality-indicator--score1 {
+    background: #fff4e5;
+    color: #ef6c00;
+}
+
+.fap-quality-indicator--score2 {
+    background: #fff8e1;
+    color: #f9a825;
+}
+
+.fap-quality-indicator--score3 {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.fap-quality-indicator--score4 {
+    background: #e3f2fd;
+    color: #1e88e5;
+}
+
+.fap-quality-indicator.is-loading {
+    background: #fff3cd;
+    color: #8a6d3b;
+}
+
+.fap-quality-indicator.is-unknown {
+    background: #eceff1;
+    color: #455a64;
+}
+
+.fap-preview-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.fap-preview-gallery__item {
+    flex: 1 1 240px;
+    background: #ffffff;
+    border: 1px solid #dde6f5;
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 0 22px 45px rgba(20, 35, 52, 0.12);
+}
+
+.fap-preview-gallery__title {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a9ab5;
+    margin-bottom: 0.75rem;
+}
+
+.fap-preview-gallery__body {
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #e8f1fb 0%, #f8fbff 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 0.5rem;
+}
+
+.fap-preview-gallery__body img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.fap-box-preview {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fap-box-preview__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.fap-preview__download {
+    margin-left: auto;
+}
+
 .fap-step .form-control {
     display: block;
     width: 100%;

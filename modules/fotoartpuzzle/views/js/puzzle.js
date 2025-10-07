@@ -13,6 +13,8 @@
 
     // Configurazione e URLs
     const config = parseConfig(wizard.dataset.config || '{}');
+    const state = createInitialState(config);
+
     const uploadUrl = wizard.dataset.uploadUrl;
     const previewUrl = wizard.dataset.previewUrl;
     const summaryUrl = wizard.dataset.summaryUrl;
@@ -41,44 +43,18 @@
     }
 
     const idProduct = parseInt(idProductInput.value, 10);
+    if (!isNaN(idProduct)) {
+        state.idProduct = idProduct;
+    }
 
     // Pannello riepilogo
     const summaryPanel = createSummaryPanel();
     wizard.appendChild(summaryPanel.element);
 
-    // Stato wizard
-    const state = {
-        currentStepIndex: 0,
-        file: null,
-        fileUrl: null,
-        fileName: '',
-        fileWidth: 0,
-        fileHeight: 0,
-        orientation: null,
-        formats: [],
-        puzzles: [],
-        boxes: [],
-        printable: false,
-        format: null,
-        selectedBox: null,
-        boxText: config.box && config.box.defaultText ? config.box.defaultText : 'Il mio puzzle',
-        boxColor: (config.box && config.box.colors && config.box.colors[0]) || '#FFFFFF',
-        boxFont: (config.box && config.box.fonts && config.box.fonts[0]) || 'Roboto',
-        previewUrl: null,
-        previewPath: null,
-        thumbnailUrl: null,
-        thumbnailPath: null,
-        previewDirty: false,
-        uploading: false,
-        previewLoading: false,
-        summaryLoading: false,
-        message: null,
-        customizationId: null,
-    };
-
     const steps = [
         { key: 'upload', title: translate('Carica la tua immagine') },
         { key: 'format', title: translate('Scegli il formato del puzzle') },
+        { key: 'crop', title: translate('Inquadra e ritaglia') },
         { key: 'box', title: translate('Personalizza la scatola') },
         { key: 'preview', title: translate('Anteprima e conferma') },
     ];
@@ -162,6 +138,9 @@
             case 'format':
                 renderFormatStep(stepWrapper);
                 break;
+            case 'crop':
+                renderCropStep(stepWrapper);
+                break;
             case 'box':
                 renderBoxStep(stepWrapper);
                 break;
@@ -174,22 +153,41 @@
     }
 
     function updateFooter() {
-        const isLoading = state.uploading || state.previewLoading || state.summaryLoading;
-        
+        const step = steps[state.currentStepIndex];
+        const isLoading = state.uploading || state.previewLoading || state.summaryLoading || state.qualityLoading;
+
         modal.prevButton.disabled = state.currentStepIndex === 0 || isLoading;
         modal.nextButton.classList.toggle('is-hidden', state.currentStepIndex >= steps.length - 1);
         modal.finishButton.classList.toggle('is-hidden', state.currentStepIndex !== steps.length - 1);
 
-        if (state.currentStepIndex === 0) {
-            modal.nextButton.disabled = !state.file || state.uploading;
-        } else if (state.currentStepIndex === 1) {
-            modal.nextButton.disabled = !state.format;
-        } else if (state.currentStepIndex === 2) {
-            modal.nextButton.disabled = false;
+        if (!step) {
+            modal.nextButton.disabled = true;
+            modal.finishButton.disabled = true;
+            return;
         }
 
-        if (state.currentStepIndex === steps.length - 1) {
+        switch (step.key) {
+            case 'upload':
+                modal.nextButton.disabled = !state.file || isLoading;
+                break;
+            case 'format':
+                modal.nextButton.disabled = !state.format || isLoading;
+                break;
+            case 'crop':
+                modal.nextButton.disabled = !state.cropSelection || isLoading;
+                break;
+            case 'box':
+                modal.nextButton.disabled = false;
+                break;
+            case 'preview':
+                modal.nextButton.disabled = true;
+                break;
+        }
+
+        if (step.key === 'preview') {
             modal.finishButton.disabled = !state.file || !state.format || isLoading;
+        } else {
+            modal.finishButton.disabled = true;
         }
     }
 
@@ -210,6 +208,8 @@
         if (!state.selectedBox && state.boxes.length) {
             state.selectedBox = state.boxes[0];
         }
+
+        updateBoxPreviewUrl();
 
         if (!ajaxUrl) {
             return;
@@ -238,6 +238,7 @@
                     nextSelection = state.boxes[0];
                 }
                 state.selectedBox = nextSelection;
+                updateBoxPreviewUrl();
                 if (state.currentStepIndex === 2) {
                     renderStep();
                 }
@@ -245,7 +246,7 @@
         });
     }
 
-    function requestAjax(action) {
+    function requestAjax(action, data) {
         if (!ajaxUrl) {
             return Promise.resolve(null);
         }
@@ -253,7 +254,17 @@
         const separator = ajaxUrl.indexOf('?') === -1 ? '?' : '&';
         const url = ajaxUrl + separator + 'action=' + encodeURIComponent(action);
 
-        return fetch(url, { credentials: 'same-origin' })
+        const options = {
+            method: data ? 'POST' : 'GET',
+            credentials: 'same-origin',
+        };
+
+        if (data) {
+            options.headers = { 'Content-Type': 'application/json; charset=UTF-8' };
+            options.body = JSON.stringify(data);
+        }
+
+        return fetch(url, options)
             .then(function (response) {
                 if (!response.ok) {
                     throw new Error('HTTP ' + response.status);
@@ -376,7 +387,6 @@
         const availableFormats = Array.isArray(state.formats) && state.formats.length
             ? state.formats
             : (state.puzzles && state.puzzles.length ? state.puzzles : (Array.isArray(config.formats) ? config.formats : []));
-            : (Array.isArray(config.formats) ? config.formats : []);
 
         if (!availableFormats.length) {
             const notice = document.createElement('p');
@@ -398,9 +408,7 @@
             card.type = 'button';
             card.className = 'fap-format-card';
 
-            if (state.format && ((state.format.id && item.id && String(state.format.id) === String(item.id)) || state.format.name === item.name)) {
-
-            if (state.format && state.format.name === item.name) {
+            if (isFormatSelected(item)) {
                 card.classList.add('is-selected');
             }
 
@@ -415,8 +423,9 @@
                 html += '<span class="fap-format-card__size">' + sanitize(sizeLabel) + '</span>';
             }
 
-            if (typeof item.quality !== 'undefined') {
-                const quality = parseInt(item.quality, 10);
+            const qualityData = getQualityDataForFormat(item);
+            if (qualityData && typeof qualityData.quality === 'number') {
+                const quality = qualityData.quality;
                 const qualityLabel = qualityLabelForScore(quality);
                 if (qualityLabel) {
                     const qualityColor = quality > 1 ? '#2e7d32' : (quality === 1 ? '#f57c00' : '#d32f2f');
@@ -425,14 +434,14 @@
                 }
                 if (quality <= 0) {
                     card.disabled = true;
-                    card.style.opacity = '0.5';
+                    card.classList.add('is-disabled');
                 }
             } else if (state.fileWidth && state.fileHeight && item.width && item.height) {
                 if (state.fileWidth < item.width || state.fileHeight < item.height) {
                     html += '<span class="fap-format-card__warning" style="color: #d32f2f; font-size: 0.85em;">' +
                         translate('⚠ Immagine troppo piccola') + '</span>';
                     card.disabled = true;
-                    card.style.opacity = '0.5';
+                    card.classList.add('is-disabled');
                 } else {
                     html += '<span class="fap-format-card__success" style="color: #2e7d32; font-size: 0.85em;">' +
                         translate('✓ Compatibile') + '</span>';
@@ -443,10 +452,7 @@
 
             card.addEventListener('click', function () {
                 if (!card.disabled) {
-                    state.format = item;
-                    state.previewDirty = true;
-                    state.message = null;
-                    renderStep();
+                    selectFormat(item);
                 }
             });
 
@@ -454,11 +460,240 @@
         });
 
         container.appendChild(list);
+
+        if (state.format) {
+            const qualityIndicator = renderQualityIndicator();
+            container.appendChild(qualityIndicator);
+        }
+    }
+
+    function renderCropStep(container) {
+        if (!state.file || !state.format) {
+            const notice = document.createElement('p');
+            notice.className = 'fap-step__description';
+            notice.textContent = translate('Carica un\'immagine e scegli un formato per continuare.');
+            container.appendChild(notice);
+            return;
+        }
+
+        ensureSourceImage();
+        ensureCropSelection(!state.cropSelection);
+        updateOrientation();
+
+        if (!state.sourceImageReady) {
+            const loading = document.createElement('p');
+            loading.className = 'fap-status';
+            loading.innerHTML = '<i class="icon-spinner icon-spin"></i> ' + translate('Caricamento anteprima in corso...');
+            container.appendChild(loading);
+            return;
+        }
+
+        const description = document.createElement('p');
+        description.className = 'fap-step__description';
+        description.textContent = translate('Regola il ritaglio per adattare l\'immagine al formato scelto. Trascina l\'area attiva o usa i controlli per ruotare e zoomare.');
+        container.appendChild(description);
+
+        const cropper = document.createElement('div');
+        cropper.className = 'fap-cropper';
+
+        const viewport = document.createElement('div');
+        viewport.className = 'fap-cropper__viewport';
+        const canvas = document.createElement('canvas');
+        canvas.className = 'fap-cropper__canvas';
+        viewport.appendChild(canvas);
+        cropper.appendChild(viewport);
+
+        const overlayInfo = document.createElement('div');
+        overlayInfo.className = 'fap-cropper__info';
+        cropper.appendChild(overlayInfo);
+
+        container.appendChild(cropper);
+
+        const controls = document.createElement('div');
+        controls.className = 'fap-crop-controls';
+
+        const rotateGroup = document.createElement('div');
+        rotateGroup.className = 'fap-crop-controls__group';
+        const rotateLabel = document.createElement('span');
+        rotateLabel.className = 'fap-crop-controls__label';
+        rotateLabel.textContent = translate('Rotazione');
+        rotateGroup.appendChild(rotateLabel);
+
+        const rotateButtons = document.createElement('div');
+        rotateButtons.className = 'fap-crop-controls__buttons';
+
+        const rotateLeft = document.createElement('button');
+        rotateLeft.type = 'button';
+        rotateLeft.className = 'btn btn-outline-secondary';
+        rotateLeft.textContent = translate('Ruota a sinistra');
+        rotateLeft.addEventListener('click', function () {
+            state.rotation = normaliseRotation(state.rotation - 90);
+            state.previewDirty = true;
+            updateOrientation();
+            scheduleQualityEvaluation();
+            scheduleSessionSync();
+            schedulePreviewRefresh();
+            refreshCanvas();
+        });
+
+        const rotateRight = document.createElement('button');
+        rotateRight.type = 'button';
+        rotateRight.className = 'btn btn-outline-secondary';
+        rotateRight.textContent = translate('Ruota a destra');
+        rotateRight.addEventListener('click', function () {
+            state.rotation = normaliseRotation(state.rotation + 90);
+            state.previewDirty = true;
+            updateOrientation();
+            scheduleQualityEvaluation();
+            scheduleSessionSync();
+            schedulePreviewRefresh();
+            refreshCanvas();
+        });
+
+        rotateButtons.appendChild(rotateLeft);
+        rotateButtons.appendChild(rotateRight);
+        rotateGroup.appendChild(rotateButtons);
+
+        const zoomGroup = document.createElement('div');
+        zoomGroup.className = 'fap-crop-controls__group';
+        const zoomLabel = document.createElement('span');
+        zoomLabel.className = 'fap-crop-controls__label';
+        zoomLabel.textContent = translate('Zoom');
+        zoomGroup.appendChild(zoomLabel);
+
+        const zoomInput = document.createElement('input');
+        zoomInput.type = 'range';
+        zoomInput.min = '0';
+        zoomInput.max = '100';
+        zoomInput.value = String(Math.max(0, Math.min(100, state.cropZoom || 0)));
+        zoomInput.className = 'form-range fap-crop-controls__slider';
+
+        const zoomValue = document.createElement('span');
+        zoomValue.className = 'fap-crop-controls__value';
+
+        zoomGroup.appendChild(zoomInput);
+        zoomGroup.appendChild(zoomValue);
+
+        controls.appendChild(rotateGroup);
+        controls.appendChild(zoomGroup);
+
+        const qualityIndicator = renderQualityIndicator();
+        qualityIndicator.classList.add('fap-quality-indicator--inline');
+        controls.appendChild(qualityIndicator);
+
+        container.appendChild(controls);
+
+        function updateZoomValueLabel(value) {
+            zoomValue.textContent = translate('Zoom {value}%').replace('{value}', value);
+        }
+
+        function updateCropInfo() {
+            const crop = getCropPayload();
+            if (!crop) {
+                overlayInfo.textContent = translate('Definisci il ritaglio trascinando l\'area attiva.');
+                return;
+            }
+            overlayInfo.textContent = translate('Area di stampa: {w} x {h} px · {orientation}')
+                .replace('{w}', Math.round(crop.width))
+                .replace('{h}', Math.round(crop.height))
+                .replace('{orientation}', state.orientation === 'portrait' ? translate('Verticale') : translate('Orizzontale'));
+        }
+
+        function refreshCanvas() {
+            updateZoomValueLabel(Math.max(0, Math.min(100, state.cropZoom || 0)));
+            const result = drawCropPreview(canvas);
+            canvasState = result;
+            updateCropInfo();
+            updateQualityIndicator(qualityIndicator);
+        }
+
+        updateZoomValueLabel(Math.max(0, Math.min(100, state.cropZoom || 0)));
+
+        let canvasState = null;
+        refreshCanvas();
+
+        zoomInput.addEventListener('input', function (event) {
+            const value = parseInt(event.target.value, 10);
+            updateCropZoom(isNaN(value) ? 0 : value);
+            state.previewDirty = true;
+            updateOrientation();
+            scheduleQualityEvaluation();
+            scheduleSessionSync();
+            schedulePreviewRefresh();
+            refreshCanvas();
+        });
+
+        let pointerActive = false;
+        let pointerId = null;
+        let pointerStart = null;
+        let pointerRect = null;
+
+        canvas.addEventListener('pointerdown', function (event) {
+            if (!canvasState || !canvasState.rectScaled) {
+                return;
+            }
+            const position = getCanvasPointerPosition(canvas, event);
+            if (!position || !isPointInsideRect(position, canvasState.rectScaled)) {
+                return;
+            }
+            pointerActive = true;
+            pointerId = event.pointerId;
+            pointerStart = position;
+            pointerRect = Object.assign({}, canvasState.rect);
+            canvas.setPointerCapture(pointerId);
+        });
+
+        canvas.addEventListener('pointermove', function (event) {
+            if (!pointerActive || !canvasState) {
+                return;
+            }
+            const position = getCanvasPointerPosition(canvas, event);
+            if (!position) {
+                return;
+            }
+            const deltaX = (position.x - pointerStart.x) / canvasState.scale;
+            const deltaY = (position.y - pointerStart.y) / canvasState.scale;
+            const boundsWidth = canvasState.rotatedWidth - pointerRect.width;
+            const boundsHeight = canvasState.rotatedHeight - pointerRect.height;
+            const nextRect = {
+                x: clamp(pointerRect.x + deltaX, 0, boundsWidth < 0 ? 0 : boundsWidth),
+                y: clamp(pointerRect.y + deltaY, 0, boundsHeight < 0 ? 0 : boundsHeight),
+                width: pointerRect.width,
+                height: pointerRect.height,
+            };
+            state.cropSelection = mapRectFromRotationToOriginal(nextRect, state.rotation, state.fileWidth, state.fileHeight);
+            state.previewDirty = true;
+            updateOrientation();
+            scheduleQualityEvaluation();
+            scheduleSessionSync();
+            schedulePreviewRefresh();
+            refreshCanvas();
+        });
+
+        function releasePointer() {
+            if (pointerActive && pointerId !== null) {
+                canvas.releasePointerCapture(pointerId);
+            }
+            pointerActive = false;
+            pointerId = null;
+            pointerStart = null;
+            pointerRect = null;
+        }
+
+        canvas.addEventListener('pointerup', releasePointer);
+        canvas.addEventListener('pointerleave', releasePointer);
+        canvas.addEventListener('pointercancel', releasePointer);
     }
 
     function renderBoxStep(container) {
         const fieldset = document.createElement('div');
         fieldset.className = 'fap-box-options';
+
+        updateBoxPreviewUrl();
+
+        if (state.previewDirty && !state.previewLoading && state.file && state.format) {
+            schedulePreviewRefresh();
+        }
 
         // Campo testo
         const textField = document.createElement('div');
@@ -488,6 +723,8 @@
             state.boxText = value;
             state.previewDirty = true;
             updateCounter();
+            schedulePreviewRefresh();
+            scheduleSessionSync();
         });
         
         textField.appendChild(label);
@@ -525,10 +762,11 @@
                 name.textContent = box.name || translate('Scatola');
                 card.appendChild(name);
 
-                if (box.preview) {
+                const previewUrl = resolveBoxPreview(box);
+                if (previewUrl) {
                     const preview = document.createElement('img');
                     preview.className = 'fap-box-card__preview';
-                    preview.src = box.preview;
+                    preview.src = previewUrl;
                     preview.alt = box.name || '';
                     card.appendChild(preview);
                 } else if (box.color) {
@@ -539,10 +777,7 @@
                 }
 
                 card.addEventListener('click', function () {
-                    state.selectedBox = box;
-                    state.previewDirty = true;
-                    state.message = null;
-                    renderStep();
+                    selectBox(box);
                 });
 
                 boxList.appendChild(card);
@@ -595,6 +830,8 @@
             colorSelect.addEventListener('change', function (event) {
                 state.boxColor = event.target.value;
                 state.previewDirty = true;
+                schedulePreviewRefresh();
+                scheduleSessionSync();
             });
             
             colorField.appendChild(colorLabel);
@@ -629,6 +866,8 @@
             fontSelect.addEventListener('change', function (event) {
                 state.boxFont = event.target.value;
                 state.previewDirty = true;
+                schedulePreviewRefresh();
+                scheduleSessionSync();
             });
             
             fontField.appendChild(fontLabel);
@@ -637,6 +876,82 @@
         }
 
         container.appendChild(fieldset);
+
+        const previewContainer = document.createElement('div');
+        previewContainer.className = 'fap-box-preview';
+
+        const gallery = document.createElement('div');
+        gallery.className = 'fap-preview-gallery';
+
+        const puzzleItem = document.createElement('div');
+        puzzleItem.className = 'fap-preview-gallery__item';
+        const puzzleTitle = document.createElement('span');
+        puzzleTitle.className = 'fap-preview-gallery__title';
+        puzzleTitle.textContent = translate('Anteprima personalizzata');
+        puzzleItem.appendChild(puzzleTitle);
+
+        const puzzleBody = document.createElement('div');
+        puzzleBody.className = 'fap-preview-gallery__body';
+        if (state.previewLoading) {
+            puzzleBody.innerHTML = '<span class="fap-status"><i class="icon-spinner icon-spin"></i> ' + translate('Generazione anteprima in corso...') + '</span>';
+        } else if (state.previewUrl) {
+            const img = document.createElement('img');
+            img.src = state.previewUrl;
+            img.alt = translate('Anteprima della scatola puzzle personalizzata');
+            puzzleBody.appendChild(img);
+        } else {
+            puzzleBody.textContent = translate('Anteprima non ancora disponibile');
+        }
+        puzzleItem.appendChild(puzzleBody);
+        gallery.appendChild(puzzleItem);
+
+        const templateItem = document.createElement('div');
+        templateItem.className = 'fap-preview-gallery__item';
+        const templateTitle = document.createElement('span');
+        templateTitle.className = 'fap-preview-gallery__title';
+        templateTitle.textContent = translate('Template scatola');
+        templateItem.appendChild(templateTitle);
+
+        const templateBody = document.createElement('div');
+        templateBody.className = 'fap-preview-gallery__body';
+        if (state.boxPreviewUrl) {
+            const boxImg = document.createElement('img');
+            boxImg.src = state.boxPreviewUrl;
+            boxImg.alt = state.selectedBox && state.selectedBox.name ? state.selectedBox.name : '';
+            templateBody.appendChild(boxImg);
+        } else {
+            templateBody.textContent = translate('Anteprima non ancora disponibile');
+        }
+        templateItem.appendChild(templateBody);
+        gallery.appendChild(templateItem);
+
+        previewContainer.appendChild(gallery);
+
+        const previewActions = document.createElement('div');
+        previewActions.className = 'fap-box-preview__actions';
+
+        const refresh = document.createElement('button');
+        refresh.type = 'button';
+        refresh.className = 'btn btn-outline-secondary';
+        refresh.textContent = translate('Rigenera anteprima');
+        refresh.disabled = state.previewLoading;
+        refresh.addEventListener('click', function () {
+            ensurePreview(true);
+        });
+        previewActions.appendChild(refresh);
+
+        if (state.previewHiResUrl) {
+            const hiResLink = document.createElement('a');
+            hiResLink.className = 'btn btn-link';
+            hiResLink.href = state.previewHiResUrl;
+            hiResLink.target = '_blank';
+            hiResLink.rel = 'noopener';
+            hiResLink.textContent = translate('Apri anteprima in una nuova scheda');
+            previewActions.appendChild(hiResLink);
+        }
+
+        previewContainer.appendChild(previewActions);
+        container.appendChild(previewContainer);
     }
 
     function renderPreviewStep(container) {
@@ -646,6 +961,10 @@
         if (!state.previewUrl && !state.previewLoading) {
             ensurePreview();
         }
+
+        const qualityIndicator = renderQualityIndicator();
+        qualityIndicator.classList.add('fap-quality-indicator--inline');
+        wrapper.appendChild(qualityIndicator);
 
         if (state.previewLoading) {
             const loading = document.createElement('p');
@@ -675,6 +994,11 @@
             formatRow.innerHTML = '<strong>' + translate('Formato:') + '</strong> ' + sanitize(formatLabel(state.format));
             details.appendChild(formatRow);
         }
+        if (typeof state.qualityScore === 'number') {
+            const qualityRow = document.createElement('p');
+            qualityRow.innerHTML = '<strong>' + translate('Qualità:') + '</strong> ' + sanitize(qualityLabelForScore(state.qualityScore));
+            details.appendChild(qualityRow);
+        }
         if (state.selectedBox) {
             const boxRow = document.createElement('p');
             boxRow.innerHTML = '<strong>' + translate('Scatola:') + '</strong> ' + sanitize(state.selectedBox.name || '-');
@@ -693,6 +1017,20 @@
         fontRow.innerHTML = '<strong>' + translate('Font:') + '</strong> ' + sanitize(state.boxFont || '-');
         details.appendChild(fontRow);
 
+        const crop = getCropPayload();
+        if (crop) {
+            const cropRow = document.createElement('p');
+            cropRow.innerHTML = '<strong>' + translate('Ritaglio:') + '</strong> ' + sanitize(Math.round(crop.width) + ' x ' + Math.round(crop.height) + ' px');
+            details.appendChild(cropRow);
+        }
+
+        if (state.orientation) {
+            const orientationRow = document.createElement('p');
+            const orientationLabel = state.orientation === 'portrait' ? translate('Verticale') : translate('Orizzontale');
+            orientationRow.innerHTML = '<strong>' + translate('Orientamento:') + '</strong> ' + sanitize(orientationLabel);
+            details.appendChild(orientationRow);
+        }
+
         wrapper.appendChild(details);
 
         const regenerate = document.createElement('button');
@@ -704,6 +1042,16 @@
         });
         regenerate.disabled = state.previewLoading;
         wrapper.appendChild(regenerate);
+
+        if (state.previewHiResUrl) {
+            const downloadLink = document.createElement('a');
+            downloadLink.className = 'btn btn-link fap-preview__download';
+            downloadLink.href = state.previewHiResUrl;
+            downloadLink.target = '_blank';
+            downloadLink.rel = 'noopener';
+            downloadLink.textContent = translate('Apri anteprima in una nuova scheda');
+            wrapper.appendChild(downloadLink);
+        }
 
         container.appendChild(wrapper);
     }
@@ -724,6 +1072,18 @@
         state.uploading = true;
         state.message = null;
         state.previewDirty = true;
+        state.assetMap = {};
+        state.previewHiResUrl = null;
+        state.qualityScore = null;
+        state.qualityCoordinates = [];
+        state.qualityByFormat = {};
+        state.sessionId = null;
+        state.format = null;
+        state.cropSelection = null;
+        state.rotation = 0;
+        state.cropZoom = 0;
+        state.customizationId = null;
+        updateSummaryPanel();
         renderStep();
 
         try {
@@ -747,6 +1107,42 @@
             state.previewDirty = !state.previewUrl;
             state.uploading = false;
 
+            state.assetMap = {
+                original: {
+                    path: response.file || null,
+                    url: state.fileUrl || null,
+                    width: state.fileWidth,
+                    height: state.fileHeight,
+                },
+            };
+
+            if (response.preview) {
+                state.assetMap.preview = {
+                    path: response.preview,
+                    url: state.previewUrl || response.preview_url || null,
+                };
+            }
+            if (response.thumbnail) {
+                state.assetMap.thumbnail = {
+                    path: response.thumbnail,
+                    url: state.thumbnailUrl || response.thumbnail_url || null,
+                };
+            }
+
+            state.previewHiResUrl = response.preview_url || null;
+
+            ensureSourceImage();
+            ensureCropSelection(true);
+            updateOrientation();
+
+            await refreshFormatsWithQuality();
+            await initSessionWithUpload(response);
+
+            updateBoxPreviewUrl();
+            schedulePreviewRefresh();
+            scheduleSessionSync();
+            updateSummaryPanel();
+
             if (!state.printable) {
                 throw new Error(translate('La qualità della foto inviata non è idonea alla stampa.'));
             }
@@ -767,6 +1163,15 @@
             state.thumbnailUrl = null;
             state.thumbnailPath = null;
             state.previewDirty = false;
+            state.assetMap = {};
+            state.previewHiResUrl = null;
+            state.boxPreviewUrl = null;
+            state.sourceImage = null;
+            state.sourceImageReady = false;
+            state.qualityScore = null;
+            state.qualityCoordinates = [];
+            state.qualityByFormat = {};
+            state.sessionId = null;
             throw error;
         }
     }
@@ -832,6 +1237,11 @@
             return;
         }
 
+        if (state.previewLoading) {
+            state.previewDirty = true;
+            return;
+        }
+
         state.previewLoading = true;
         state.message = null;
         renderStep();
@@ -839,8 +1249,21 @@
         generatePreview().then(function (response) {
             state.previewUrl = response.download_url || response.preview;
             state.previewPath = response.preview;
+            state.previewHiResUrl = response.download_url || state.previewHiResUrl;
             state.previewDirty = false;
             state.previewLoading = false;
+            if (!state.assetMap) {
+                state.assetMap = {};
+            }
+            if (response.preview) {
+                state.assetMap.preview = {
+                    path: response.preview,
+                    url: response.download_url || state.previewUrl || null,
+                };
+            }
+            updateBoxPreviewUrl();
+            updateSummaryPanel();
+            scheduleSessionSync();
             renderStep();
         }).catch(function (error) {
             state.previewLoading = false;
@@ -867,7 +1290,22 @@
         if (state.selectedBox && state.selectedBox.reference) {
             payload.append('box_reference', state.selectedBox.reference);
         }
-        
+        if (state.selectedBox && state.selectedBox.template) {
+            payload.append('box_template', state.selectedBox.template);
+        }
+        const cropPayload = getCropPayload();
+        if (cropPayload) {
+            try {
+                payload.append('crop', JSON.stringify(cropPayload));
+            } catch (error) {
+                console.error('Unable to serialise crop payload', error);
+            }
+        }
+        payload.append('rotation', normaliseRotation(state.rotation || 0));
+        if (state.sessionId) {
+            payload.append('session_id', state.sessionId);
+        }
+
         return fetch(previewUrl, {
             method: 'POST',
             body: payload.toString(),
@@ -935,15 +1373,15 @@
                 payload.append('format_reference', state.format.reference);
             }
             payload.append('format', state.format.name || '');
-            if (typeof state.format.quality !== 'undefined' && state.format.quality !== null) {
-                payload.append('quality', state.format.quality);
+            if (typeof state.qualityScore !== 'undefined' && state.qualityScore !== null) {
+                payload.append('quality', state.qualityScore);
             }
             if (typeof state.format.pieces !== 'undefined' && state.format.pieces !== null) {
                 payload.append('pieces', state.format.pieces);
             }
-            if (state.format && state.format.coordinates) {
+            if (state.qualityCoordinates && state.qualityCoordinates.length) {
                 try {
-                    payload.append('coordinates', JSON.stringify(state.format.coordinates));
+                    payload.append('coordinates', JSON.stringify(state.qualityCoordinates));
                 } catch (error) {
                     console.error('Unable to serialise coordinates', error);
                 }
@@ -1003,6 +1441,7 @@
             if (state.orientation) {
                 payload.append('orientation', state.orientation);
             }
+            payload.append('rotation', normaliseRotation(state.rotation || 0));
             if (state.fileWidth) {
                 payload.append('image_width', state.fileWidth);
             }
@@ -1012,12 +1451,29 @@
             if (state.fileUrl) {
                 payload.append('download_url', state.fileUrl);
             }
-            if (state.cropSelection) {
+            const cropPayload = getCropPayload();
+            if (cropPayload) {
                 try {
-                    payload.append('crop', JSON.stringify(state.cropSelection));
+                    payload.append('crop', JSON.stringify(cropPayload));
                 } catch (error) {
-                    console.error('Unable to serialise crop selection', error);
+                    console.error('Unable to serialise crop payload', error);
                 }
+            }
+            if (state.assetMap && Object.keys(state.assetMap).length) {
+                try {
+                    payload.append('asset_map', JSON.stringify(state.assetMap));
+                } catch (error) {
+                    console.error('Unable to serialise asset map', error);
+                }
+            }
+            if (state.previewHiResUrl) {
+                payload.append('preview_hi_res_url', state.previewHiResUrl);
+            }
+            if (state.boxPreviewUrl) {
+                payload.append('box_preview_url', state.boxPreviewUrl);
+            }
+            if (state.sessionId) {
+                payload.append('session_id', state.sessionId);
             }
 
             const response = await fetch(summaryUrl, {
@@ -1034,10 +1490,8 @@
             updateSummaryPanel();
             closeModal();
 
-            setTimeout(function() {
-                triggerAddToCart();
-                showToast(translate('Il tuo puzzle personalizzato è stato aggiunto al carrello!'));
-            }, 300);
+            scheduleSessionSync();
+            showToast(translate('Personalizzazione salvata. Ora aggiungi il prodotto al carrello per proseguire.'));
 
         } catch (error) {
             state.summaryLoading = false;
@@ -1054,15 +1508,6 @@
             addToCartForm.appendChild(input);
         }
         input.value = String(value || '');
-    }
-
-    function triggerAddToCart() {
-        const addButton = addToCartForm.querySelector('[data-button-action="add-to-cart"]');
-        if (addButton) {
-            addButton.click();
-        } else {
-            addToCartForm.submit();
-        }
     }
 
     function updateSummaryPanel() {
@@ -1094,12 +1539,12 @@
                 const formatItem = document.createElement('li');
                 formatItem.innerHTML = '<span>' + translate('Formato:') + '</span> ' + sanitize(formatLabel(state.format));
                 list.appendChild(formatItem);
+            }
 
-                if (typeof state.format.quality !== 'undefined') {
-                    const qualityItem = document.createElement('li');
-                    qualityItem.innerHTML = '<span>' + translate('Qualità:') + '</span> ' + sanitize(qualityLabelForScore(state.format.quality));
-                    list.appendChild(qualityItem);
-                }
+            if (typeof state.qualityScore === 'number') {
+                const qualityItem = document.createElement('li');
+                qualityItem.innerHTML = '<span>' + translate('Qualità:') + '</span> ' + sanitize(qualityLabelForScore(state.qualityScore));
+                list.appendChild(qualityItem);
             }
 
             if (state.selectedBox) {
@@ -1126,11 +1571,732 @@
                 list.appendChild(fontItem);
             }
 
+            const crop = getCropPayload();
+            if (crop) {
+                const cropItem = document.createElement('li');
+                cropItem.innerHTML = '<span>' + translate('Ritaglio:') + '</span> ' + sanitize(Math.round(crop.width) + ' x ' + Math.round(crop.height) + ' px');
+                list.appendChild(cropItem);
+            }
+
             summaryPanel.content.appendChild(list);
         } else {
             summaryPanel.element.classList.remove('is-visible');
             summaryPanel.content.innerHTML = '';
         }
+    }
+
+    function renderQualityIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'fap-quality-indicator';
+        updateQualityIndicator(indicator);
+        return indicator;
+    }
+
+    function updateQualityIndicator(element) {
+        if (!element) {
+            return;
+        }
+        element.className = 'fap-quality-indicator';
+        if (state.qualityLoading) {
+            element.textContent = translate('Valutazione qualità...');
+            element.classList.add('is-loading');
+            return;
+        }
+        const score = typeof state.qualityScore === 'number' ? state.qualityScore : null;
+        if (score === null) {
+            element.textContent = translate('Qualità non disponibile');
+            element.classList.add('is-unknown');
+            return;
+        }
+        element.textContent = qualityLabelForScore(score);
+        element.classList.add('fap-quality-indicator--score' + score);
+    }
+
+    function isFormatSelected(format) {
+        if (!state.format || !format) {
+            return false;
+        }
+        if (state.format.id && format.id && String(state.format.id) === String(format.id)) {
+            return true;
+        }
+        return state.format.name === format.name;
+    }
+
+    function selectFormat(format) {
+        state.format = format;
+        state.previewDirty = true;
+        state.message = null;
+        const qualityData = getQualityDataForFormat(format);
+        state.qualityScore = qualityData && typeof qualityData.quality === 'number' ? qualityData.quality : null;
+        state.qualityCoordinates = qualityData && Array.isArray(qualityData.coordinates) ? qualityData.coordinates : [];
+        ensureCropSelection(true);
+        updateOrientation();
+        scheduleQualityEvaluation();
+        scheduleSessionSync();
+        schedulePreviewRefresh();
+        renderStep();
+    }
+
+    function selectBox(box) {
+        state.selectedBox = box;
+        state.previewDirty = true;
+        state.message = null;
+        updateBoxPreviewUrl();
+        schedulePreviewRefresh();
+        scheduleSessionSync();
+        renderStep();
+    }
+
+    function updateBoxPreviewUrl() {
+        state.boxPreviewUrl = resolveBoxPreview(state.selectedBox);
+    }
+
+    function ensureSourceImage() {
+        const candidateUrl = state.fileUrl || state.previewUrl;
+        if (!candidateUrl) {
+            return;
+        }
+        if (state.sourceImage && state.sourceImageUrl === candidateUrl) {
+            return;
+        }
+
+        const image = new Image();
+        state.sourceImage = image;
+        state.sourceImageReady = false;
+        state.sourceImageUrl = candidateUrl;
+        image.onload = function () {
+            state.sourceImageReady = true;
+            const cropIndex = getStepIndex('crop');
+            if (cropIndex !== null && state.currentStepIndex === cropIndex) {
+                renderStep();
+            }
+        };
+        image.onerror = function () {
+            state.sourceImageReady = false;
+        };
+        image.crossOrigin = 'anonymous';
+        image.src = candidateUrl;
+    }
+
+    function normaliseRotation(value) {
+        let rotation = parseInt(value, 10) || 0;
+        rotation %= 360;
+        if (rotation < 0) {
+            rotation += 360;
+        }
+        return rotation;
+    }
+
+    function getFormatRatio() {
+        if (!state.format) {
+            return null;
+        }
+        const width = parseFloat(state.format.width || state.format.width_cm || (state.format.payload && state.format.payload.width));
+        const height = parseFloat(state.format.height || state.format.height_cm || (state.format.payload && state.format.payload.height));
+        if (isFinite(width) && isFinite(height) && width > 0 && height > 0) {
+            return width / height;
+        }
+        if (state.fileWidth && state.fileHeight) {
+            return state.fileWidth / state.fileHeight;
+        }
+        return null;
+    }
+
+    function computeCenteredCrop(ratio) {
+        const imageWidth = state.fileWidth || 1;
+        const imageHeight = state.fileHeight || 1;
+        let cropWidth = imageWidth;
+        let cropHeight = Math.round(cropWidth / ratio);
+        if (cropHeight > imageHeight) {
+            cropHeight = imageHeight;
+            cropWidth = Math.round(cropHeight * ratio);
+        }
+        if (cropWidth > imageWidth) {
+            cropWidth = imageWidth;
+            cropHeight = Math.round(cropWidth / ratio);
+        }
+        cropWidth = Math.max(1, Math.min(imageWidth, cropWidth));
+        cropHeight = Math.max(1, Math.min(imageHeight, cropHeight));
+        const x = clamp(Math.round((imageWidth - cropWidth) / 2), 0, imageWidth - cropWidth);
+        const y = clamp(Math.round((imageHeight - cropHeight) / 2), 0, imageHeight - cropHeight);
+        return { x: x, y: y, width: cropWidth, height: cropHeight };
+    }
+
+    function adaptCropToRatio(selection, ratio) {
+        const base = computeCenteredCrop(ratio);
+        if (!selection) {
+            return base;
+        }
+        const imageWidth = state.fileWidth || 1;
+        const imageHeight = state.fileHeight || 1;
+        const centerX = selection.x + selection.width / 2;
+        const centerY = selection.y + selection.height / 2;
+        let width = selection.width;
+        let height = Math.round(width / ratio);
+        if (height > imageHeight) {
+            height = imageHeight;
+            width = Math.round(height * ratio);
+        }
+        if (width > imageWidth) {
+            width = imageWidth;
+            height = Math.round(width / ratio);
+        }
+        width = Math.max(1, Math.min(imageWidth, width));
+        height = Math.max(1, Math.min(imageHeight, height));
+        const x = clamp(Math.round(centerX - width / 2), 0, imageWidth - width);
+        const y = clamp(Math.round(centerY - height / 2), 0, imageHeight - height);
+        return { x: x, y: y, width: width, height: height };
+    }
+
+    function computeZoomFromSelection(selection, base) {
+        if (!selection || !base || !base.width) {
+            return 0;
+        }
+        const factorRange = 1.7;
+        const ratio = base.width / Math.max(1, selection.width);
+        const value = Math.round((Math.max(1, ratio) - 1) / factorRange * 100);
+        return clamp(value, 0, 100);
+    }
+
+    function ensureCropSelection(force) {
+        const ratio = getFormatRatio();
+        if (!ratio) {
+            return;
+        }
+        if (!state.cropSelection || force === true) {
+            state.cropSelection = computeCenteredCrop(ratio);
+            state.cropZoom = 0;
+        } else {
+            state.cropSelection = adaptCropToRatio(state.cropSelection, ratio);
+            const base = computeCenteredCrop(ratio);
+            state.cropZoom = computeZoomFromSelection(state.cropSelection, base);
+        }
+    }
+
+    function updateCropZoom(value) {
+        const ratio = getFormatRatio() || 1;
+        const base = computeCenteredCrop(ratio);
+        const factorRange = 1.7;
+        const factor = 1 + (value / 100) * factorRange;
+        let width = Math.round(base.width / factor);
+        const minWidth = Math.round(base.width * 0.3);
+        if (width < minWidth) {
+            width = minWidth;
+        }
+        let height = Math.round(width / ratio);
+        if (height > state.fileHeight) {
+            height = state.fileHeight;
+            width = Math.round(height * ratio);
+        }
+        if (width > state.fileWidth) {
+            width = state.fileWidth;
+            height = Math.round(width / ratio);
+        }
+        width = Math.max(1, Math.min(state.fileWidth, width));
+        height = Math.max(1, Math.min(state.fileHeight, height));
+        const centerX = state.cropSelection ? state.cropSelection.x + state.cropSelection.width / 2 : state.fileWidth / 2;
+        const centerY = state.cropSelection ? state.cropSelection.y + state.cropSelection.height / 2 : state.fileHeight / 2;
+        const x = clamp(Math.round(centerX - width / 2), 0, state.fileWidth - width);
+        const y = clamp(Math.round(centerY - height / 2), 0, state.fileHeight - height);
+        state.cropSelection = { x: x, y: y, width: width, height: height };
+        state.cropZoom = value;
+    }
+
+    function getEffectiveDimensions() {
+        if (!state.cropSelection) {
+            return {
+                width: state.fileWidth,
+                height: state.fileHeight,
+            };
+        }
+        const rotation = normaliseRotation(state.rotation || 0);
+        if (rotation === 90 || rotation === 270) {
+            return {
+                width: state.cropSelection.height,
+                height: state.cropSelection.width,
+            };
+        }
+        return {
+            width: state.cropSelection.width,
+            height: state.cropSelection.height,
+        };
+    }
+
+    function getCropPayload() {
+        if (!state.cropSelection) {
+            return null;
+        }
+        const effective = getEffectiveDimensions();
+        return {
+            x: Math.round(state.cropSelection.x),
+            y: Math.round(state.cropSelection.y),
+            width: Math.round(state.cropSelection.width),
+            height: Math.round(state.cropSelection.height),
+            rotation: normaliseRotation(state.rotation || 0),
+            source_width: state.fileWidth,
+            source_height: state.fileHeight,
+            effective_width: Math.round(effective.width || 0),
+            effective_height: Math.round(effective.height || 0),
+        };
+    }
+
+    function drawCropPreview(canvas) {
+        if (!canvas || !state.sourceImage || !state.sourceImageReady) {
+            return { scale: 1, rect: null, rectScaled: null, rotatedWidth: 0, rotatedHeight: 0 };
+        }
+
+        const rotation = normaliseRotation(state.rotation || 0);
+        const sourceWidth = state.fileWidth || state.sourceImage.naturalWidth || 1;
+        const sourceHeight = state.fileHeight || state.sourceImage.naturalHeight || 1;
+        const rotatedWidth = rotation === 90 || rotation === 270 ? sourceHeight : sourceWidth;
+        const rotatedHeight = rotation === 90 || rotation === 270 ? sourceWidth : sourceHeight;
+        const maxSize = 520;
+        const scale = Math.min(maxSize / rotatedWidth, maxSize / rotatedHeight, 1);
+        const canvasWidth = Math.max(1, Math.round(rotatedWidth * scale));
+        const canvasHeight = Math.max(1, Math.round(rotatedHeight * scale));
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        canvas.style.width = canvasWidth + 'px';
+        canvas.style.height = canvasHeight + 'px';
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.save();
+        ctx.translate(canvasWidth / 2, canvasHeight / 2);
+        ctx.rotate(rotation * Math.PI / 180);
+        const drawWidth = sourceWidth * scale;
+        const drawHeight = sourceHeight * scale;
+        ctx.drawImage(state.sourceImage, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        ctx.restore();
+
+        const crop = state.cropSelection || { x: 0, y: 0, width: sourceWidth, height: sourceHeight };
+        const rotatedRect = mapRectFromOriginalToRotation(crop, rotation, sourceWidth, sourceHeight);
+        const rectScaled = {
+            x: rotatedRect.x * scale,
+            y: rotatedRect.y * scale,
+            width: rotatedRect.width * scale,
+            height: rotatedRect.height * scale,
+        };
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 31, 49, 0.55)';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.clearRect(rectScaled.x, rectScaled.y, rectScaled.width, rectScaled.height);
+        ctx.strokeStyle = '#42a5f5';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rectScaled.x + 1, rectScaled.y + 1, Math.max(0, rectScaled.width - 2), Math.max(0, rectScaled.height - 2));
+        ctx.restore();
+
+        return {
+            scale: scale,
+            rect: rotatedRect,
+            rectScaled: rectScaled,
+            rotatedWidth: rotatedWidth,
+            rotatedHeight: rotatedHeight,
+        };
+    }
+
+    function mapRectFromOriginalToRotation(rect, rotation, width, height) {
+        switch (rotation) {
+            case 90:
+                return {
+                    x: rect.y,
+                    y: width - (rect.x + rect.width),
+                    width: rect.height,
+                    height: rect.width,
+                };
+            case 180:
+                return {
+                    x: width - (rect.x + rect.width),
+                    y: height - (rect.y + rect.height),
+                    width: rect.width,
+                    height: rect.height,
+                };
+            case 270:
+                return {
+                    x: height - (rect.y + rect.height),
+                    y: rect.x,
+                    width: rect.height,
+                    height: rect.width,
+                };
+            default:
+                return {
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                };
+        }
+    }
+
+    function mapRectFromRotationToOriginal(rect, rotation, width, height) {
+        switch (rotation) {
+            case 90:
+                return {
+                    x: width - (rect.y + rect.height),
+                    y: rect.x,
+                    width: rect.height,
+                    height: rect.width,
+                };
+            case 180:
+                return {
+                    x: width - (rect.x + rect.width),
+                    y: height - (rect.y + rect.height),
+                    width: rect.width,
+                    height: rect.height,
+                };
+            case 270:
+                return {
+                    x: rect.y,
+                    y: height - (rect.x + rect.width),
+                    width: rect.height,
+                    height: rect.width,
+                };
+            default:
+                return {
+                    x: rect.x,
+                    y: rect.y,
+                    width: rect.width,
+                    height: rect.height,
+                };
+        }
+    }
+
+    function getCanvasPointerPosition(canvas, event) {
+        if (!canvas) {
+            return null;
+        }
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+            return null;
+        }
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+            x: (event.clientX - rect.left) * scaleX,
+            y: (event.clientY - rect.top) * scaleY,
+        };
+    }
+
+    function isPointInsideRect(point, rect) {
+        if (!point || !rect) {
+            return false;
+        }
+        return point.x >= rect.x && point.x <= rect.x + rect.width && point.y >= rect.y && point.y <= rect.y + rect.height;
+    }
+
+    function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    function scheduleQualityEvaluation() {
+        if (!ajaxUrl || !state.format || !state.format.id || !state.fileWidth || !state.fileHeight) {
+            return;
+        }
+        if (state.pendingQualityEvaluation) {
+            clearTimeout(state.pendingQualityEvaluation);
+        }
+        state.pendingQualityEvaluation = setTimeout(function () {
+            state.pendingQualityEvaluation = null;
+            evaluateQuality();
+        }, 250);
+    }
+
+    async function evaluateQuality() {
+        if (!ajaxUrl || !state.format || !state.format.id) {
+            return;
+        }
+        const effective = getEffectiveDimensions();
+        if (!effective.width || !effective.height) {
+            return;
+        }
+
+        state.qualityLoading = true;
+
+        try {
+            const response = await requestAjax('getQuality', {
+                format_id: state.format.id,
+                imageWidth: Math.round(effective.width),
+                imageHeight: Math.round(effective.height),
+            });
+            if (response && response.success) {
+                const quality = typeof response.quality === 'number' ? response.quality : null;
+                const coordinates = Array.isArray(response.coordinates) ? response.coordinates : [];
+                state.qualityScore = quality;
+                state.qualityCoordinates = coordinates;
+                storeQualityForFormat(state.format, quality, coordinates);
+            }
+        } catch (error) {
+            console.warn('FotoArt Puzzle: impossibile valutare la qualità', error);
+        } finally {
+            state.qualityLoading = false;
+            if (steps[state.currentStepIndex] && (steps[state.currentStepIndex].key === 'crop' || steps[state.currentStepIndex].key === 'preview')) {
+                renderStep();
+            }
+        }
+    }
+
+    function storeQualityForFormat(format, quality, coordinates) {
+        if (!format) {
+            return;
+        }
+        const key = format.id ? String(format.id) : (format.name || '');
+        if (!key) {
+            return;
+        }
+        state.qualityByFormat[key] = {
+            quality: typeof quality === 'number' ? quality : null,
+            coordinates: Array.isArray(coordinates) ? coordinates : [],
+        };
+    }
+
+    function getQualityDataForFormat(format) {
+        if (!format) {
+            return null;
+        }
+        const key = format.id ? String(format.id) : (format.name || '');
+        if (key && state.qualityByFormat[key]) {
+            return state.qualityByFormat[key];
+        }
+        if (typeof format.quality !== 'undefined') {
+            return {
+                quality: typeof format.quality === 'number' ? format.quality : parseInt(format.quality, 10),
+                coordinates: Array.isArray(format.coordinates) ? format.coordinates : [],
+            };
+        }
+        return null;
+    }
+
+    function schedulePreviewRefresh(force) {
+        if (!state.file || !state.format) {
+            return;
+        }
+        if (state.pendingPreviewTimeout) {
+            clearTimeout(state.pendingPreviewTimeout);
+        }
+        state.pendingPreviewTimeout = setTimeout(function () {
+            state.pendingPreviewTimeout = null;
+            ensurePreview(force);
+        }, 350);
+    }
+
+    function scheduleSessionSync() {
+        if (!ajaxUrl || !state.sessionId) {
+            return;
+        }
+        if (state.pendingSessionTimeout) {
+            clearTimeout(state.pendingSessionTimeout);
+        }
+        state.pendingSessionTimeout = setTimeout(function () {
+            state.pendingSessionTimeout = null;
+            sendSessionSync();
+        }, 500);
+    }
+
+    function sendSessionSync() {
+        if (!ajaxUrl || !state.sessionId) {
+            return;
+        }
+        requestAjax('updateSession', {
+            session_id: state.sessionId,
+            data: buildSessionPayload(),
+        }).catch(function (error) {
+            console.warn('FotoArt Puzzle: sincronizzazione sessione fallita', error);
+        });
+    }
+
+    function buildSessionPayload() {
+        const payload = {
+            id_product: state.idProduct,
+            file: state.file,
+            file_url: state.fileUrl,
+            box_text: state.boxText,
+            box_color: state.boxColor,
+            box_font: state.boxFont,
+            crop: getCropPayload(),
+            rotation: normaliseRotation(state.rotation || 0),
+            quality: typeof state.qualityScore === 'number' ? state.qualityScore : null,
+            quality_coordinates: state.qualityCoordinates,
+            preview_dirty: state.previewDirty,
+            preview: {
+                path: state.previewPath,
+                url: state.previewUrl,
+                hi_res: state.previewHiResUrl,
+            },
+            thumbnail: {
+                path: state.thumbnailPath,
+                url: state.thumbnailUrl,
+            },
+            asset_map: state.assetMap,
+        };
+
+        if (state.format) {
+            payload.format = {
+                id: state.format.id,
+                name: state.format.name,
+                reference: state.format.reference,
+            };
+        }
+
+        if (state.selectedBox) {
+            payload.box = {
+                id: state.selectedBox.id,
+                name: state.selectedBox.name,
+                reference: state.selectedBox.reference,
+            };
+            if (state.boxPreviewUrl) {
+                payload.box_preview_url = state.boxPreviewUrl;
+            }
+        }
+
+        if (state.customizationId) {
+            payload.id_customization = state.customizationId;
+        }
+
+        return payload;
+    }
+
+    async function initSessionWithUpload(response) {
+        if (!ajaxUrl) {
+            return;
+        }
+
+        const payload = {
+            session_id: state.sessionId || undefined,
+            id_product: state.idProduct,
+            file: state.file,
+            file_url: state.fileUrl,
+            image: {
+                width: state.fileWidth,
+                height: state.fileHeight,
+                name: state.fileName,
+            },
+            asset_map: state.assetMap,
+        };
+
+        try {
+            const result = await requestAjax('manageSession', payload);
+            if (result && result.success && result.session && result.session.session_id) {
+                state.sessionId = result.session.session_id;
+            }
+        } catch (error) {
+            console.warn('FotoArt Puzzle: impossibile inizializzare la sessione', error);
+        }
+    }
+
+    async function refreshFormatsWithQuality() {
+        if (!ajaxUrl || !state.fileWidth || !state.fileHeight) {
+            return;
+        }
+
+        try {
+            const response = await requestAjax('getPuzzles', {
+                imageWidth: Math.round(state.fileWidth),
+                imageHeight: Math.round(state.fileHeight),
+            });
+            if (response && response.success && Array.isArray(response.puzzles)) {
+                state.formats = response.puzzles;
+                state.puzzles = response.puzzles;
+                response.puzzles.forEach(function (item) {
+                    const qualityData = getQualityDataForFormat(item);
+                    storeQualityForFormat(item, qualityData ? qualityData.quality : item.quality, qualityData ? qualityData.coordinates : item.coordinates);
+                });
+                if (steps[state.currentStepIndex] && steps[state.currentStepIndex].key === 'format') {
+                    renderStep();
+                }
+            }
+        } catch (error) {
+            console.warn('FotoArt Puzzle: impossibile aggiornare i formati', error);
+        }
+    }
+
+    function resolveBoxPreview(box) {
+        if (!box) {
+            return null;
+        }
+        if (box.preview_url) {
+            return box.preview_url;
+        }
+        if (box.payload && box.payload.preview_url) {
+            return box.payload.preview_url;
+        }
+        if (box.preview && box.preview.indexOf('http') === 0) {
+            return box.preview;
+        }
+        if (box.preview && box.preview.indexOf('/') === 0) {
+            return box.preview;
+        }
+        if (box.preview && typeof prestashop !== 'undefined' && prestashop.urls && prestashop.urls.base_url) {
+            return prestashop.urls.base_url.replace(/\/$/, '') + '/' + String(box.preview).replace(/^\/+/, '');
+        }
+        return box.preview || null;
+    }
+
+    function updateOrientation() {
+        const effective = getEffectiveDimensions();
+        if (!effective.width || !effective.height) {
+            state.orientation = null;
+            return;
+        }
+        state.orientation = effective.width >= effective.height ? 'landscape' : 'portrait';
+    }
+
+    function getStepIndex(key) {
+        for (var i = 0; i < steps.length; i += 1) {
+            if (steps[i].key === key) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    function createInitialState(config) {
+        return {
+            idProduct: null,
+            currentStepIndex: 0,
+            file: null,
+            fileUrl: null,
+            fileName: '',
+            fileWidth: 0,
+            fileHeight: 0,
+            orientation: null,
+            rotation: 0,
+            formats: [],
+            puzzles: [],
+            boxes: [],
+            printable: false,
+            format: null,
+            selectedBox: null,
+            boxText: config.box && config.box.defaultText ? config.box.defaultText : 'Il mio puzzle',
+            boxColor: (config.box && config.box.colors && config.box.colors[0]) || '#FFFFFF',
+            boxFont: (config.box && config.box.fonts && config.box.fonts[0]) || 'Roboto',
+            previewUrl: null,
+            previewHiResUrl: null,
+            previewPath: null,
+            thumbnailUrl: null,
+            thumbnailPath: null,
+            boxPreviewUrl: null,
+            previewDirty: false,
+            uploading: false,
+            previewLoading: false,
+            summaryLoading: false,
+            qualityLoading: false,
+            qualityScore: null,
+            qualityCoordinates: [],
+            qualityByFormat: {},
+            cropSelection: null,
+            cropZoom: 0,
+            message: null,
+            customizationId: null,
+            sessionId: null,
+            assetMap: {},
+            sourceImage: null,
+            sourceImageReady: false,
+            sourceImageUrl: null,
+            pendingQualityEvaluation: null,
+            pendingPreviewTimeout: null,
+            pendingSessionTimeout: null,
+        };
     }
 
     function createModal() {
@@ -1146,7 +2312,7 @@
             '  <div class="fap-modal__footer">' +
             '    <button type="button" class="btn btn-secondary fap-modal__prev">' + sanitize(translate('Indietro')) + '</button>' +
             '    <button type="button" class="btn btn-primary fap-modal__next">' + sanitize(translate('Avanti')) + '</button>' +
-            '    <button type="button" class="btn btn-primary fap-modal__finish is-hidden">' + sanitize(translate('Aggiungi al carrello')) + '</button>' +
+            '    <button type="button" class="btn btn-primary fap-modal__finish is-hidden">' + sanitize(translate('Salva personalizzazione')) + '</button>' +
             '  </div>' +
             '</div>';
 
@@ -1248,13 +2414,16 @@
             'Carica la tua immagine': 'Carica la tua immagine',
             'Scegli il formato del puzzle': 'Scegli il formato del puzzle',
             'Personalizza la scatola': 'Personalizza la scatola',
+            'Inquadra e ritaglia': 'Inquadra e ritaglia',
             'Anteprima e conferma': 'Anteprima e conferma',
             'Chiudi': 'Chiudi',
             'Indietro': 'Indietro',
             'Avanti': 'Avanti',
             'Aggiungi al carrello': 'Aggiungi al carrello',
+            'Salva personalizzazione': 'Salva personalizzazione',
             'Carica immagine': 'Carica immagine',
             'Caricamento in corso...': 'Caricamento in corso...',
+            'Caricamento anteprima in corso...': 'Caricamento anteprima in corso...',
             'Immagine caricata con successo.': 'Immagine caricata con successo.',
             'Formato: ': 'Formato: ',
             'Nessun formato puzzle configurato.': 'Nessun formato puzzle configurato.',
@@ -1278,6 +2447,7 @@
             'Orientamento:': 'Orientamento:',
             'Orizzontale': 'Orizzontale',
             'Verticale': 'Verticale',
+            'Ritaglio:': 'Ritaglio:',
             'Carica prima un\'immagine.': 'Carica prima un\'immagine.',
             'Scegli un formato puzzle.': 'Scegli un formato puzzle.',
             'Risposta del server non valida.': 'Risposta del server non valida.',
@@ -1298,6 +2468,21 @@
             'Seleziona la scatola': 'Seleziona la scatola',
             'Scatola': 'Scatola',
             'Scatola:': 'Scatola:',
+            'Regola il ritaglio per adattare l\'immagine al formato scelto. Trascina l\'area attiva o usa i controlli per ruotare e zoomare.': 'Regola il ritaglio per adattare l\'immagine al formato scelto. Trascina l\'area attiva o usa i controlli per ruotare e zoomare.',
+            'Rotazione': 'Rotazione',
+            'Ruota a sinistra': 'Ruota a sinistra',
+            'Ruota a destra': 'Ruota a destra',
+            'Zoom': 'Zoom',
+            'Zoom {value}%': 'Zoom {value}%',
+            'Definisci il ritaglio trascinando l\'area attiva.': 'Definisci il ritaglio trascinando l\'area attiva.',
+            'Area di stampa: {w} x {h} px · {orientation}': 'Area di stampa: {w} x {h} px · {orientation}',
+            'Anteprima personalizzata': 'Anteprima personalizzata',
+            'Template scatola': 'Template scatola',
+            'Anteprima non ancora disponibile': 'Anteprima non ancora disponibile',
+            'Apri anteprima in una nuova scheda': 'Apri anteprima in una nuova scheda',
+            'Valutazione qualità...': 'Valutazione qualità...',
+            'Qualità non disponibile': 'Qualità non disponibile',
+            'Personalizzazione salvata. Ora aggiungi il prodotto al carrello per proseguire.': 'Personalizzazione salvata. Ora aggiungi il prodotto al carrello per proseguire.',
         };
         return translations[text] || text;
     }

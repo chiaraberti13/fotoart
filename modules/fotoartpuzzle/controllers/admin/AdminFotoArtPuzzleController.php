@@ -239,16 +239,32 @@ class AdminFotoArtPuzzleController extends ModuleAdminController
                 $displayMetadata['timestamps']
             );
 
+            $assetDownloads = [];
+            if (!empty($metadata['asset_map']) && is_array($metadata['asset_map'])) {
+                foreach ($metadata['asset_map'] as $key => $asset) {
+                    if (!is_array($asset) || empty($asset['path'])) {
+                        continue;
+                    }
+
+                    $assetDownloads[$key] = $this->module->getDownloadLink(
+                        $asset['path'],
+                        'admin',
+                        ['ttl' => 86400, 'id_order' => $idOrder]
+                    );
+                }
+            }
+
             $formatted[] = [
                 'id_customization' => $customization['id_customization'],
                 'text' => $customization['text'],
                 'metadata' => $displayMetadata,
                 'preview_link' => !empty($metadata['preview_path'])
-                    ? $this->module->getDownloadLink($metadata['preview_path'], 'admin')
+                    ? $this->module->getDownloadLink($metadata['preview_path'], 'admin', ['ttl' => 86400, 'id_order' => $idOrder])
                     : null,
                 'image_link' => !empty($customization['file'])
-                    ? $this->module->getDownloadLink($customization['file'], 'admin')
+                    ? $this->module->getDownloadLink($customization['file'], 'admin', ['ttl' => 86400, 'id_order' => $idOrder])
                     : null,
+                'asset_downloads' => $assetDownloads,
             ];
         }
 

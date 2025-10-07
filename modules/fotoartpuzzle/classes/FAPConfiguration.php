@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/FAPPuzzleRepository.php';
+require_once __DIR__ . '/FAPFontManager.php';
 
 class FAPConfiguration
 {
@@ -144,7 +145,7 @@ class FAPConfiguration
     public static function getFrontConfig()
     {
         $combinations = json_decode((string) Configuration::get(self::BOX_COLOR_COMBINATIONS), true) ?: [];
-        $fonts = json_decode((string) Configuration::get(self::CUSTOM_FONTS), true) ?: [];
+        $storedFonts = json_decode((string) Configuration::get(self::CUSTOM_FONTS), true) ?: [];
         $colors = [];
         foreach ($combinations as $combination) {
             if (!empty($combination['box'])) {
@@ -162,6 +163,10 @@ class FAPConfiguration
         }
 
         $boxes = $repository->getBoxes(true);
+
+        $fontManager = new FAPFontManager();
+        $availableFonts = $fontManager->getAvailableFonts();
+        $fonts = self::filterConfiguredFonts($storedFonts, $availableFonts);
 
         return [
             'maxUploadMb' => (int) Configuration::get(self::MAX_UPLOAD_SIZE),
@@ -187,6 +192,59 @@ class FAPConfiguration
             'puzzles' => $formats,
             'boxes' => $boxes,
         ];
+    }
+
+    /**
+     * Filter configured fonts against the filesystem.
+     *
+     * @param array $storedFonts
+     * @param array $availableFonts
+     *
+     * @return array
+     */
+    private static function filterConfiguredFonts(array $storedFonts, array $availableFonts)
+    {
+        if (!$availableFonts) {
+            return [];
+        }
+
+        $byName = [];
+        foreach ($availableFonts as $font) {
+            $key = Tools::strtolower($font['name']);
+            $font['url'] = self::buildFontUrl($font['filename']);
+            $byName[$key] = $font;
+        }
+
+        $selected = [];
+        foreach ($storedFonts as $font) {
+            if (is_array($font) && isset($font['name'])) {
+                $name = Tools::strtolower($font['name']);
+            } else {
+                $name = Tools::strtolower((string) $font);
+            }
+
+            if ($name && isset($byName[$name])) {
+                $selected[$name] = $byName[$name];
+            }
+        }
+
+        if ($selected) {
+            return array_values($selected);
+        }
+
+        return array_values($byName);
+    }
+
+    /**
+     * Build public URL for font file.
+     *
+     * @param string $filename
+     *
+     * @return string
+     */
+    private static function buildFontUrl($filename)
+    {
+        return _MODULE_DIR_ . FotoArtPuzzle::MODULE_NAME . '/fonts/' . rawurlencode($filename);
     }
 
     /**

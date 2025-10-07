@@ -101,8 +101,13 @@
             function rebuildFontList() {
                 $fontList.empty();
                 fonts.forEach(function (font) {
-                    var $item = $('<div class="fap-font-item"/>').attr('data-font-name', font);
-                    $('<span/>').addClass('fap-font-name').text(font).appendTo($item);
+                    var fontName = font && font.name ? font.name : '';
+                    var fontFile = font && font.filename ? font.filename : fontName;
+                    var $item = $('<div class="fap-font-item"/>').attr('data-font-name', fontFile);
+                    $('<span/>').addClass('fap-font-name').text(fontName).appendTo($item);
+                    if (font && font.url) {
+                        $('<span/>').addClass('fap-font-file').text(' (' + fontFile + ')').appendTo($item);
+                    }
                     $('<button/>')
                         .addClass('btn btn-link btn-sm fap-remove-font')
                         .attr('type', 'button')
@@ -110,7 +115,10 @@
                         .appendTo($item);
                     $fontList.append($item);
                 });
-                $fontField.val(JSON.stringify(fonts));
+                var stored = fonts.map(function (font) {
+                    return font && font.name ? font.name : font;
+                });
+                $fontField.val(JSON.stringify(stored));
             }
 
             function resolveErrorMessage(payload) {

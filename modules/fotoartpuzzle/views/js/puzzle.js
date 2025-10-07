@@ -376,6 +376,7 @@
         const availableFormats = Array.isArray(state.formats) && state.formats.length
             ? state.formats
             : (state.puzzles && state.puzzles.length ? state.puzzles : (Array.isArray(config.formats) ? config.formats : []));
+            : (Array.isArray(config.formats) ? config.formats : []);
 
         if (!availableFormats.length) {
             const notice = document.createElement('p');
@@ -398,6 +399,8 @@
             card.className = 'fap-format-card';
 
             if (state.format && ((state.format.id && item.id && String(state.format.id) === String(item.id)) || state.format.name === item.name)) {
+
+            if (state.format && state.format.name === item.name) {
                 card.classList.add('is-selected');
             }
 

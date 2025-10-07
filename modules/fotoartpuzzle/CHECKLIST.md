@@ -5,6 +5,7 @@
 - [x] Ampliare l'endpoint di upload per calcolare orientamento, qualità, coordinate di crop e generare preview/thumb delle immagini caricate.
 - [x] Introdurre un servizio di qualità (`FAPQualityService`) che replichi gli algoritmi `getQuality`, `setCoordinates`, `getLandscapeSelection`, ecc.
 - [x] Gestire elenchi puzzle e box tramite nuove strutture dati/tabelle, esponendo endpoint dedicati (`getPuzzles`, `getBoxes`, ecc.).
+
 - [ ] Estendere `FAPCustomizationService` per persistere metadati completi: ID puzzle, coordinate crop, qualità, ID box, note PDF, ecc.
 - [ ] Implementare la generazione PDF (utente/admin) sfruttando librerie come TCPDF/FPDI e allegare gli output a email/ordini.
 - [ ] Migliorare la sicurezza dei token front-end legandoli alla sessione carrello/cliente invece della data.

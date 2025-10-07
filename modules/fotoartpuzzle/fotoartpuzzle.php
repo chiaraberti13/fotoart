@@ -21,6 +21,7 @@ require_once __DIR__ . '/classes/FAPImageProcessor.php';
 require_once __DIR__ . '/classes/FAPQualityService.php';
 require_once __DIR__ . '/classes/FAPImageAnalysis.php';
 require_once __DIR__ . '/classes/FAPBoxRenderer.php';
+require_once __DIR__ . '/classes/FAPPdfGenerator.php';
 require_once __DIR__ . '/classes/FAPCustomizationService.php';
 
 class FotoArtPuzzle extends Module
@@ -811,12 +812,114 @@ class FotoArtPuzzle extends Module
 
         $this->ensureProductionRecord($order);
 
+        $pdfArtifacts = [];
+        $customerAttachments = [];
+        $adminAttachments = [];
+
+        $generateUserPdf = (bool) Configuration::get(FAPConfiguration::ENABLE_PDF_USER);
+        $generateAdminPdf = (bool) Configuration::get(FAPConfiguration::ENABLE_PDF_ADMIN);
+
+        if ($generateUserPdf || $generateAdminPdf) {
+            try {
+                $pdfGenerator = new FAPPdfGenerator($this);
+
+                if ($generateUserPdf) {
+                    $userPdf = $pdfGenerator->generate($order, $customizations, [
+                        'scope' => 'user',
+                        'id_lang' => (int) $order->id_lang,
+                    ]);
+                    if ($userPdf && !empty($userPdf['path']) && file_exists($userPdf['path'])) {
+                        $pdfArtifacts['user'] = $userPdf;
+
+                        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_USER)) {
+                            $content = Tools::file_get_contents($userPdf['path']);
+                            if ($content !== false) {
+                                $customerAttachments[] = [
+                                    'content' => $content,
+                                    'name' => $userPdf['filename'],
+                                    'mime' => 'application/pdf',
+                                ];
+                            }
+                        }
+                    }
+                }
+
+                if ($generateAdminPdf) {
+                    $adminPdf = $pdfGenerator->generate($order, $customizations, [
+                        'scope' => 'admin',
+                        'id_lang' => (int) Configuration::get('PS_LANG_DEFAULT'),
+                    ]);
+                    if ($adminPdf && !empty($adminPdf['path']) && file_exists($adminPdf['path'])) {
+                        $pdfArtifacts['admin'] = $adminPdf;
+
+                        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)) {
+                            $content = Tools::file_get_contents($adminPdf['path']);
+                            if ($content !== false) {
+                                $adminAttachments[] = [
+                                    'content' => $content,
+                                    'name' => $adminPdf['filename'],
+                                    'mime' => 'application/pdf',
+                                ];
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                FAPLogger::create()->error('Failed to generate FotoArt PDF summary', [
+                    'order_id' => (int) $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (!empty($pdfArtifacts)) {
+            foreach ($customizations as $index => $customization) {
+                $metadata = isset($customization['metadata']) && is_array($customization['metadata'])
+                    ? $customization['metadata']
+                    : [];
+
+                if (!isset($metadata['asset_map']) || !is_array($metadata['asset_map'])) {
+                    $metadata['asset_map'] = [];
+                }
+
+                foreach ($pdfArtifacts as $scope => $pdfInfo) {
+                    if (empty($pdfInfo['path'])) {
+                        continue;
+                    }
+
+                    $metadata['asset_map']['pdf_' . $scope] = [
+                        'path' => $pdfInfo['path'],
+                        'filename' => $pdfInfo['filename'],
+                        'scope' => $scope,
+                    ];
+                }
+
+                FAPCustomizationService::saveMetadata($customization['id_customization'], $metadata);
+                $customizations[$index]['metadata'] = $metadata;
+            }
+        }
+
+        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)
+            && empty($adminAttachments)
+            && isset($pdfArtifacts['user'])
+            && !empty($pdfArtifacts['user']['path'])
+            && file_exists($pdfArtifacts['user']['path'])) {
+            $content = Tools::file_get_contents($pdfArtifacts['user']['path']);
+            if ($content !== false) {
+                $adminAttachments[] = [
+                    'content' => $content,
+                    'name' => $pdfArtifacts['user']['filename'],
+                    'mime' => 'application/pdf',
+                ];
+            }
+        }
+
         if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_USER)) {
-            $this->sendCustomerEmail($order, $customizations);
+            $this->sendCustomerEmail($order, $customizations, $customerAttachments);
         }
 
         if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)) {
-            $this->sendAdminEmail($order, $customizations);
+            $this->sendAdminEmail($order, $customizations, $adminAttachments);
         }
     }
 
@@ -1234,7 +1337,7 @@ class FotoArtPuzzle extends Module
      * @param Order $order
      * @param array $customizations
      */
-    private function sendCustomerEmail(Order $order, array $customizations)
+    private function sendCustomerEmail(Order $order, array $customizations, array $attachments = [])
     {
         if (empty($order->id_customer)) {
             return;
@@ -1246,8 +1349,6 @@ class FotoArtPuzzle extends Module
         }
 
         $idLang = (int) $order->id_lang ?: (int) Configuration::get('PS_LANG_DEFAULT');
-
-        $attachments = [];
 
         $templateVars = array_merge(
             [
@@ -1285,7 +1386,7 @@ class FotoArtPuzzle extends Module
      * @param Order $order
      * @param array $customizations
      */
-    private function sendAdminEmail(Order $order, array $customizations)
+    private function sendAdminEmail(Order $order, array $customizations, array $attachments = [])
     {
         $recipients = $this->parseAdminRecipients(Configuration::get(FAPConfiguration::EMAIL_ADMIN_RECIPIENTS));
         if (empty($recipients)) {
@@ -1293,7 +1394,6 @@ class FotoArtPuzzle extends Module
         }
 
         $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-        $attachments = [];
 
         $customer = new Customer((int) $order->id_customer);
         $templateVars = array_merge(
@@ -1331,6 +1431,19 @@ class FotoArtPuzzle extends Module
                 _PS_MODULE_DIR_ . self::MODULE_NAME . '/mails/'
             );
         }
+    }
+
+    /**
+     * Expose mapped customization metadata for downstream consumers (PDF, API, etc.).
+     *
+     * @param array $customizations
+     * @param array $options
+     *
+     * @return array
+     */
+    public function getCustomizationDisplayData(array $customizations, array $options = [])
+    {
+        return $this->mapCustomizationsForEmail($customizations, $options);
     }
 
     /**
@@ -1378,6 +1491,8 @@ class FotoArtPuzzle extends Module
             }
 
             $previewPath = !empty($metadata['preview_path']) ? $metadata['preview_path'] : null;
+            $pdfKey = $scope === 'admin' ? 'pdf_admin' : 'pdf_user';
+            $pdfAttached = !empty($metadata['asset_map'][$pdfKey]['path']);
             $mapped[] = [
                 'id_customization' => $customization['id_customization'],
                 'text' => $customization['text'],
@@ -1390,6 +1505,7 @@ class FotoArtPuzzle extends Module
                     ? $this->getDownloadLink($customization['file'], $scope, ['disposition' => 'inline'])
                     : null,
                 'preview_attached' => false,
+                'pdf_attached' => $pdfAttached,
             ];
         }
 

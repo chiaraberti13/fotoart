@@ -75,6 +75,7 @@ class FAPImageAnalysis
                 ],
             ]);
         }
+
         return [
             'orientation' => $orientation,
             'width' => $width,
@@ -221,6 +222,7 @@ class FAPImageAnalysis
         return [
             'width' => $width,
             'height' => $height,
+
         ];
     }
 }

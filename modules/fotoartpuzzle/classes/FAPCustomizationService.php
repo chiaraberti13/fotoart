@@ -200,6 +200,24 @@ class FAPCustomizationService
     }
 
     /**
+     * Persist updated metadata for a customization entry.
+     *
+     * @param int $idCustomization
+     * @param array $metadata
+     */
+    public static function saveMetadata($idCustomization, array $metadata)
+    {
+        $normalized = self::ensureMetadataStructure($metadata);
+
+        self::saveCustomizationData(
+            (int) $idCustomization,
+            Product::CUSTOMIZE_TEXTFIELD,
+            1,
+            self::encodeMetadata($normalized)
+        );
+    }
+
+    /**
      * Copy an asset into the order directory
      *
      * @param string $source

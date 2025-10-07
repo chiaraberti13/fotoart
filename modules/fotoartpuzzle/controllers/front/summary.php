@@ -267,7 +267,6 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
 
         return Tools::substr($value, 0, 1000);
     }
-
     private function validateFormat($format, $imagePath, $formatId = null)
     {
         $config = FAPConfiguration::getFrontConfig();

@@ -233,7 +233,11 @@ class AdminFotoArtPuzzleController extends ModuleAdminController
         foreach ($customizations as $customization) {
             $metadata = is_array($customization['metadata']) ? $customization['metadata'] : [];
             $displayMetadata = $metadata;
-            unset($displayMetadata['preview_path']);
+            unset(
+                $displayMetadata['preview_path'],
+                $displayMetadata['asset_map'],
+                $displayMetadata['timestamps']
+            );
 
             $formatted[] = [
                 'id_customization' => $customization['id_customization'],

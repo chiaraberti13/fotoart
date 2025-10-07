@@ -34,6 +34,8 @@ class FAPCustomizationService
             self::encodeMetadata($structuredMetadata)
         );
 
+        self::generateDerivedAssets((int) $customization->id, $structuredMetadata);
+
         Db::getInstance()->update('cart_product', [
             'id_customization' => (int) $customization->id,
         ], 'id_cart = ' . (int) $cart->id . ' AND id_product = ' . (int) $idProduct . ' AND id_product_attribute = ' . (int) $idProductAttribute);
@@ -215,6 +217,31 @@ class FAPCustomizationService
             1,
             self::encodeMetadata($normalized)
         );
+
+        self::generateDerivedAssets((int) $idCustomization, $normalized);
+    }
+
+    /**
+     * Generate derivative assets and persist updated metadata map.
+     *
+     * @param int $idCustomization
+     * @param array $metadata
+     *
+     * @return array
+     */
+    public static function generateDerivedAssets($idCustomization, array $metadata)
+    {
+        $generator = new FAPAssetGenerationService();
+        $updatedMetadata = $generator->generate($metadata);
+
+        self::saveCustomizationData(
+            (int) $idCustomization,
+            Product::CUSTOMIZE_TEXTFIELD,
+            1,
+            self::encodeMetadata($updatedMetadata)
+        );
+
+        return $updatedMetadata;
     }
 
     /**

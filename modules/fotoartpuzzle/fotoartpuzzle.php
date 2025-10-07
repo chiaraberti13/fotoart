@@ -23,6 +23,9 @@ require_once __DIR__ . '/classes/FAPImageAnalysis.php';
 require_once __DIR__ . '/classes/FAPBoxRenderer.php';
 require_once __DIR__ . '/classes/FAPPdfGenerator.php';
 require_once __DIR__ . '/classes/FAPCustomizationService.php';
+require_once __DIR__ . '/classes/FAPAssetGenerationService.php';
+require_once __DIR__ . '/classes/FAPSessionService.php';
+require_once __DIR__ . '/classes/FAPFontManager.php';
 
 class FotoArtPuzzle extends Module
 {
@@ -43,6 +46,7 @@ class FotoArtPuzzle extends Module
         'displayProductButtons',
         'displayAdminProductsMainStepLeftColumnMiddle',  // Compatibile con PS 1.7.6.9
         'displayAdminProductsOptionsStepTop',  // Hook aggiuntivo per migliore visibilità
+        'actionCronJob',
     ];
 
     /**
@@ -201,7 +205,9 @@ class FotoArtPuzzle extends Module
                 'enable_orientation' => (bool) $values[FAPConfiguration::ENABLE_ORIENTATION],
                 'enable_interactive_crop' => (bool) $values[FAPConfiguration::ENABLE_INTERACTIVE_CROP],
                 'puzzle_products_raw' => (string) $values[FAPConfiguration::PUZZLE_PRODUCTS],
-                'custom_fonts_json' => json_encode($fonts),
+                'custom_fonts_json' => json_encode(array_map(function ($font) {
+                    return is_array($font) && isset($font['name']) ? $font['name'] : $font;
+                }, $fonts)),
                 'color_combinations_json' => json_encode($colorCombinations),
             ],
             'color_combinations' => $colorCombinations,
@@ -327,7 +333,7 @@ class FotoArtPuzzle extends Module
         Configuration::updateValue(FAPConfiguration::BOX_COLOR_COMBINATIONS, json_encode($colorCombinations));
 
         $fonts = $this->decodeFonts(Tools::getValue(FAPConfiguration::CUSTOM_FONTS, '[]'));
-        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, json_encode($fonts));
+        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, $this->encodeFontsForStorage($fonts));
 
         $products = $this->sanitizeProductCsv(Tools::getValue(FAPConfiguration::PUZZLE_PRODUCTS, ''));
         $this->persistPuzzleProducts($products);
@@ -390,20 +396,58 @@ class FotoArtPuzzle extends Module
 
     private function decodeFonts($value)
     {
-        $decoded = json_decode((string) $value, true);
+        $decoded = is_array($value) ? $value : json_decode((string) $value, true);
         if (!is_array($decoded)) {
+            $decoded = [];
+        }
+
+        $manager = new FAPFontManager();
+        $available = $manager->getAvailableFonts();
+        if (!$available) {
             return [];
+        }
+
+        $byName = [];
+        foreach ($available as $font) {
+            $font['url'] = _MODULE_DIR_ . self::MODULE_NAME . '/fonts/' . rawurlencode($font['filename']);
+            $byName[Tools::strtolower($font['name'])] = $font;
         }
 
         $fonts = [];
         foreach ($decoded as $font) {
-            $font = trim((string) $font);
-            if ($font !== '') {
-                $fonts[] = $font;
+            $name = null;
+            if (is_array($font) && isset($font['name'])) {
+                $name = Tools::strtolower($font['name']);
+            } elseif (is_string($font)) {
+                $name = Tools::strtolower($font);
+            }
+
+            if ($name && isset($byName[$name])) {
+                $fonts[$name] = $byName[$name];
             }
         }
 
-        return array_values(array_unique($fonts));
+        if (!$fonts) {
+            $fonts = $byName;
+        }
+
+        return array_values($fonts);
+    }
+
+    private function encodeFontsForStorage(array $fonts)
+    {
+        $names = [];
+        foreach ($fonts as $font) {
+            if (is_array($font) && isset($font['name'])) {
+                $names[] = (string) $font['name'];
+            } elseif (is_string($font)) {
+                $names[] = $font;
+            }
+        }
+
+        $names = array_values(array_unique(array_filter($names)));
+
+        return json_encode($names);
     }
 
     private function sanitizeColor($color)
@@ -606,36 +650,17 @@ class FotoArtPuzzle extends Module
             throw new Exception($this->l('Error uploading font.'));
         }
 
-        $extension = Tools::strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
-        if ($extension !== 'ttf') {
-            throw new Exception($this->l('Only TTF files are supported.'));
-        }
-
-        $fontsDir = _PS_MODULE_DIR_ . self::MODULE_NAME . '/fonts';
-        if (!is_dir($fontsDir)) {
-            @mkdir($fontsDir, 0750, true);
-        }
-
-        $baseName = Tools::link_rewrite(pathinfo($file['name'], PATHINFO_FILENAME));
-        if ($baseName === '') {
-            $baseName = 'font';
-        }
-
-        $targetName = $baseName . '-' . Tools::passwdGen(6) . '.ttf';
-        $targetPath = rtrim($fontsDir, '/\\') . '/' . $targetName;
-
-        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-            throw new Exception($this->l('Unable to save the uploaded font.'));
-        }
+        $manager = new FAPFontManager();
+        $fontInfo = $manager->handleUpload($file);
 
         $fonts = $this->decodeFonts(Configuration::get(FAPConfiguration::CUSTOM_FONTS));
-        $fonts[] = $targetName;
-        $fonts = array_values(array_unique($fonts));
-        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, json_encode($fonts));
+        $fonts[] = $fontInfo;
+        $encoded = $this->encodeFontsForStorage($fonts);
+        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, $encoded);
 
         return [
             'success' => true,
-            'fonts' => $fonts,
+            'fonts' => $this->decodeFonts($encoded),
         ];
     }
 
@@ -647,20 +672,25 @@ class FotoArtPuzzle extends Module
         }
 
         $fonts = $this->decodeFonts(Configuration::get(FAPConfiguration::CUSTOM_FONTS));
-        $fonts = array_values(array_filter($fonts, static function ($font) use ($fontName) {
-            return $font !== $fontName;
-        }));
+        $remaining = [];
+        foreach ($fonts as $font) {
+            if (Tools::strtolower($font['filename']) === Tools::strtolower($fontName)
+                || Tools::strtolower($font['name']) === Tools::strtolower(pathinfo($fontName, PATHINFO_FILENAME))) {
+                $fontPath = _PS_MODULE_DIR_ . self::MODULE_NAME . '/fonts/' . $font['filename'];
+                if (is_file($fontPath)) {
+                    @unlink($fontPath);
+                }
+                continue;
+            }
 
-        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, json_encode($fonts));
-
-        $fontPath = _PS_MODULE_DIR_ . self::MODULE_NAME . '/fonts/' . $fontName;
-        if (is_file($fontPath)) {
-            @unlink($fontPath);
+            $remaining[] = $font;
         }
+
+        Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, $this->encodeFontsForStorage($remaining));
 
         return [
             'success' => true,
-            'fonts' => $fonts,
+            'fonts' => $remaining,
         ];
     }
 
@@ -928,6 +958,11 @@ class FotoArtPuzzle extends Module
         FAPCleanupService::fromModule($this)->cleanupTemporary();
     }
 
+    public function hookActionCronJob($params)
+    {
+        FAPCleanupService::fromModule($this)->runHousekeeping();
+    }
+
     public function hookDisplayBackOfficeHeader()
     {
         $controller = Tools::getValue('controller');
@@ -1092,13 +1127,33 @@ class FotoArtPuzzle extends Module
     public function getDownloadLink($path, $scope = 'admin', array $options = [])
     {
         $secret = $this->getScopeSecret($scope);
-        $signature = $this->signDownloadPath($path, $secret);
+        if (!$secret) {
+            return '';
+        }
+
+        if ($path && file_exists($path) && !$this->isAllowedDownloadPath($path)) {
+            return '';
+        }
+
+        $ttl = isset($options['ttl']) ? (int) $options['ttl'] : 3600;
+        if ($ttl <= 0) {
+            $ttl = 3600;
+        }
+        $expires = time() + $ttl;
+        $idOrder = isset($options['id_order']) ? (int) $options['id_order'] : 0;
+
+        $signature = $this->signDownloadPath($path, $scope, $expires, $idOrder, $secret);
 
         $params = array_merge([
             'token' => $signature,
             'path' => $path,
             'scope' => $scope,
+            'expires' => $expires,
         ], $options);
+
+        if ($idOrder) {
+            $params['id_order'] = (int) $idOrder;
+        }
 
         return $this->context->link->getModuleLink(self::MODULE_NAME, 'download', $params);
     }
@@ -1109,30 +1164,45 @@ class FotoArtPuzzle extends Module
      * @param string $token
      * @param string $path
      * @param string $scope
+     * @param int|null $expires
+     * @param int|null $idOrder
      *
      * @return bool
      */
-    public function validateDownloadToken($token, $path, $scope)
+    public function validateDownloadToken($token, $path, $scope, $expires = null, $idOrder = null)
     {
         $secret = $this->getScopeSecret($scope);
         if (!$secret) {
             return false;
         }
 
-        return hash_equals($this->signDownloadPath($path, $secret), (string) $token);
+        if ($expires && (int) $expires < time()) {
+            return false;
+        }
+
+        if (!$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
+            return false;
+        }
+
+        $signature = $this->signDownloadPath($path, $scope, (int) $expires, (int) $idOrder, $secret);
+
+        return hash_equals($signature, (string) $token);
     }
 
     /**
      * Sign download path with secret
      *
      * @param string $path
+     * @param string $scope
+     * @param int $expires
+     * @param int $idOrder
      * @param string $token
      *
      * @return string
      */
-    private function signDownloadPath($path, $token)
+    private function signDownloadPath($path, $scope, $expires, $idOrder, $token)
     {
-        return hash('sha256', $path . '|' . $token . '|' . _COOKIE_KEY_);
+        return hash('sha256', $path . '|' . $scope . '|' . (int) $expires . '|' . (int) $idOrder . '|' . $token . '|' . _COOKIE_KEY_);
     }
 
     /**
@@ -1153,6 +1223,61 @@ class FotoArtPuzzle extends Module
         }
 
         return null;
+    }
+
+    /**
+     * Validate scope specific permissions for download.
+     *
+     * @param string $scope
+     * @param int $idOrder
+     *
+     * @return bool
+     */
+    private function isAuthorizedForDownload($scope, $idOrder)
+    {
+        if ($scope === 'admin') {
+            return isset($this->context->employee) && $this->context->employee->id;
+        }
+
+        if ($scope === 'front' && $idOrder) {
+            $order = new Order((int) $idOrder);
+            if (!Validate::isLoadedObject($order)) {
+                return false;
+            }
+
+            return $this->context->customer->isLogged() && (int) $order->id_customer === (int) $this->context->customer->id;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if the provided path is within allowed directories.
+     *
+     * @param string $path
+     *
+     * @return bool
+     */
+    public function isAllowedDownloadPath($path)
+    {
+        $realPath = realpath($path);
+        if ($realPath === false) {
+            return false;
+        }
+
+        $allowedRoots = array_filter([
+            realpath(FAPPathBuilder::getBasePath()),
+            realpath(_PS_DOWNLOAD_DIR_),
+            realpath(_PS_UPLOAD_DIR_),
+        ]);
+
+        foreach ($allowedRoots as $root) {
+            if (strpos($realPath, $root) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

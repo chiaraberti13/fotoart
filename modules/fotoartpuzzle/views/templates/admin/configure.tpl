@@ -117,18 +117,19 @@
                         {$translations.upload_font|escape:'htmlall':'UTF-8'}
                     </label>
                     <div class="col-lg-9 fap-font-upload">
-                        <input type="file" id="fap-font-upload" accept=".ttf" class="form-control" style="max-width: 300px; display: inline-block;">
+                        <input type="file" id="fap-font-upload" accept=".ttf,.otf" class="form-control" style="max-width: 300px; display: inline-block;">
                         <button type="button" class="btn btn-default" id="fap-add-font">
                             <i class="icon-plus"></i> {$translations.add_font|escape:'htmlall':'UTF-8'}
                         </button>
-                        <p class="help-block">{l s='Solo file .ttf (TrueType Font)' mod='fotoartpuzzle'}</p>
+                        <p class="help-block">{l s='Sono supportati file TTF e OTF. I file vengono copiati automaticamente nella cartella del modulo.' mod='fotoartpuzzle'}</p>
                     </div>
                 </div>
                 <div class="fap-font-list" id="fap-font-list">
                     {if isset($fonts) && $fonts}
                         {foreach from=$fonts item=font}
-                            <div class="fap-font-item" data-font-name="{$font|escape:'htmlall':'UTF-8'}">
-                                <span class="fap-font-name">{$font|escape:'htmlall':'UTF-8'}</span>
+                            <div class="fap-font-item" data-font-name="{$font.filename|escape:'htmlall':'UTF-8'}">
+                                <span class="fap-font-name">{$font.name|escape:'htmlall':'UTF-8'}</span>
+                                {if isset($font.filename)}<span class="fap-font-file"> ({$font.filename|escape:'htmlall':'UTF-8'})</span>{/if}
                                 <button type="button" class="btn btn-link btn-sm fap-remove-font">
                                     <i class="icon-trash"></i> {$translations.remove|escape:'htmlall':'UTF-8'}
                                 </button>

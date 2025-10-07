@@ -94,7 +94,13 @@ class FotoartpuzzlePreviewModuleFrontController extends ModuleFrontController
             throw new Exception($this->module->l('Selected color is not available.'));
         }
 
-        $allowedFonts = array_map('trim', $config['box']['fonts']);
+        $allowedFonts = array_map(function ($font) {
+            if (is_array($font) && isset($font['name'])) {
+                return trim((string) $font['name']);
+            }
+
+            return trim((string) $font);
+        }, $config['box']['fonts']);
         $normalizedFont = trim((string) $font);
         if (!in_array($normalizedFont, $allowedFonts, true)) {
             throw new Exception($this->module->l('Selected font is not available.'));

@@ -107,6 +107,11 @@
                                                         {if $custom.preview_link}
                                                             <a class="btn btn-default" href="{$custom.preview_link|escape:'html':'UTF-8'}" target="_blank">{l s='Preview' mod='fotoartpuzzle'}</a>
                                                         {/if}
+                                                        {if isset($custom.asset_downloads) && $custom.asset_downloads}
+                                                            {foreach from=$custom.asset_downloads key=assetKey item=assetLink}
+                                                                <a class="btn btn-default" href="{$assetLink|escape:'html':'UTF-8'}" target="_blank">{l s='%s asset' sprintf=[{$assetKey|replace:'_':' '|capitalize}] mod='fotoartpuzzle'}</a>
+                                                            {/foreach}
+                                                        {/if}
                                                     </div>
                                                 </li>
                                             {/foreach}

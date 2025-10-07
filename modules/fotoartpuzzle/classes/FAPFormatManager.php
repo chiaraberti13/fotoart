@@ -1,7 +1,22 @@
 <?php
 
+require_once __DIR__ . '/FAPPuzzleRepository.php';
+
 class FAPFormatManager
 {
+    /**
+     * @var FAPPuzzleRepository
+     */
+    private $repository;
+
+    /**
+     * @param FAPPuzzleRepository|null $repository
+     */
+    public function __construct(?FAPPuzzleRepository $repository = null)
+    {
+        $this->repository = $repository ?: new FAPPuzzleRepository();
+    }
+
     /**
      * Validate that uploaded image fits selected format
      *
@@ -51,11 +66,17 @@ class FAPFormatManager
      */
     public function getFormats()
     {
-        $formats = json_decode((string) Configuration::get(FAPConfiguration::FORMATS), true);
-        if (!is_array($formats)) {
-            return [];
+        $formats = $this->repository->getFormats(true);
+        if (!empty($formats)) {
+            return $formats;
         }
 
-        return $formats;
+        $legacy = json_decode((string) Configuration::get(FAPConfiguration::FORMATS), true);
+        if (is_array($legacy)) {
+            return $legacy;
+        }
+
+        return [];
     }
 }
+

@@ -30,6 +30,11 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             $boxColor = (string) Tools::getValue('box_color', '#FFFFFF');
             $boxFont = (string) Tools::getValue('box_font', 'Roboto');
             $format = Tools::getValue('format');
+            $formatId = (int) Tools::getValue('format_id');
+            $formatReference = Tools::getValue('format_reference', '');
+            $boxId = (int) Tools::getValue('box_id');
+            $boxReference = Tools::getValue('box_reference', '');
+            $boxName = Tools::getValue('box_name', '');
             $previewPath = (string) Tools::getValue('preview_path', '');
 
             if (!$idProduct || !$imagePath || !file_exists($imagePath)) {
@@ -41,13 +46,33 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             }
 
             $this->validateBoxOptions($boxText, $boxColor, $boxFont);
-            $selectedFormat = $this->validateFormat($format, $imagePath);
+            $selectedFormat = $this->validateFormat($format, $imagePath, $formatId);
 
             $metadata = [
                 'color' => $boxColor,
                 'font' => $boxFont,
                 'format' => is_array($selectedFormat) && isset($selectedFormat['name']) ? $selectedFormat['name'] : (string) $format,
             ];
+
+            if ($formatId) {
+                $metadata['format_id'] = (int) $formatId;
+            }
+
+            if ($formatReference !== '') {
+                $metadata['format_reference'] = (string) $formatReference;
+            }
+
+            if ($boxId) {
+                $metadata['box_id'] = (int) $boxId;
+            }
+
+            if ($boxReference !== '') {
+                $metadata['box_reference'] = (string) $boxReference;
+            }
+
+            if ($boxName !== '') {
+                $metadata['box_name'] = (string) $boxName;
+            }
 
             if (is_array($selectedFormat)) {
                 $metadata['format_details'] = $selectedFormat;
@@ -126,16 +151,28 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
         return '#' . Tools::strtoupper(ltrim($color, '#'));
     }
 
-    private function validateFormat($format, $imagePath)
+    private function validateFormat($format, $imagePath, $formatId = null)
     {
         $config = FAPConfiguration::getFrontConfig();
         $formats = $config['formats'];
         $selected = null;
 
         foreach ($formats as $candidate) {
-            if ((is_array($candidate) && ((isset($candidate['name']) && $candidate['name'] === $format) || (isset($candidate['id']) && (string) $candidate['id'] === (string) $format)))) {
-                $selected = $candidate;
-                break;
+            if (is_array($candidate)) {
+                if ($formatId && isset($candidate['id']) && (int) $candidate['id'] === (int) $formatId) {
+                    $selected = $candidate;
+                    break;
+                }
+
+                if (isset($candidate['name']) && $candidate['name'] === $format) {
+                    $selected = $candidate;
+                    break;
+                }
+
+                if (isset($candidate['id']) && (string) $candidate['id'] === (string) $format) {
+                    $selected = $candidate;
+                    break;
+                }
             }
 
             if ($candidate === $format) {

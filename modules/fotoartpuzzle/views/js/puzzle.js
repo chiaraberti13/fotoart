@@ -16,6 +16,7 @@
     const uploadUrl = wizard.dataset.uploadUrl;
     const previewUrl = wizard.dataset.previewUrl;
     const summaryUrl = wizard.dataset.summaryUrl;
+    const ajaxUrl = wizard.dataset.ajaxUrl || '';
     const tokens = {
         upload: wizard.dataset.tokenUpload || '',
         preview: wizard.dataset.tokenPreview || '',
@@ -53,12 +54,20 @@
         fileName: '',
         fileWidth: 0,
         fileHeight: 0,
+        orientation: null,
+        formats: [],
+        puzzles: [],
+        boxes: [],
+        printable: false,
         format: null,
+        selectedBox: null,
         boxText: config.box && config.box.defaultText ? config.box.defaultText : 'Il mio puzzle',
         boxColor: (config.box && config.box.colors && config.box.colors[0]) || '#FFFFFF',
         boxFont: (config.box && config.box.fonts && config.box.fonts[0]) || 'Roboto',
         previewUrl: null,
         previewPath: null,
+        thumbnailUrl: null,
+        thumbnailPath: null,
         previewDirty: false,
         uploading: false,
         previewLoading: false,
@@ -87,6 +96,8 @@
     });
     modal.nextButton.addEventListener('click', handleStepForward);
     modal.finishButton.addEventListener('click', finalizeCustomization);
+
+    preloadReferenceData();
 
     let escapeHandler = null;
 
@@ -180,6 +191,79 @@
         if (state.currentStepIndex === steps.length - 1) {
             modal.finishButton.disabled = !state.file || !state.format || isLoading;
         }
+    }
+
+    function preloadReferenceData() {
+        const fallbackPuzzles = Array.isArray(config.puzzles) && config.puzzles.length
+            ? config.puzzles
+            : (Array.isArray(config.formats) ? config.formats : []);
+        const fallbackBoxes = Array.isArray(config.boxes) ? config.boxes : [];
+
+        if (!state.puzzles.length && fallbackPuzzles.length) {
+            state.puzzles = fallbackPuzzles;
+        }
+
+        if (!state.boxes.length && fallbackBoxes.length) {
+            state.boxes = fallbackBoxes;
+        }
+
+        if (!state.selectedBox && state.boxes.length) {
+            state.selectedBox = state.boxes[0];
+        }
+
+        if (!ajaxUrl) {
+            return;
+        }
+
+        requestAjax('getPuzzles').then(function (response) {
+            if (response && response.success && Array.isArray(response.puzzles)) {
+                state.puzzles = response.puzzles;
+                if (state.currentStepIndex === 1) {
+                    renderStep();
+                }
+            }
+        });
+
+        requestAjax('getBoxes').then(function (response) {
+            if (response && response.success && Array.isArray(response.boxes)) {
+                var previousId = state.selectedBox && state.selectedBox.id ? String(state.selectedBox.id) : null;
+                var nextSelection = null;
+                if (previousId) {
+                    nextSelection = response.boxes.find(function (item) {
+                        return String(item.id) === previousId;
+                    }) || null;
+                }
+                state.boxes = response.boxes;
+                if (!nextSelection && state.boxes.length) {
+                    nextSelection = state.boxes[0];
+                }
+                state.selectedBox = nextSelection;
+                if (state.currentStepIndex === 2) {
+                    renderStep();
+                }
+            }
+        });
+    }
+
+    function requestAjax(action) {
+        if (!ajaxUrl) {
+            return Promise.resolve(null);
+        }
+
+        const separator = ajaxUrl.indexOf('?') === -1 ? '?' : '&';
+        const url = ajaxUrl + separator + 'action=' + encodeURIComponent(action);
+
+        return fetch(url, { credentials: 'same-origin' })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .catch(function (error) {
+                console.warn('FotoArt Puzzle: richiesta AJAX fallita', error);
+                return null;
+            });
     }
 
     function renderUploadStep(container) {
@@ -289,7 +373,11 @@
     }
 
     function renderFormatStep(container) {
-        if (!Array.isArray(config.formats) || !config.formats.length) {
+        const availableFormats = Array.isArray(state.formats) && state.formats.length
+            ? state.formats
+            : (state.puzzles && state.puzzles.length ? state.puzzles : (Array.isArray(config.formats) ? config.formats : []));
+
+        if (!availableFormats.length) {
             const notice = document.createElement('p');
             notice.textContent = translate('Nessun formato puzzle configurato.');
             container.appendChild(notice);
@@ -304,40 +392,52 @@
         const list = document.createElement('div');
         list.className = 'fap-format-list';
 
-        config.formats.forEach(function (item) {
+        availableFormats.forEach(function (item) {
             const card = document.createElement('button');
             card.type = 'button';
             card.className = 'fap-format-card';
-            
-            if (state.format && state.format.name === item.name) {
+
+            if (state.format && ((state.format.id && item.id && String(state.format.id) === String(item.id)) || state.format.name === item.name)) {
                 card.classList.add('is-selected');
             }
 
             let html = '<span class="fap-format-card__name">' + sanitize(item.name) + '</span>';
-            
+
             if (item.pieces) {
                 html += '<span class="fap-format-card__pieces">' + sanitize(item.pieces + ' ' + translate('pezzi')) + '</span>';
             }
-            
-            if (item.width && item.height) {
-                html += '<span class="fap-format-card__size">' + sanitize(item.width + ' x ' + item.height + ' px') + '</span>';
+
+            const sizeLabel = formatSizeLabel(item);
+            if (sizeLabel) {
+                html += '<span class="fap-format-card__size">' + sanitize(sizeLabel) + '</span>';
             }
 
-            // Verifica compatibilità con immagine caricata
-            if (state.fileWidth && state.fileHeight && item.width && item.height) {
+            if (typeof item.quality !== 'undefined') {
+                const quality = parseInt(item.quality, 10);
+                const qualityLabel = qualityLabelForScore(quality);
+                if (qualityLabel) {
+                    const qualityColor = quality > 1 ? '#2e7d32' : (quality === 1 ? '#f57c00' : '#d32f2f');
+                    html += '<span class="fap-format-card__quality" style="display:block;color:' + qualityColor + ';font-size:0.85em;">'
+                        + sanitize(qualityLabel) + '</span>';
+                }
+                if (quality <= 0) {
+                    card.disabled = true;
+                    card.style.opacity = '0.5';
+                }
+            } else if (state.fileWidth && state.fileHeight && item.width && item.height) {
                 if (state.fileWidth < item.width || state.fileHeight < item.height) {
-                    html += '<span class="fap-format-card__warning" style="color: #d32f2f; font-size: 0.85em;">' + 
-                            translate('⚠ Immagine troppo piccola') + '</span>';
+                    html += '<span class="fap-format-card__warning" style="color: #d32f2f; font-size: 0.85em;">' +
+                        translate('⚠ Immagine troppo piccola') + '</span>';
                     card.disabled = true;
                     card.style.opacity = '0.5';
                 } else {
-                    html += '<span class="fap-format-card__success" style="color: #2e7d32; font-size: 0.85em;">' + 
-                            translate('✓ Compatibile') + '</span>';
+                    html += '<span class="fap-format-card__success" style="color: #2e7d32; font-size: 0.85em;">' +
+                        translate('✓ Compatibile') + '</span>';
                 }
             }
 
             card.innerHTML = html;
-            
+
             card.addEventListener('click', function () {
                 if (!card.disabled) {
                     state.format = item;
@@ -394,6 +494,60 @@
         counter.className = 'fap-char-counter';
         textField.appendChild(counter);
         fieldset.appendChild(textField);
+
+        if (Array.isArray(state.boxes) && state.boxes.length) {
+            const boxField = document.createElement('div');
+            boxField.className = 'fap-field fap-field--box-selection';
+
+            const boxLabel = document.createElement('span');
+            boxLabel.className = 'fap-field__label';
+            boxLabel.textContent = translate('Seleziona la scatola');
+            boxField.appendChild(boxLabel);
+
+            const boxList = document.createElement('div');
+            boxList.className = 'fap-box-list';
+
+            state.boxes.forEach(function (box) {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'fap-box-card';
+
+                const isSelected = state.selectedBox && ((state.selectedBox.id && box.id && String(state.selectedBox.id) === String(box.id)) || (state.selectedBox.reference && box.reference && state.selectedBox.reference === box.reference));
+                if (isSelected) {
+                    card.classList.add('is-selected');
+                }
+
+                const name = document.createElement('span');
+                name.className = 'fap-box-card__name';
+                name.textContent = box.name || translate('Scatola');
+                card.appendChild(name);
+
+                if (box.preview) {
+                    const preview = document.createElement('img');
+                    preview.className = 'fap-box-card__preview';
+                    preview.src = box.preview;
+                    preview.alt = box.name || '';
+                    card.appendChild(preview);
+                } else if (box.color) {
+                    const swatch = document.createElement('span');
+                    swatch.className = 'fap-box-card__swatch';
+                    swatch.style.backgroundColor = box.color;
+                    card.appendChild(swatch);
+                }
+
+                card.addEventListener('click', function () {
+                    state.selectedBox = box;
+                    state.previewDirty = true;
+                    state.message = null;
+                    renderStep();
+                });
+
+                boxList.appendChild(card);
+            });
+
+            boxField.appendChild(boxList);
+            fieldset.appendChild(boxField);
+        }
 
         function updateCounter() {
             const max = (config.box && config.box.maxChars) || 0;
@@ -518,6 +672,11 @@
             formatRow.innerHTML = '<strong>' + translate('Formato:') + '</strong> ' + sanitize(formatLabel(state.format));
             details.appendChild(formatRow);
         }
+        if (state.selectedBox) {
+            const boxRow = document.createElement('p');
+            boxRow.innerHTML = '<strong>' + translate('Scatola:') + '</strong> ' + sanitize(state.selectedBox.name || '-');
+            details.appendChild(boxRow);
+        }
         if (state.boxText) {
             const textRow = document.createElement('p');
             textRow.innerHTML = '<strong>' + translate('Testo:') + '</strong> ' + sanitize(state.boxText);
@@ -568,14 +727,27 @@
             const dimensions = await validateImage(file);
             state.fileWidth = dimensions.width;
             state.fileHeight = dimensions.height;
-            
+
             const response = await uploadFile(file);
-            state.file = response.file;
-            state.fileUrl = response.download_url;
+            state.file = response.file || null;
+            state.fileUrl = response.download_url || null;
             state.fileName = file.name;
+            state.fileWidth = response.width || state.fileWidth;
+            state.fileHeight = response.height || state.fileHeight;
+            state.orientation = response.orientation || (state.fileWidth >= state.fileHeight ? 'landscape' : 'portrait');
+            state.formats = Array.isArray(response.formats) ? response.formats : [];
+            state.printable = !!response.printable;
+            state.previewUrl = response.preview_url || null;
+            state.previewPath = response.preview || null;
+            state.thumbnailUrl = response.thumbnail_url || null;
+            state.thumbnailPath = response.thumbnail || null;
+            state.previewDirty = !state.previewUrl;
             state.uploading = false;
-            state.previewUrl = null;
-            
+
+            if (!state.printable) {
+                throw new Error(translate('La qualità della foto inviata non è idonea alla stampa.'));
+            }
+
             setMessage('success', translate('Immagine caricata con successo.'));
         } catch (error) {
             state.uploading = false;
@@ -584,7 +756,13 @@
             state.fileName = '';
             state.fileWidth = 0;
             state.fileHeight = 0;
+            state.orientation = null;
+            state.formats = [];
+            state.printable = false;
             state.previewUrl = null;
+            state.previewPath = null;
+            state.thumbnailUrl = null;
+            state.thumbnailPath = null;
             state.previewDirty = false;
             throw error;
         }
@@ -674,6 +852,18 @@
         payload.append('box_text', state.boxText || '');
         payload.append('box_color', state.boxColor || '');
         payload.append('box_font', state.boxFont || '');
+        if (state.format && state.format.id) {
+            payload.append('format_id', state.format.id);
+        }
+        if (state.format && state.format.reference) {
+            payload.append('format_reference', state.format.reference);
+        }
+        if (state.selectedBox && state.selectedBox.id) {
+            payload.append('box_id', state.selectedBox.id);
+        }
+        if (state.selectedBox && state.selectedBox.reference) {
+            payload.append('box_reference', state.selectedBox.reference);
+        }
         
         return fetch(previewUrl, {
             method: 'POST',
@@ -735,17 +925,96 @@
             payload.append('box_text', state.boxText || '');
             payload.append('box_color', state.boxColor || '');
             payload.append('box_font', state.boxFont || '');
+            if (state.format && state.format.id) {
+                payload.append('format_id', state.format.id);
+            }
+            if (state.format && state.format.reference) {
+                payload.append('format_reference', state.format.reference);
+            }
             payload.append('format', state.format.name || '');
+            if (typeof state.format.quality !== 'undefined' && state.format.quality !== null) {
+                payload.append('quality', state.format.quality);
+            }
+            if (typeof state.format.pieces !== 'undefined' && state.format.pieces !== null) {
+                payload.append('pieces', state.format.pieces);
+            }
+            if (state.format && state.format.coordinates) {
+                try {
+                    payload.append('coordinates', JSON.stringify(state.format.coordinates));
+                } catch (error) {
+                    console.error('Unable to serialise coordinates', error);
+                }
+            }
+            if (state.format && state.format.payload) {
+                try {
+                    payload.append('format_payload', JSON.stringify(state.format.payload));
+                } catch (error) {
+                    console.error('Unable to serialise format payload', error);
+                }
+            }
+            if (state.format) {
+                try {
+                    payload.append('format_details', JSON.stringify(state.format));
+                } catch (error) {
+                    console.error('Unable to serialise format details', error);
+                }
+            }
+            if (state.selectedBox && state.selectedBox.id) {
+                payload.append('box_id', state.selectedBox.id);
+            }
+            if (state.selectedBox && state.selectedBox.reference) {
+                payload.append('box_reference', state.selectedBox.reference);
+            }
+            if (state.selectedBox && state.selectedBox.name) {
+                payload.append('box_name', state.selectedBox.name);
+            }
+            if (state.selectedBox) {
+                try {
+                    payload.append('box_payload', JSON.stringify(state.selectedBox));
+                } catch (error) {
+                    console.error('Unable to serialise box payload', error);
+                }
+            }
             payload.append('id_product', idProduct);
-            
-            // Gestione combinazione prodotto
+
             const combinationInput = addToCartForm.querySelector('input[name="id_product_attribute"]');
             if (combinationInput && combinationInput.value) {
                 payload.append('id_product_attribute', combinationInput.value);
             }
-            
+
             if (state.previewPath) {
                 payload.append('preview_path', state.previewPath);
+            }
+            if (state.previewUrl) {
+                payload.append('preview_url', state.previewUrl);
+            }
+            if (state.thumbnailPath) {
+                payload.append('thumbnail_path', state.thumbnailPath);
+            }
+            if (state.thumbnailUrl) {
+                payload.append('thumbnail_url', state.thumbnailUrl);
+            }
+            if (typeof state.printable !== 'undefined') {
+                payload.append('printable', state.printable ? '1' : '0');
+            }
+            if (state.orientation) {
+                payload.append('orientation', state.orientation);
+            }
+            if (state.fileWidth) {
+                payload.append('image_width', state.fileWidth);
+            }
+            if (state.fileHeight) {
+                payload.append('image_height', state.fileHeight);
+            }
+            if (state.fileUrl) {
+                payload.append('download_url', state.fileUrl);
+            }
+            if (state.cropSelection) {
+                try {
+                    payload.append('crop', JSON.stringify(state.cropSelection));
+                } catch (error) {
+                    console.error('Unable to serialise crop selection', error);
+                }
             }
 
             const response = await fetch(summaryUrl, {
@@ -757,17 +1026,16 @@
 
             state.summaryLoading = false;
             state.customizationId = response.id_customization;
-            
+
             ensureCustomizationField(state.customizationId);
             updateSummaryPanel();
             closeModal();
-            
-            // Aspetta un momento prima di aggiungere al carrello
+
             setTimeout(function() {
                 triggerAddToCart();
                 showToast(translate('Il tuo puzzle personalizzato è stato aggiunto al carrello!'));
             }, 300);
-            
+
         } catch (error) {
             state.summaryLoading = false;
             setMessage('error', error.message);
@@ -810,10 +1078,31 @@
             fileItem.innerHTML = '<span>' + translate('Immagine:') + '</span> ' + sanitize(state.fileName);
             list.appendChild(fileItem);
 
+            if (state.orientation) {
+                const orientationItem = document.createElement('li');
+                const orientationLabel = state.orientation === 'landscape'
+                    ? translate('Orizzontale')
+                    : translate('Verticale');
+                orientationItem.innerHTML = '<span>' + translate('Orientamento:') + '</span> ' + sanitize(orientationLabel);
+                list.appendChild(orientationItem);
+            }
+
             if (state.format) {
                 const formatItem = document.createElement('li');
                 formatItem.innerHTML = '<span>' + translate('Formato:') + '</span> ' + sanitize(formatLabel(state.format));
                 list.appendChild(formatItem);
+
+                if (typeof state.format.quality !== 'undefined') {
+                    const qualityItem = document.createElement('li');
+                    qualityItem.innerHTML = '<span>' + translate('Qualità:') + '</span> ' + sanitize(qualityLabelForScore(state.format.quality));
+                    list.appendChild(qualityItem);
+                }
+            }
+
+            if (state.selectedBox) {
+                const boxItem = document.createElement('li');
+                boxItem.innerHTML = '<span>' + translate('Scatola:') + '</span> ' + sanitize(state.selectedBox.name || '-');
+                list.appendChild(boxItem);
             }
 
             if (state.boxText) {
@@ -879,6 +1168,63 @@
         return { element: element, content: content };
     }
 
+    function formatSizeLabel(format) {
+        if (!format) {
+            return null;
+        }
+
+        const width = parseFloat(format.width);
+        const height = parseFloat(format.height);
+
+        if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) {
+            return null;
+        }
+
+        const widthDisplay = normaliseDimension(width);
+        const heightDisplay = normaliseDimension(height);
+
+        if (!widthDisplay || !heightDisplay) {
+            return null;
+        }
+
+        return widthDisplay.value + ' x ' + heightDisplay.value + ' ' + widthDisplay.unit;
+    }
+
+    function normaliseDimension(value) {
+        if (!isFinite(value) || value <= 0) {
+            return null;
+        }
+
+        let numeric = value;
+        let unit = 'cm';
+
+        if (value > 100) {
+            numeric = value / 100;
+        }
+
+        const rounded = Math.round(numeric * 10) / 10;
+        const display = Math.abs(rounded - Math.round(rounded)) < 0.05
+            ? String(Math.round(rounded))
+            : rounded.toFixed(1);
+
+        return { value: display, unit: unit };
+    }
+
+    function qualityLabelForScore(score) {
+        switch (score) {
+            case 4:
+                return translate('Qualità eccellente');
+            case 3:
+                return translate('Qualità ottima');
+            case 2:
+                return translate('Buona qualità');
+            case 1:
+                return translate('Qualità scarsa');
+            default:
+                return translate('Non adatto alla stampa');
+        }
+    }
+
     function formatLabel(format) {
         const pieces = format.pieces ? format.pieces + ' ' + translate('pezzi') : '';
         return format.name + (pieces ? ' (' + pieces + ')' : '');
@@ -921,10 +1267,14 @@
             'Anteprima della scatola puzzle personalizzata': 'Anteprima della scatola puzzle personalizzata',
             'Immagine:': 'Immagine:',
             'Formato:': 'Formato:',
+            'Qualità:': 'Qualità:',
             'Testo:': 'Testo:',
             'Colore:': 'Colore:',
             'Font:': 'Font:',
             'Rigenera anteprima': 'Rigenera anteprima',
+            'Orientamento:': 'Orientamento:',
+            'Orizzontale': 'Orizzontale',
+            'Verticale': 'Verticale',
             'Carica prima un\'immagine.': 'Carica prima un\'immagine.',
             'Scegli un formato puzzle.': 'Scegli un formato puzzle.',
             'Risposta del server non valida.': 'Risposta del server non valida.',
@@ -935,7 +1285,16 @@
             'Il tuo puzzle personalizzato è stato aggiunto al carrello!': 'Il tuo puzzle personalizzato è stato aggiunto al carrello!',
             'Personalizzazione pronta': 'Personalizzazione pronta',
             'Impossibile leggere l\'immagine selezionata.': 'Impossibile leggere l\'immagine selezionata.',
+            'Qualità eccellente': 'Qualità eccellente',
+            'Qualità ottima': 'Qualità ottima',
+            'Buona qualità': 'Buona qualità',
+            'Qualità scarsa': 'Qualità scarsa',
+            'Non adatto alla stampa': 'Non adatto alla stampa',
+            'La qualità della foto inviata non è idonea alla stampa.': 'La qualità della foto inviata non è idonea alla stampa.',
             'Trascina qui la tua immagine oppure clicca per selezionarla': 'Trascina qui la tua immagine oppure clicca per selezionarla',
+            'Seleziona la scatola': 'Seleziona la scatola',
+            'Scatola': 'Scatola',
+            'Scatola:': 'Scatola:',
         };
         return translations[text] || text;
     }

@@ -12,6 +12,11 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
     protected $fileProcessor;
 
     /**
+     * @var FAPImageAnalysis
+     */
+    protected $imageAnalysis;
+
+    /**
      * @var FAPLogger
      */
     protected $logger;
@@ -24,6 +29,7 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
         parent::__construct();
         $this->ajax = true;
         $this->fileProcessor = new FAPImageProcessor();
+        $this->imageAnalysis = new FAPImageAnalysis();
         $this->logger = FAPLogger::create();
     }
 
@@ -60,19 +66,37 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
             $this->validateMimeType($file);
             $this->validateImageDimensions($file);
             
-            $tempPath = $this->moveToTemporary($file);
+            $processed = $this->moveToTemporary($file);
+
+            $formats = (new FAPFormatManager())->getFormats();
+            $analysis = $this->imageAnalysis->analyse(
+                (int) $processed['width'],
+                (int) $processed['height'],
+                $formats
+            );
 
             $this->logger->info('Image uploaded successfully', [
-                'file' => basename($tempPath),
+                'file' => basename($processed['path']),
                 'size' => $file['size'],
                 'cart_id' => $this->context->cart ? $this->context->cart->id : 0,
             ]);
 
-            return [
-                'success' => true,
-                'file' => $tempPath,
-                'download_url' => $this->module->getDownloadLink($tempPath, 'front', ['disposition' => 'inline']),
-            ];
+            return array_merge(
+                [
+                    'success' => true,
+                    'file' => $processed['path'],
+                    'download_url' => $this->module->getDownloadLink($processed['path'], 'front', ['disposition' => 'inline']),
+                    'preview' => $processed['preview_path'],
+                    'preview_url' => $processed['preview_path']
+                        ? $this->module->getDownloadLink($processed['preview_path'], 'front', ['disposition' => 'inline'])
+                        : null,
+                    'thumbnail' => $processed['thumb_path'],
+                    'thumbnail_url' => $processed['thumb_path']
+                        ? $this->module->getDownloadLink($processed['thumb_path'], 'front', ['disposition' => 'inline'])
+                        : null,
+                ],
+                $analysis
+            );
         } catch (Exception $exception) {
             $this->logger->error('Upload error', [
                 'error' => $exception->getMessage(),
@@ -367,10 +391,13 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
         }
 
         $tempDir = FAPPathBuilder::getCartPath((int) $cart->id);
-        if (!is_dir($tempDir)) {
-            if (!@mkdir($tempDir, 0750, true)) {
+        $previewDir = $tempDir . '/preview';
+        $thumbDir = $tempDir . '/thumb';
+
+        foreach ([$tempDir, $previewDir, $thumbDir] as $dir) {
+            if (!is_dir($dir) && !@mkdir($dir, 0750, true)) {
                 $this->logger->error('Failed to create temp directory', [
-                    'path' => $tempDir,
+                    'path' => $dir,
                 ]);
                 throw new Exception($this->module->l('Unable to create temporary directory.', 'upload'));
             }
@@ -387,7 +414,13 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
             $basename = $originalName . '_' . Tools::passwdGen(8);
         }
 
-        $destination = rtrim($tempDir, '/\\') . '/' . $basename;
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if ($extension === '') {
+            $extension = 'jpg';
+        }
+
+        $destinationBase = rtrim($tempDir, '/\\') . '/' . $basename;
+        $destination = $destinationBase . '.' . $extension;
 
         // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $destination)) {
@@ -400,21 +433,30 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
 
         // Process image (re-encode, strip EXIF, normalize)
         try {
-            $processed = $this->fileProcessor->process($destination, $destination . '_processed');
-            
-            // Remove original
-            @unlink($destination);
+            $processed = $this->fileProcessor->process(
+                $destination,
+                $destinationBase,
+                [
+                    'preview_path' => rtrim($previewDir, '/\\') . '/' . $basename,
+                    'thumb_path' => rtrim($thumbDir, '/\\') . '/' . $basename,
+                ]
+            );
 
-            return $processed['path'];
+            // Remove original temporary file if it differs from processed path
+            if ($processed['path'] !== $destination && file_exists($destination)) {
+                @unlink($destination);
+            }
+
+            return $processed;
         } catch (Exception $e) {
             // Clean up on error
             @unlink($destination);
-            
+
             $this->logger->error('Image processing failed', [
                 'file' => $file['name'],
                 'error' => $e->getMessage(),
             ]);
-            
+
             throw new Exception($this->module->l('Image processing failed.', 'upload'));
         }
     }

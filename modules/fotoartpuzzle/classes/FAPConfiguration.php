@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/FAPPuzzleRepository.php';
+
 class FAPConfiguration
 {
     public const MAX_UPLOAD_SIZE = 'FAP_MAX_UPLOAD_SIZE';
@@ -153,12 +155,20 @@ class FAPConfiguration
         array_unshift($colors, $primaryColor);
         $colors = array_values(array_unique(array_map('strtoupper', array_map('trim', $colors))));
 
+        $repository = new FAPPuzzleRepository();
+        $formats = $repository->getFormats(true);
+        if (empty($formats)) {
+            $formats = json_decode((string) Configuration::get(self::FORMATS), true) ?: [];
+        }
+
+        $boxes = $repository->getBoxes(true);
+
         return [
             'maxUploadMb' => (int) Configuration::get(self::MAX_UPLOAD_SIZE),
             'minWidth' => (int) Configuration::get(self::MIN_WIDTH),
             'minHeight' => (int) Configuration::get(self::MIN_HEIGHT),
             'extensions' => explode(',', (string) Configuration::get(self::ALLOWED_EXTENSIONS)),
-            'formats' => json_decode((string) Configuration::get(self::FORMATS), true) ?: [],
+            'formats' => $formats,
             'uploadFolder' => (string) Configuration::get(self::UPLOAD_FOLDER),
             'features' => [
                 'enableOrientation' => (bool) Configuration::get(self::ENABLE_ORIENTATION),
@@ -174,6 +184,8 @@ class FAPConfiguration
                 'fonts' => $fonts,
                 'uppercase' => false,
             ],
+            'puzzles' => $formats,
+            'boxes' => $boxes,
         ];
     }
 

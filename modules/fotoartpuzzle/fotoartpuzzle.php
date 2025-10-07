@@ -17,6 +17,7 @@ require_once __DIR__ . '/classes/FAPPathBuilder.php';
 require_once __DIR__ . '/classes/FAPCleanupService.php';
 require_once __DIR__ . '/classes/FAPFormatManager.php';
 require_once __DIR__ . '/classes/FAPImageProcessor.php';
+require_once __DIR__ . '/classes/FAPQualityService.php';
 require_once __DIR__ . '/classes/FAPImageAnalysis.php';
 require_once __DIR__ . '/classes/FAPBoxRenderer.php';
 require_once __DIR__ . '/classes/FAPCustomizationService.php';

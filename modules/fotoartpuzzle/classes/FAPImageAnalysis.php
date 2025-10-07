@@ -2,6 +2,19 @@
 
 class FAPImageAnalysis
 {
+    /**
+     * @var FAPQualityService
+     */
+    private $qualityService;
+
+    /**
+     * @param FAPQualityService|null $qualityService
+     */
+    public function __construct(?FAPQualityService $qualityService = null)
+    {
+        $this->qualityService = $qualityService ?: new FAPQualityService();
+    }
+
     private const QUALITY_EXCELLENT = 4;
     private const QUALITY_GREAT = 3;
     private const QUALITY_GOOD = 2;
@@ -25,6 +38,8 @@ class FAPImageAnalysis
     public function analyse($width, $height, array $formats)
     {
         $orientation = $width >= $height ? 'landscape' : 'portrait';
+        $evaluations = $this->qualityService->evaluateFormats($width, $height, $formats);
+
         $evaluations = [];
 
         foreach ($formats as $format) {
@@ -67,6 +82,7 @@ class FAPImageAnalysis
             'width' => $width,
             'height' => $height,
             'formats' => $evaluations,
+            'printable' => $this->qualityService->hasPrintableFormat($evaluations),
             'printable' => $this->hasPrintableFormat($evaluations),
         ];
     }

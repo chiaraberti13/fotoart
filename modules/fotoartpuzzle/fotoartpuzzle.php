@@ -156,6 +156,7 @@ class FotoArtPuzzle extends Module
         $products = $this->getPuzzleProductsForDisplay($productIds);
         $colorCombinations = $this->decodeColorCombinations($values[FAPConfiguration::BOX_COLOR_COMBINATIONS]);
         $fonts = $this->decodeFonts($values[FAPConfiguration::CUSTOM_FONTS]);
+        $legacyMappings = $this->decodeLegacyMappings($values[FAPConfiguration::PUZZLE_LEGACY_MAP]);
 
         $configKeys = [
             'max_upload_size' => FAPConfiguration::MAX_UPLOAD_SIZE,
@@ -177,6 +178,7 @@ class FotoArtPuzzle extends Module
             'enable_orientation' => FAPConfiguration::ENABLE_ORIENTATION,
             'enable_interactive_crop' => FAPConfiguration::ENABLE_INTERACTIVE_CROP,
             'puzzle_products' => FAPConfiguration::PUZZLE_PRODUCTS,
+            'legacy_map' => FAPConfiguration::PUZZLE_LEGACY_MAP,
         ];
 
         $this->context->smarty->assign([
@@ -209,10 +211,12 @@ class FotoArtPuzzle extends Module
                     return is_array($font) && isset($font['name']) ? $font['name'] : $font;
                 }, $fonts)),
                 'color_combinations_json' => json_encode($colorCombinations),
+                'legacy_map_json' => json_encode($legacyMappings),
             ],
             'color_combinations' => $colorCombinations,
             'fonts' => $fonts,
             'puzzle_products' => $products,
+            'legacy_mappings' => $legacyMappings,
             'translations' => $this->getAdminTranslations(),
         ]);
 
@@ -338,6 +342,9 @@ class FotoArtPuzzle extends Module
         $products = $this->sanitizeProductCsv(Tools::getValue(FAPConfiguration::PUZZLE_PRODUCTS, ''));
         $this->persistPuzzleProducts($products);
 
+        $legacyMappings = $this->sanitizeLegacyMappings(Tools::getValue(FAPConfiguration::PUZZLE_LEGACY_MAP, '[]'));
+        Configuration::updateValue(FAPConfiguration::PUZZLE_LEGACY_MAP, json_encode($legacyMappings));
+
         return $this->displayConfirmation($this->l('Settings updated successfully.'));
     }
 
@@ -392,6 +399,58 @@ class FotoArtPuzzle extends Module
         }
 
         return $result;
+    }
+
+    private function decodeLegacyMappings($value)
+    {
+        return $this->sanitizeLegacyMappings($value);
+    }
+
+    private function sanitizeLegacyMappings($value)
+    {
+        $decoded = is_array($value) ? $value : json_decode((string) $value, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($decoded as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $idProduct = isset($entry['id_product']) ? (int) $entry['id_product'] : 0;
+            $legacyCode = isset($entry['legacy_code']) ? trim((string) $entry['legacy_code']) : '';
+
+            if ($idProduct <= 0 || $legacyCode === '') {
+                continue;
+            }
+
+            $idProductAttribute = isset($entry['id_product_attribute']) ? (int) $entry['id_product_attribute'] : 0;
+            $pieces = isset($entry['pieces']) ? (int) $entry['pieces'] : null;
+            $width = isset($entry['width_mm']) ? (int) $entry['width_mm'] : null;
+            $height = isset($entry['height_mm']) ? (int) $entry['height_mm'] : null;
+            $price = null;
+            if (isset($entry['price']) && $entry['price'] !== '') {
+                $price = (float) str_replace(',', '.', (string) $entry['price']);
+                if ($price < 0) {
+                    $price = null;
+                }
+            }
+
+            $result[] = [
+                'id_product' => $idProduct,
+                'id_product_attribute' => $idProductAttribute > 0 ? $idProductAttribute : 0,
+                'legacy_code' => Tools::substr($legacyCode, 0, 128),
+                'pieces' => ($pieces !== null && $pieces > 0) ? $pieces : null,
+                'width_mm' => ($width !== null && $width > 0) ? $width : null,
+                'height_mm' => ($height !== null && $height > 0) ? $height : null,
+                'price' => $price !== null ? number_format($price, 2, '.', '') : null,
+                'available' => !empty($entry['available']),
+            ];
+        }
+
+        return array_values($result);
     }
 
     private function decodeFonts($value)
@@ -546,6 +605,20 @@ class FotoArtPuzzle extends Module
             'email_admin_recipients' => $this->l('Administrator email'),
             'enable_pdf_user' => $this->l('Enable PDF for user'),
             'enable_pdf_admin' => $this->l('Enable PDF for admin'),
+            'legacy_heading' => $this->l('LEGACY PUZZLE MAPPING'),
+            'legacy_product_label' => $this->l('Product ID'),
+            'legacy_attribute_label' => $this->l('Combination ID (optional)'),
+            'legacy_code_label' => $this->l('Legacy code'),
+            'legacy_pieces_label' => $this->l('Pieces'),
+            'legacy_width_label' => $this->l('Width (mm)'),
+            'legacy_height_label' => $this->l('Height (mm)'),
+            'legacy_price_label' => $this->l('Price'),
+            'legacy_available_label' => $this->l('Available'),
+            'legacy_add' => $this->l('Add mapping'),
+            'legacy_empty' => $this->l('No mappings configured yet.'),
+            'legacy_validation_error' => $this->l('Please fill product ID and legacy code. Price must be positive.'),
+            'yes' => $this->l('Yes'),
+            'no' => $this->l('No'),
             'save' => $this->l('Save'),
             'remove' => $this->l('Remove'),
             'error' => $this->l('An error occurred.'),
@@ -721,6 +794,7 @@ class FotoArtPuzzle extends Module
             FAPConfiguration::ENABLE_ORIENTATION => (int) Configuration::get(FAPConfiguration::ENABLE_ORIENTATION),
             FAPConfiguration::ENABLE_INTERACTIVE_CROP => (int) Configuration::get(FAPConfiguration::ENABLE_INTERACTIVE_CROP),
             FAPConfiguration::PUZZLE_PRODUCTS => (string) Configuration::get(FAPConfiguration::PUZZLE_PRODUCTS),
+            FAPConfiguration::PUZZLE_LEGACY_MAP => (string) Configuration::get(FAPConfiguration::PUZZLE_LEGACY_MAP),
         ];
     }
 

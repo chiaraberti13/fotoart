@@ -28,6 +28,7 @@ class FAPConfiguration
     public const ANONYMIZE_FILENAMES = 'FAP_ANONYMIZE_FILENAMES';
     public const LOG_LEVEL = 'FAP_LOG_LEVEL';
     public const PUZZLE_PRODUCTS = 'FAP_PUZZLE_PRODUCTS';
+    public const PUZZLE_LEGACY_MAP = 'FAP_PUZZLE_LEGACY_MAP';
 
     /**
      * Install default configuration values
@@ -65,6 +66,7 @@ class FAPConfiguration
             self::ANONYMIZE_FILENAMES => 1,
             self::LOG_LEVEL => 'INFO',
             self::PUZZLE_PRODUCTS => '',
+            self::PUZZLE_LEGACY_MAP => json_encode([]),
         ];
 
         foreach ($defaults as $key => $value) {
@@ -107,6 +109,7 @@ class FAPConfiguration
             self::ANONYMIZE_FILENAMES,
             self::LOG_LEVEL,
             self::PUZZLE_PRODUCTS,
+            self::PUZZLE_LEGACY_MAP,
         ];
 
         foreach ($keys as $key) {
@@ -191,7 +194,48 @@ class FAPConfiguration
             ],
             'puzzles' => $formats,
             'boxes' => $boxes,
+            'legacyMappings' => self::getLegacyMappings(),
         ];
+    }
+
+    /**
+     * Retrieve the legacy mapping configuration.
+     *
+     * @return array
+     */
+    public static function getLegacyMappings()
+    {
+        $raw = (string) Configuration::get(self::PUZZLE_LEGACY_MAP);
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $sanitized = [];
+        foreach ($decoded as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+
+            $idProduct = isset($entry['id_product']) ? (int) $entry['id_product'] : 0;
+            $legacyCode = isset($entry['legacy_code']) ? trim((string) $entry['legacy_code']) : '';
+            if ($idProduct <= 0 || $legacyCode === '') {
+                continue;
+            }
+
+            $sanitized[] = [
+                'id_product' => $idProduct,
+                'id_product_attribute' => isset($entry['id_product_attribute']) ? (int) $entry['id_product_attribute'] : 0,
+                'legacy_code' => $legacyCode,
+                'pieces' => isset($entry['pieces']) ? (int) $entry['pieces'] : null,
+                'width_mm' => isset($entry['width_mm']) ? (int) $entry['width_mm'] : null,
+                'height_mm' => isset($entry['height_mm']) ? (int) $entry['height_mm'] : null,
+                'price' => isset($entry['price']) ? (float) $entry['price'] : null,
+                'available' => !empty($entry['available']),
+            ];
+        }
+
+        return $sanitized;
     }
 
     /**

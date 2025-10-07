@@ -7,7 +7,7 @@
 - [x] Gestire elenchi puzzle e box tramite nuove strutture dati/tabelle, esponendo endpoint dedicati (`getPuzzles`, `getBoxes`, ecc.).
 - [x] Estendere `FAPCustomizationService` per persistere metadati completi: ID puzzle, coordinate crop, qualità, ID box, note PDF, ecc.
 - [x] Implementare la generazione PDF (utente/admin) sfruttando librerie come TCPDF/FPDI e allegare gli output a email/ordini.
-- [ ] Migliorare la sicurezza dei token front-end legandoli alla sessione carrello/cliente invece della data.
+- [x] Migliorare la sicurezza dei token front-end legandoli alla sessione carrello/cliente invece della data.
 - [ ] Allineare i font utilizzati dal front-end con quelli disponibili lato server e aggiornare `FAPBoxRenderer` per i template grafici.
 - [ ] Ampliare gli endpoint AJAX per coprire tutte le azioni legacy (sessione, asset manageriali, recupero configurazioni, ecc.).
 - [ ] Aggiornare i template admin per mostrare preview hi-res, crop, qualità e consentire download asset.

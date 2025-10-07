@@ -935,7 +935,6 @@
                 payload.append('format_reference', state.format.reference);
             }
             payload.append('format', state.format.name || '');
-          
             if (typeof state.format.quality !== 'undefined' && state.format.quality !== null) {
                 payload.append('quality', state.format.quality);
             }

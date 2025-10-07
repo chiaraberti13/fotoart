@@ -1031,8 +1031,14 @@ class FotoArtPuzzle extends Module
      */
     public function getFrontToken($scope)
     {
+        $sessionSecret = $this->getFrontSessionSecret();
+        if (!$sessionSecret) {
+            return '';
+        }
+
         $key = $this->getCustomerSecureKey();
-        return hash('sha256', $scope . $key . _COOKIE_KEY_ . date('Ymd'));
+
+        return hash('sha256', $scope . '|' . $key . '|' . _COOKIE_KEY_ . '|' . $sessionSecret);
     }
 
     /**
@@ -1055,6 +1061,24 @@ class FotoArtPuzzle extends Module
         }
 
         return session_id() ?: 'anonymous';
+    }
+
+    /**
+     * Retrieve or generate a persistent session secret used for front tokens
+     *
+     * @return string
+     */
+    private function getFrontSessionSecret()
+    {
+        if (!isset($this->context) || !isset($this->context->cookie)) {
+            return '';
+        }
+
+        if (empty($this->context->cookie->fap_session_secret)) {
+            $this->context->cookie->fap_session_secret = Tools::passwdGen(64);
+        }
+
+        return (string) $this->context->cookie->fap_session_secret;
     }
 
     /**

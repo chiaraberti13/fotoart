@@ -12,12 +12,16 @@ if (!defined('_PS_VERSION_')) {
 }
 
 require_once __DIR__ . '/classes/FAPLogger.php';
+require_once __DIR__ . '/classes/FAPPuzzleRepository.php';
 require_once __DIR__ . '/classes/FAPConfiguration.php';
 require_once __DIR__ . '/classes/FAPPathBuilder.php';
 require_once __DIR__ . '/classes/FAPCleanupService.php';
 require_once __DIR__ . '/classes/FAPFormatManager.php';
 require_once __DIR__ . '/classes/FAPImageProcessor.php';
+require_once __DIR__ . '/classes/FAPQualityService.php';
+require_once __DIR__ . '/classes/FAPImageAnalysis.php';
 require_once __DIR__ . '/classes/FAPBoxRenderer.php';
+require_once __DIR__ . '/classes/FAPPdfGenerator.php';
 require_once __DIR__ . '/classes/FAPCustomizationService.php';
 
 class FotoArtPuzzle extends Module
@@ -808,12 +812,114 @@ class FotoArtPuzzle extends Module
 
         $this->ensureProductionRecord($order);
 
+        $pdfArtifacts = [];
+        $customerAttachments = [];
+        $adminAttachments = [];
+
+        $generateUserPdf = (bool) Configuration::get(FAPConfiguration::ENABLE_PDF_USER);
+        $generateAdminPdf = (bool) Configuration::get(FAPConfiguration::ENABLE_PDF_ADMIN);
+
+        if ($generateUserPdf || $generateAdminPdf) {
+            try {
+                $pdfGenerator = new FAPPdfGenerator($this);
+
+                if ($generateUserPdf) {
+                    $userPdf = $pdfGenerator->generate($order, $customizations, [
+                        'scope' => 'user',
+                        'id_lang' => (int) $order->id_lang,
+                    ]);
+                    if ($userPdf && !empty($userPdf['path']) && file_exists($userPdf['path'])) {
+                        $pdfArtifacts['user'] = $userPdf;
+
+                        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_USER)) {
+                            $content = Tools::file_get_contents($userPdf['path']);
+                            if ($content !== false) {
+                                $customerAttachments[] = [
+                                    'content' => $content,
+                                    'name' => $userPdf['filename'],
+                                    'mime' => 'application/pdf',
+                                ];
+                            }
+                        }
+                    }
+                }
+
+                if ($generateAdminPdf) {
+                    $adminPdf = $pdfGenerator->generate($order, $customizations, [
+                        'scope' => 'admin',
+                        'id_lang' => (int) Configuration::get('PS_LANG_DEFAULT'),
+                    ]);
+                    if ($adminPdf && !empty($adminPdf['path']) && file_exists($adminPdf['path'])) {
+                        $pdfArtifacts['admin'] = $adminPdf;
+
+                        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)) {
+                            $content = Tools::file_get_contents($adminPdf['path']);
+                            if ($content !== false) {
+                                $adminAttachments[] = [
+                                    'content' => $content,
+                                    'name' => $adminPdf['filename'],
+                                    'mime' => 'application/pdf',
+                                ];
+                            }
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                FAPLogger::create()->error('Failed to generate FotoArt PDF summary', [
+                    'order_id' => (int) $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (!empty($pdfArtifacts)) {
+            foreach ($customizations as $index => $customization) {
+                $metadata = isset($customization['metadata']) && is_array($customization['metadata'])
+                    ? $customization['metadata']
+                    : [];
+
+                if (!isset($metadata['asset_map']) || !is_array($metadata['asset_map'])) {
+                    $metadata['asset_map'] = [];
+                }
+
+                foreach ($pdfArtifacts as $scope => $pdfInfo) {
+                    if (empty($pdfInfo['path'])) {
+                        continue;
+                    }
+
+                    $metadata['asset_map']['pdf_' . $scope] = [
+                        'path' => $pdfInfo['path'],
+                        'filename' => $pdfInfo['filename'],
+                        'scope' => $scope,
+                    ];
+                }
+
+                FAPCustomizationService::saveMetadata($customization['id_customization'], $metadata);
+                $customizations[$index]['metadata'] = $metadata;
+            }
+        }
+
+        if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)
+            && empty($adminAttachments)
+            && isset($pdfArtifacts['user'])
+            && !empty($pdfArtifacts['user']['path'])
+            && file_exists($pdfArtifacts['user']['path'])) {
+            $content = Tools::file_get_contents($pdfArtifacts['user']['path']);
+            if ($content !== false) {
+                $adminAttachments[] = [
+                    'content' => $content,
+                    'name' => $pdfArtifacts['user']['filename'],
+                    'mime' => 'application/pdf',
+                ];
+            }
+        }
+
         if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_USER)) {
-            $this->sendCustomerEmail($order, $customizations);
+            $this->sendCustomerEmail($order, $customizations, $customerAttachments);
         }
 
         if (Configuration::get(FAPConfiguration::EMAIL_PREVIEW_ADMIN)) {
-            $this->sendAdminEmail($order, $customizations);
+            $this->sendAdminEmail($order, $customizations, $adminAttachments);
         }
     }
 
@@ -925,8 +1031,14 @@ class FotoArtPuzzle extends Module
      */
     public function getFrontToken($scope)
     {
+        $sessionSecret = $this->getFrontSessionSecret();
+        if (!$sessionSecret) {
+            return '';
+        }
+
         $key = $this->getCustomerSecureKey();
-        return hash('sha256', $scope . $key . _COOKIE_KEY_ . date('Ymd'));
+
+        return hash('sha256', $scope . '|' . $key . '|' . _COOKIE_KEY_ . '|' . $sessionSecret);
     }
 
     /**
@@ -949,6 +1061,24 @@ class FotoArtPuzzle extends Module
         }
 
         return session_id() ?: 'anonymous';
+    }
+
+    /**
+     * Retrieve or generate a persistent session secret used for front tokens
+     *
+     * @return string
+     */
+    private function getFrontSessionSecret()
+    {
+        if (!isset($this->context) || !isset($this->context->cookie)) {
+            return '';
+        }
+
+        if (empty($this->context->cookie->fap_session_secret)) {
+            $this->context->cookie->fap_session_secret = Tools::passwdGen(64);
+        }
+
+        return (string) $this->context->cookie->fap_session_secret;
     }
 
     /**
@@ -1032,17 +1162,62 @@ class FotoArtPuzzle extends Module
      */
     private function installDatabase()
     {
-        $sql = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'fap_production_order` (
-            `id_fap_production` INT(11) NOT NULL AUTO_INCREMENT,
-            `id_order` INT(11) NOT NULL,
-            `status` VARCHAR(32) NOT NULL,
-            `date_add` DATETIME NOT NULL,
-            `date_upd` DATETIME NOT NULL,
-            PRIMARY KEY (`id_fap_production`),
-            UNIQUE KEY `id_order` (`id_order`)
-        ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4';
+        $prefix = _DB_PREFIX_;
+        $engine = _MYSQL_ENGINE_;
 
-        return Db::getInstance()->execute($sql);
+        $queries = [
+            'CREATE TABLE IF NOT EXISTS `' . $prefix . 'fap_production_order` (
+                `id_fap_production` INT(11) NOT NULL AUTO_INCREMENT,
+                `id_order` INT(11) NOT NULL,
+                `status` VARCHAR(32) NOT NULL,
+                `date_add` DATETIME NOT NULL,
+                `date_upd` DATETIME NOT NULL,
+                PRIMARY KEY (`id_fap_production`),
+                UNIQUE KEY `id_order` (`id_order`)
+            ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',
+            'CREATE TABLE IF NOT EXISTS `' . $prefix . 'fap_puzzle_format` (
+                `id_fap_puzzle_format` INT(11) NOT NULL AUTO_INCREMENT,
+                `reference` VARCHAR(64) NOT NULL,
+                `name` VARCHAR(255) NOT NULL,
+                `pieces` INT(11) NOT NULL DEFAULT 0,
+                `width_cm` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `height_cm` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `shape` VARCHAR(64) DEFAULT NULL,
+                `price` DECIMAL(20,6) DEFAULT NULL,
+                `image` VARCHAR(255) DEFAULT NULL,
+                `payload` LONGTEXT DEFAULT NULL,
+                `position` INT(11) NOT NULL DEFAULT 0,
+                `active` TINYINT(1) NOT NULL DEFAULT 1,
+                `date_add` DATETIME NOT NULL,
+                `date_upd` DATETIME NOT NULL,
+                PRIMARY KEY (`id_fap_puzzle_format`),
+                UNIQUE KEY `reference` (`reference`)
+            ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',
+            'CREATE TABLE IF NOT EXISTS `' . $prefix . 'fap_puzzle_box` (
+                `id_fap_puzzle_box` INT(11) NOT NULL AUTO_INCREMENT,
+                `reference` VARCHAR(64) NOT NULL,
+                `name` VARCHAR(255) NOT NULL,
+                `template` VARCHAR(255) DEFAULT NULL,
+                `preview` VARCHAR(255) DEFAULT NULL,
+                `color` VARCHAR(32) DEFAULT NULL,
+                `text_color` VARCHAR(32) DEFAULT NULL,
+                `payload` LONGTEXT DEFAULT NULL,
+                `position` INT(11) NOT NULL DEFAULT 0,
+                `active` TINYINT(1) NOT NULL DEFAULT 1,
+                `date_add` DATETIME NOT NULL,
+                `date_upd` DATETIME NOT NULL,
+                PRIMARY KEY (`id_fap_puzzle_box`),
+                UNIQUE KEY `reference` (`reference`)
+            ) ENGINE=' . $engine . ' DEFAULT CHARSET=utf8mb4',
+        ];
+
+        foreach ($queries as $sql) {
+            if (!Db::getInstance()->execute($sql)) {
+                return false;
+            }
+        }
+
+        return $this->seedReferenceData();
     }
 
     /**
@@ -1052,9 +1227,109 @@ class FotoArtPuzzle extends Module
      */
     private function uninstallDatabase()
     {
-        $sql = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'fap_production_order`';
+        $queries = [
+            'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'fap_puzzle_box`',
+            'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'fap_puzzle_format`',
+            'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'fap_production_order`',
+        ];
 
-        return Db::getInstance()->execute($sql);
+        foreach ($queries as $sql) {
+            if (!Db::getInstance()->execute($sql)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Seed default puzzle formats and boxes for first installation.
+     *
+     * @return bool
+     */
+    private function seedReferenceData()
+    {
+        $db = Db::getInstance();
+        $now = date('Y-m-d H:i:s');
+
+        $formatTable = _DB_PREFIX_ . 'fap_puzzle_format';
+        if (!(int) $db->getValue('SELECT COUNT(*) FROM `' . $formatTable . '`')) {
+            $defaultFormats = [
+                [
+                    'reference' => 'PUZ-500',
+                    'name' => 'Puzzle 500 pezzi',
+                    'pieces' => 500,
+                    'width_cm' => 49.0,
+                    'height_cm' => 36.0,
+                    'shape' => null,
+                    'price' => null,
+                    'image' => null,
+                    'payload' => [],
+                ],
+                [
+                    'reference' => 'PUZ-1000',
+                    'name' => 'Puzzle 1000 pezzi',
+                    'pieces' => 1000,
+                    'width_cm' => 68.0,
+                    'height_cm' => 48.0,
+                    'shape' => null,
+                    'price' => null,
+                    'image' => null,
+                    'payload' => [],
+                ],
+            ];
+
+            foreach ($defaultFormats as $position => $format) {
+                $db->insert('fap_puzzle_format', [
+                    'reference' => pSQL($format['reference']),
+                    'name' => pSQL($format['name']),
+                    'pieces' => (int) $format['pieces'],
+                    'width_cm' => sprintf('%.2f', (float) $format['width_cm']),
+                    'height_cm' => sprintf('%.2f', (float) $format['height_cm']),
+                    'shape' => $format['shape'] ? pSQL($format['shape']) : null,
+                    'price' => $format['price'] !== null ? (float) $format['price'] : null,
+                    'image' => $format['image'] ? pSQL($format['image']) : null,
+                    'payload' => !empty($format['payload']) ? pSQL(json_encode($format['payload'])) : null,
+                    'position' => (int) $position,
+                    'active' => 1,
+                    'date_add' => pSQL($now),
+                    'date_upd' => pSQL($now),
+                ]);
+            }
+        }
+
+        $boxTable = _DB_PREFIX_ . 'fap_puzzle_box';
+        if (!(int) $db->getValue('SELECT COUNT(*) FROM `' . $boxTable . '`')) {
+            $defaultBoxes = [
+                [
+                    'reference' => 'BOX-CLASSIC',
+                    'name' => 'Scatola classica',
+                    'template' => null,
+                    'preview' => null,
+                    'color' => '#FFFFFF',
+                    'text_color' => '#000000',
+                    'payload' => [],
+                ],
+            ];
+
+            foreach ($defaultBoxes as $position => $box) {
+                $db->insert('fap_puzzle_box', [
+                    'reference' => pSQL($box['reference']),
+                    'name' => pSQL($box['name']),
+                    'template' => $box['template'] ? pSQL($box['template']) : null,
+                    'preview' => $box['preview'] ? pSQL($box['preview']) : null,
+                    'color' => $box['color'] ? pSQL($box['color']) : null,
+                    'text_color' => $box['text_color'] ? pSQL($box['text_color']) : null,
+                    'payload' => !empty($box['payload']) ? pSQL(json_encode($box['payload'])) : null,
+                    'position' => (int) $position,
+                    'active' => 1,
+                    'date_add' => pSQL($now),
+                    'date_upd' => pSQL($now),
+                ]);
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1086,7 +1361,7 @@ class FotoArtPuzzle extends Module
      * @param Order $order
      * @param array $customizations
      */
-    private function sendCustomerEmail(Order $order, array $customizations)
+    private function sendCustomerEmail(Order $order, array $customizations, array $attachments = [])
     {
         if (empty($order->id_customer)) {
             return;
@@ -1098,8 +1373,6 @@ class FotoArtPuzzle extends Module
         }
 
         $idLang = (int) $order->id_lang ?: (int) Configuration::get('PS_LANG_DEFAULT');
-
-        $attachments = [];
 
         $templateVars = array_merge(
             [
@@ -1137,7 +1410,7 @@ class FotoArtPuzzle extends Module
      * @param Order $order
      * @param array $customizations
      */
-    private function sendAdminEmail(Order $order, array $customizations)
+    private function sendAdminEmail(Order $order, array $customizations, array $attachments = [])
     {
         $recipients = $this->parseAdminRecipients(Configuration::get(FAPConfiguration::EMAIL_ADMIN_RECIPIENTS));
         if (empty($recipients)) {
@@ -1145,7 +1418,6 @@ class FotoArtPuzzle extends Module
         }
 
         $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
-        $attachments = [];
 
         $customer = new Customer((int) $order->id_customer);
         $templateVars = array_merge(
@@ -1186,6 +1458,19 @@ class FotoArtPuzzle extends Module
     }
 
     /**
+     * Expose mapped customization metadata for downstream consumers (PDF, API, etc.).
+     *
+     * @param array $customizations
+     * @param array $options
+     *
+     * @return array
+     */
+    public function getCustomizationDisplayData(array $customizations, array $options = [])
+    {
+        return $this->mapCustomizationsForEmail($customizations, $options);
+    }
+
+    /**
      * Normalize customization data for email templates
      *
      * @param array $customizations
@@ -1205,14 +1490,33 @@ class FotoArtPuzzle extends Module
             if (!empty($metadata['format'])) {
                 $displayMetadata[$this->l('Format')] = $metadata['format'];
             }
+            if (!empty($metadata['box_name'])) {
+                $displayMetadata[$this->l('Box')] = $metadata['box_name'];
+            }
             if (!empty($metadata['color'])) {
                 $displayMetadata[$this->l('Color')] = $metadata['color'];
             }
             if (!empty($metadata['font'])) {
                 $displayMetadata[$this->l('Font')] = $metadata['font'];
             }
+            if (!empty($metadata['pieces'])) {
+                $displayMetadata[$this->l('Pieces')] = (int) $metadata['pieces'];
+            }
+
+            $qualityLabel = $this->resolveQualityLabel($metadata);
+            if ($qualityLabel) {
+                $displayMetadata[$this->l('Quality')] = $qualityLabel;
+            }
+
+            if (!empty($metadata['orientation'])) {
+                $displayMetadata[$this->l('Orientation')] = $metadata['orientation'] === 'portrait'
+                    ? $this->l('Portrait')
+                    : $this->l('Landscape');
+            }
 
             $previewPath = !empty($metadata['preview_path']) ? $metadata['preview_path'] : null;
+            $pdfKey = $scope === 'admin' ? 'pdf_admin' : 'pdf_user';
+            $pdfAttached = !empty($metadata['asset_map'][$pdfKey]['path']);
             $mapped[] = [
                 'id_customization' => $customization['id_customization'],
                 'text' => $customization['text'],
@@ -1225,10 +1529,87 @@ class FotoArtPuzzle extends Module
                     ? $this->getDownloadLink($customization['file'], $scope, ['disposition' => 'inline'])
                     : null,
                 'preview_attached' => false,
+                'pdf_attached' => $pdfAttached,
             ];
         }
 
         return $mapped;
+    }
+
+    /**
+     * Resolve a translated quality label from customization metadata.
+     *
+     * @param array $metadata
+     *
+     * @return string|null
+     */
+    private function resolveQualityLabel(array $metadata)
+    {
+        if (!empty($metadata['print_info']) && is_array($metadata['print_info'])) {
+            if (!empty($metadata['print_info']['quality_label'])) {
+                return $this->translateQualityKey($metadata['print_info']['quality_label']);
+            }
+            if (isset($metadata['print_info']['quality'])) {
+                return $this->translateQualityKey($this->qualityKeyFromScore((int) $metadata['print_info']['quality']));
+            }
+        }
+
+        if (array_key_exists('quality', $metadata)) {
+            return $this->translateQualityKey($this->qualityKeyFromScore((int) $metadata['quality']));
+        }
+
+        return null;
+    }
+
+    /**
+     * Map a score to a quality keyword.
+     *
+     * @param int $score
+     *
+     * @return string
+     */
+    private function qualityKeyFromScore($score)
+    {
+        switch ((int) $score) {
+            case 4:
+                return 'excellent';
+            case 3:
+                return 'great';
+            case 2:
+                return 'good';
+            case 1:
+                return 'poor';
+            default:
+                return 'insufficient';
+        }
+    }
+
+    /**
+     * Translate a quality keyword into the current language.
+     *
+     * @param string|null $key
+     *
+     * @return string|null
+     */
+    private function translateQualityKey($key)
+    {
+        if (!$key) {
+            return null;
+        }
+
+        switch ((string) $key) {
+            case 'excellent':
+                return $this->l('Excellent');
+            case 'great':
+                return $this->l('Great');
+            case 'good':
+                return $this->l('Good');
+            case 'poor':
+                return $this->l('Fair');
+            case 'insufficient':
+            default:
+                return $this->l('Insufficient');
+        }
     }
 
     /**

@@ -6,7 +6,7 @@
 
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
-class Art_PuzzleCartModuleFrontController extends ModuleFrontController
+class Art_puzzleCartModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {

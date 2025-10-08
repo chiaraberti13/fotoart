@@ -4,7 +4,7 @@
  * Gestisce la selezione dei formati puzzle
  */
 
-class Art_PuzzleFormatModuleFrontController extends ModuleFrontController
+class Art_puzzleFormatModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

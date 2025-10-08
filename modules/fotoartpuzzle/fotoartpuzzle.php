@@ -1506,11 +1506,9 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
-        if ($scope !== 'admin') {
-            $orderToCheck = $payloadOrderId ?: (int) $idOrder;
-            if (!$this->isAuthorizedForDownload($scope, $orderToCheck)) {
-                return false;
-            }
+        $orderToCheck = $payloadOrderId ?: (int) $idOrder;
+        if (!$this->isAuthorizedForDownload($scope, $orderToCheck)) {
+            return false;
         }
 
         if ($expires !== null && (int) $payload['exp'] !== (int) $expires) {
@@ -1543,6 +1541,12 @@ class FotoArtPuzzle extends Module
     private function isAuthorizedForDownload($scope, $idOrder)
     {
         if ($scope === 'admin') {
+            $context = $this->context ?: Context::getContext();
+            $cookie = $context && isset($context->cookie) ? $context->cookie : null;
+            if (!$cookie || !isset($cookie->id_employee) || (int) $cookie->id_employee <= 0) {
+                return false;
+            }
+
             return true;
         }
 

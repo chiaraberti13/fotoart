@@ -61,6 +61,21 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             ]);
         }
 
+=======
+            if (file_exists($loggerPath)) {
+                require_once $loggerPath;
+            }
+        }
+
+        if (class_exists('ArtPuzzleLogger')) {
+            ArtPuzzleLogger::log('AJAX Request received - Action: ' . Tools::getValue('action'), 'DEBUG');
+        }
+
+        // Verifica se è una richiesta AJAX
+        if (!$this->isXmlHttpRequest() && !Tools::getValue('ajax')) {
+            $this->returnResponse(false, 'Richiesta non valida');
+            exit;
+        }
         /*
          * Debug: controllo del token temporaneamente disabilitato
          *

@@ -184,7 +184,59 @@ class FAPSessionService
      */
     private function getPath($sessionId)
     {
-        return rtrim(FAPPathBuilder::getSessionsPath(), '/\\') . '/' . $sessionId . '.json';
+        $sessionId = $this->sanitizeSessionId($sessionId);
+
+        $sessionsPath = FAPPathBuilder::getSessionsPath();
+        if (!is_dir($sessionsPath)) {
+            if (!@mkdir($sessionsPath, 0750, true)) {
+                throw new RuntimeException('Session storage directory is not available');
+            }
+        }
+
+        $canonicalSessionsPath = realpath($sessionsPath);
+        if (false === $canonicalSessionsPath || !is_dir($canonicalSessionsPath)) {
+            throw new RuntimeException('Session storage directory is not accessible');
+        }
+
+        if (!is_readable($canonicalSessionsPath)) {
+            throw new RuntimeException('Session storage directory cannot be read');
+        }
+
+        if (!is_writable($canonicalSessionsPath)) {
+            throw new RuntimeException('Session storage directory cannot be written');
+        }
+
+        $basePath = rtrim($canonicalSessionsPath, '/\\');
+        $fullPath = $basePath . DIRECTORY_SEPARATOR . $sessionId . '.json';
+
+        $parentDirectory = realpath(dirname($fullPath));
+        $basePathWithSeparator = $basePath . DIRECTORY_SEPARATOR;
+        if (false === $parentDirectory || strpos($parentDirectory . DIRECTORY_SEPARATOR, $basePathWithSeparator) !== 0) {
+            throw new RuntimeException('Resolved session path is outside of the sessions directory');
+        }
+
+        return $fullPath;
+    }
+
+    /**
+     * Sanitize and validate session identifier.
+     *
+     * @param string $sessionId
+     *
+     * @return string
+     */
+    private function sanitizeSessionId($sessionId)
+    {
+        $sessionId = trim((string) $sessionId);
+        if ($sessionId === '') {
+            throw new InvalidArgumentException('Missing session identifier');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $sessionId)) {
+            throw new InvalidArgumentException('Invalid session identifier');
+        }
+
+        return $sessionId;
     }
 }
 

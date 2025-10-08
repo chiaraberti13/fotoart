@@ -125,6 +125,9 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
     {
         try {
             $sessionPayload = isset($payload['data']) ? $this->normaliseInput($payload['data']) : $payload;
+            if (!empty($sessionPayload['session_id'])) {
+                $sessionPayload['session_id'] = $this->assertValidSessionIdentifier($sessionPayload['session_id']);
+            }
             $result = $this->sessionService->manage($sessionPayload);
             $this->sendJsonResponse(['success' => true, 'session' => $result]);
         } catch (Exception $exception) {
@@ -139,12 +142,14 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected function handleRestore(array $payload)
     {
-        if (empty($payload['session_id'])) {
-            $this->sendJsonResponse(['success' => false, 'message' => 'Missing session identifier']);
+        try {
+            $sessionId = $this->assertValidSessionIdentifier(isset($payload['session_id']) ? $payload['session_id'] : '');
+        } catch (InvalidArgumentException $exception) {
+            $this->sendJsonResponse(['success' => false, 'message' => $exception->getMessage()]);
             return;
         }
 
-        $data = $this->sessionService->restore($payload['session_id']);
+        $data = $this->sessionService->restore($sessionId);
         $this->sendJsonResponse([
             'success' => true,
             'data' => $data,
@@ -158,18 +163,35 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected function handleUpdateSession(array $payload)
     {
-        if (empty($payload['session_id'])) {
-            $this->sendJsonResponse(['success' => false, 'message' => 'Missing session identifier']);
-            return;
-        }
-
         try {
+            $sessionId = $this->assertValidSessionIdentifier(isset($payload['session_id']) ? $payload['session_id'] : '');
             $dataPayload = isset($payload['data']) ? $this->normaliseInput($payload['data']) : [];
-            $data = $this->sessionService->update($payload['session_id'], $dataPayload);
+            $data = $this->sessionService->update($sessionId, $dataPayload);
             $this->sendJsonResponse(['success' => true, 'data' => $data]);
         } catch (Exception $exception) {
             $this->sendJsonResponse(['success' => false, 'message' => $exception->getMessage()]);
         }
+    }
+
+    /**
+     * Validate provided session identifier input.
+     *
+     * @param string $sessionId
+     *
+     * @return string
+     */
+    protected function assertValidSessionIdentifier($sessionId)
+    {
+        $sessionId = trim((string) $sessionId);
+        if ($sessionId === '') {
+            throw new InvalidArgumentException('Missing session identifier');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $sessionId)) {
+            throw new InvalidArgumentException('Invalid session identifier');
+        }
+
+        return $sessionId;
     }
 
     /**

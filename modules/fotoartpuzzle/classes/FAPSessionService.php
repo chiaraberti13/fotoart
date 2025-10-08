@@ -16,7 +16,7 @@ class FAPSessionService
      */
     public function manage(array $payload)
     {
-        $sessionId = isset($payload['session_id']) ? (string) $payload['session_id'] : '';
+        $sessionId = isset($payload['session_id']) ? $this->sanitizeSessionId($payload['session_id'], true) : '';
         if (!$sessionId) {
             $sessionId = $this->generateSessionId();
         }
@@ -46,10 +46,7 @@ class FAPSessionService
      */
     public function update($sessionId, array $diff)
     {
-        $sessionId = (string) $sessionId;
-        if (!$sessionId) {
-            throw new Exception('Missing session identifier');
-        }
+        $sessionId = $this->sanitizeSessionId($sessionId);
 
         $data = $this->load($sessionId);
         if (!$data) {
@@ -72,6 +69,7 @@ class FAPSessionService
      */
     public function restore($sessionId)
     {
+        $sessionId = $this->sanitizeSessionId($sessionId);
         $data = $this->load($sessionId);
         if (!$data) {
             return [];
@@ -184,7 +182,35 @@ class FAPSessionService
      */
     private function getPath($sessionId)
     {
+        $sessionId = $this->sanitizeSessionId($sessionId);
+
         return rtrim(FAPPathBuilder::getSessionsPath(), '/\\') . '/' . $sessionId . '.json';
+    }
+
+    /**
+     * Ensure the session identifier is safe to use on disk.
+     *
+     * @param mixed $sessionId
+     * @param bool $allowEmpty
+     *
+     * @return string
+     */
+    private function sanitizeSessionId($sessionId, $allowEmpty = false)
+    {
+        $sessionId = trim((string) $sessionId);
+        if ($sessionId === '') {
+            if ($allowEmpty) {
+                return '';
+            }
+
+            throw new Exception('Missing session identifier');
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $sessionId)) {
+            throw new Exception('Invalid session identifier');
+        }
+
+        return $sessionId;
     }
 }
 

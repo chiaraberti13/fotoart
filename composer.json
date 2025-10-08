@@ -1,0 +1,26 @@
+{
+    "name": "fotoart/fotoartpuzzle",
+    "type": "project",
+    "require": {
+        "php": "^7.3"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.22",
+        "phpstan/phpstan": "^1.10"
+    },
+    "scripts": {
+        "phpcsfixer": "php vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --diff --dry-run --allow-risky=yes",
+        "phplint": "sh -c \"find modules/fotoartpuzzle -type f -name '*.php' -print0 | xargs -0 -n1 php -l\"",
+        "lint": [
+            "@phpcsfixer",
+            "@phplint"
+        ],
+        "phpstan": "vendor/bin/phpstan analyse -c phpstan.neon",
+        "test": "php modules/fotoartpuzzle/tests/run.php",
+        "ci": [
+            "@lint",
+            "@phpstan",
+            "@test"
+        ]
+    }
+}

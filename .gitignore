@@ -1,0 +1,5 @@
+/vendor/
+modules/fotoartpuzzle/var/*
+!modules/fotoartpuzzle/var/.htaccess
+!modules/fotoartpuzzle/var/index.php
+modules/fotoartpuzzle/fotoartpuzzle/

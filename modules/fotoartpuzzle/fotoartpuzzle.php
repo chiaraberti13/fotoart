@@ -27,6 +27,8 @@ $fapDependencies = [
     'FAPAssetGenerationService' => '/classes/FAPAssetGenerationService.php',
     'FAPSessionService' => '/classes/FAPSessionService.php',
     'FAPFontManager' => '/classes/FAPFontManager.php',
+    'FAPSecurityTokenService' => '/classes/FAPSecurityTokenService.php',
+    'FAPPathValidator' => '/classes/FAPPathValidator.php',
 ];
 
 foreach ($fapDependencies as $className => $path) {
@@ -94,6 +96,10 @@ class FotoArtPuzzle extends Module
         }
 
         if (!FAPConfiguration::installDefaults()) {
+            return false;
+        }
+
+        if (!$this->ensureSecuritySecret()) {
             return false;
         }
 
@@ -867,6 +873,7 @@ class FotoArtPuzzle extends Module
             'token_upload' => $this->getFrontToken('upload'),
             'token_preview' => $this->getFrontToken('preview'),
             'token_summary' => $this->getFrontToken('summary'),
+            'token_ajax' => $this->getFrontToken('ajax'),
             'module' => $this,
         ]);
 
@@ -1148,14 +1155,67 @@ class FotoArtPuzzle extends Module
      */
     public function getFrontToken($scope)
     {
-        $sessionSecret = $this->getFrontSessionSecret();
-        if (!$sessionSecret) {
+        try {
+            $service = $this->buildFrontTokenService();
+            if (!$service) {
+                return '';
+            }
+
+            $issued = $service->issue([
+                'scope' => 'front:' . (string) $scope,
+                'cart_id' => isset($this->context->cart->id) ? (int) $this->context->cart->id : 0,
+            ], $this->getFrontTokenTtl());
+
+            return $issued['token'];
+        } catch (Exception $exception) {
+            FAPLogger::create()->warning('Unable to issue front token', [
+                'scope' => $scope,
+                'error' => $exception->getMessage(),
+            ]);
+
             return '';
         }
+    }
 
-        $key = $this->getCustomerSecureKey();
+    /**
+     * Validate a previously issued front token.
+     *
+     * @param string $token
+     * @param string $scope
+     *
+     * @return bool
+     */
+    public function validateFrontToken($token, $scope)
+    {
+        try {
+            $service = $this->buildFrontTokenService();
+            if (!$service) {
+                return false;
+            }
 
-        return hash('sha256', $scope . '|' . $key . '|' . _COOKIE_KEY_ . '|' . $sessionSecret);
+            $service->validate((string) $token, [
+                'scope' => 'front:' . (string) $scope,
+            ]);
+
+            return true;
+        } catch (Exception $exception) {
+            FAPLogger::create()->warning('Front token validation failed', [
+                'scope' => $scope,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Determine TTL for front tokens in seconds.
+     *
+     * @return int
+     */
+    private function getFrontTokenTtl()
+    {
+        return 900;
     }
 
     /**
@@ -1199,6 +1259,74 @@ class FotoArtPuzzle extends Module
     }
 
     /**
+     * Build token service for the current front context.
+     *
+     * @return FAPSecurityTokenService|null
+     */
+    private function buildFrontTokenService()
+    {
+        $sessionSecret = $this->getFrontSessionSecret();
+        if ($sessionSecret === '') {
+            return null;
+        }
+
+        $customerKey = $this->getCustomerSecureKey();
+        $secret = hash('sha256', $this->getSecuritySecret() . '|' . $sessionSecret . '|' . $customerKey . '|' . _COOKIE_KEY_);
+
+        return new FAPSecurityTokenService($secret);
+    }
+
+    /**
+     * Build download token service based on the module secret.
+     *
+     * @return FAPSecurityTokenService
+     */
+    private function buildDownloadTokenService()
+    {
+        $secret = hash('sha256', $this->getSecuritySecret() . '|' . _COOKIE_KEY_);
+
+        return new FAPSecurityTokenService($secret);
+    }
+
+    /**
+     * Retrieve module scoped security secret.
+     *
+     * @return string
+     */
+    private function getSecuritySecret()
+    {
+        $secret = (string) Configuration::get(FAPConfiguration::SECURITY_SECRET);
+        if ($secret === '') {
+            $secret = Tools::passwdGen(64);
+            if (!Configuration::updateValue(FAPConfiguration::SECURITY_SECRET, $secret)) {
+                throw new RuntimeException('Unable to persist module security secret');
+            }
+        }
+
+        return $secret;
+    }
+
+    /**
+     * Ensure the security secret is available in configuration storage.
+     *
+     * @return bool
+     */
+    private function ensureSecuritySecret()
+    {
+        try {
+            $this->getSecuritySecret();
+
+            return true;
+        } catch (Exception $exception) {
+            FAPLogger::create()->error('Unable to ensure FotoArt security secret', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * Create signed download URL
      *
      * @param string $path
@@ -1208,36 +1336,59 @@ class FotoArtPuzzle extends Module
      */
     public function getDownloadLink($path, $scope = 'admin', array $options = [])
     {
-        $secret = $this->getScopeSecret($scope);
-        if (!$secret) {
+        try {
+            $canonicalPath = FAPPathValidator::assertReadablePath($path);
+        } catch (Exception $exception) {
+            FAPLogger::create()->warning('Refused to build download link for invalid path', [
+                'path' => $path,
+                'error' => $exception->getMessage(),
+            ]);
+
             return '';
         }
 
-        if ($path && file_exists($path) && !$this->isAllowedDownloadPath($path)) {
-            return '';
-        }
-
+        $scope = $this->normaliseDownloadScope($scope);
         $ttl = isset($options['ttl']) ? (int) $options['ttl'] : 3600;
         if ($ttl <= 0) {
             $ttl = 3600;
         }
-        $expires = time() + $ttl;
+
         $idOrder = isset($options['id_order']) ? (int) $options['id_order'] : 0;
+        $disposition = isset($options['disposition']) && $options['disposition'] === 'inline' ? 'inline' : 'attachment';
 
-        $signature = $this->signDownloadPath($path, $scope, $expires, $idOrder, $secret);
+        try {
+            $service = $this->buildDownloadTokenService();
+            $issued = $service->issue([
+                'scope' => 'download:' . $scope,
+                'path_hash' => hash('sha256', $canonicalPath),
+                'id_order' => $idOrder,
+                'disposition' => $disposition,
+            ], $ttl);
+        } catch (Exception $exception) {
+            FAPLogger::create()->error('Unable to issue download token', [
+                'path' => $path,
+                'scope' => $scope,
+                'error' => $exception->getMessage(),
+            ]);
 
-        $params = array_merge([
-            'token' => $signature,
-            'path' => $path,
-            'scope' => $scope,
-            'expires' => $expires,
-        ], $options);
-
-        if ($idOrder) {
-            $params['id_order'] = (int) $idOrder;
+            return '';
         }
 
-        return $this->context->link->getModuleLink(self::MODULE_NAME, 'download', $params);
+        $params = [
+            'token' => $issued['token'],
+            'path' => $canonicalPath,
+            'scope' => $scope,
+            'disposition' => $disposition,
+            'expires' => isset($issued['payload']['exp']) ? (int) $issued['payload']['exp'] : (time() + $ttl),
+        ];
+
+        if ($idOrder) {
+            $params['id_order'] = $idOrder;
+        }
+
+        unset($options['ttl']);
+
+        return $this->context->link->getModuleLink(self::MODULE_NAME, 'download', array_merge($params, $options));
     }
 
     /**
@@ -1248,63 +1399,80 @@ class FotoArtPuzzle extends Module
      * @param string $scope
      * @param int|null $expires
      * @param int|null $idOrder
+     * @param string|null $disposition
      *
      * @return bool
      */
-    public function validateDownloadToken($token, $path, $scope, $expires = null, $idOrder = null)
+    public function validateDownloadToken($token, $path, $scope, $expires = null, $idOrder = null, $disposition = null)
     {
-        $secret = $this->getScopeSecret($scope);
-        if (!$secret) {
+        try {
+            $canonicalPath = FAPPathValidator::assertReadablePath($path);
+        } catch (Exception $exception) {
+            FAPLogger::create()->warning('Download path validation failed', [
+                'path' => $path,
+                'error' => $exception->getMessage(),
+            ]);
+
             return false;
         }
 
-        if ($expires && (int) $expires < time()) {
+        $scope = $this->normaliseDownloadScope($scope);
+
+        try {
+            $service = $this->buildDownloadTokenService();
+            $payload = $service->validate((string) $token, [
+                'scope' => 'download:' . $scope,
+            ]);
+        } catch (Exception $exception) {
+            FAPLogger::create()->warning('Download token validation failed', [
+                'scope' => $scope,
+                'error' => $exception->getMessage(),
+            ]);
+
             return false;
         }
 
-        if ($scope !== 'admin' && !$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
+        $claims = isset($payload['claims']) && is_array($payload['claims']) ? $payload['claims'] : [];
+        $expectedHash = hash('sha256', $canonicalPath);
+
+        if (!isset($claims['path_hash']) || !hash_equals($expectedHash, (string) $claims['path_hash'])) {
             return false;
         }
 
-        $signature = $this->signDownloadPath($path, $scope, (int) $expires, (int) $idOrder, $secret);
+        $payloadDisposition = isset($claims['disposition']) ? (string) $claims['disposition'] : 'attachment';
+        if ($disposition !== null && $payloadDisposition !== (string) $disposition) {
+            return false;
+        }
 
-        return hash_equals($signature, (string) $token);
+        $payloadOrderId = isset($claims['id_order']) ? (int) $claims['id_order'] : 0;
+        if ($payloadOrderId && $idOrder && (int) $idOrder !== $payloadOrderId) {
+            return false;
+        }
+
+        if ($scope !== 'admin') {
+            $orderToCheck = $payloadOrderId ?: (int) $idOrder;
+            if (!$this->isAuthorizedForDownload($scope, $orderToCheck)) {
+                return false;
+            }
+        }
+
+        if ($expires !== null && (int) $payload['exp'] !== (int) $expires) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * Sign download path with secret
+     * Normalize download scope input.
      *
-     * @param string $path
      * @param string $scope
-     * @param int $expires
-     * @param int $idOrder
-     * @param string $token
      *
      * @return string
      */
-    private function signDownloadPath($path, $scope, $expires, $idOrder, $token)
+    private function normaliseDownloadScope($scope)
     {
-        return hash('sha256', $path . '|' . $scope . '|' . (int) $expires . '|' . (int) $idOrder . '|' . $token . '|' . _COOKIE_KEY_);
-    }
-
-    /**
-     * Return secret per scope
-     *
-     * @param string $scope
-     *
-     * @return string|null
-     */
-    private function getScopeSecret($scope)
-    {
-        if ($scope === 'admin') {
-            return Tools::getAdminTokenLite('AdminOrders');
-        }
-
-        if ($scope === 'front') {
-            return $this->getFrontToken('download');
-        }
-
-        return null;
+        return $scope === 'admin' ? 'admin' : 'front';
     }
 
     /**
@@ -1342,24 +1510,7 @@ class FotoArtPuzzle extends Module
      */
     public function isAllowedDownloadPath($path)
     {
-        $realPath = realpath($path);
-        if ($realPath === false) {
-            return false;
-        }
-
-        $allowedRoots = array_filter([
-            realpath(FAPPathBuilder::getBasePath()),
-            realpath(_PS_DOWNLOAD_DIR_),
-            realpath(_PS_UPLOAD_DIR_),
-        ]);
-
-        foreach ($allowedRoots as $root) {
-            if (strpos($realPath, $root) === 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return FAPPathValidator::isAllowed($path);
     }
 
     /**

@@ -15,6 +15,8 @@ class FAPCustomizationService
      */
     public static function createCustomization(Cart $cart, $idProduct, $imagePath, $boxText, array $metadata, $idProductAttribute = 0)
     {
+        $imagePath = FAPPathValidator::assertReadablePath($imagePath);
+
         $context = Context::getContext();
         $customization = self::getOrCreateCustomization($cart->id, $idProduct, (int) $idProductAttribute, $context->shop->id);
 
@@ -256,6 +258,7 @@ class FAPCustomizationService
      */
     private static function copyAssetToOrder($source, $orderPath, $prefix, $idCustomization)
     {
+        $source = FAPPathValidator::assertReadablePath($source);
         $extension = pathinfo($source, PATHINFO_EXTENSION);
         $filename = $prefix . '_' . (int) $idCustomization;
         if ($extension) {
@@ -263,9 +266,12 @@ class FAPCustomizationService
         }
 
         $destination = rtrim($orderPath, '/\\') . '/' . $filename;
-        Tools::copy($source, $destination);
+        $destination = FAPPathValidator::assertWritableDestination($destination);
+        if (!Tools::copy($source, $destination)) {
+            throw new RuntimeException('Unable to copy asset into order directory');
+        }
 
-        return $destination;
+        return FAPPathValidator::assertReadablePath($destination);
     }
 
     /**

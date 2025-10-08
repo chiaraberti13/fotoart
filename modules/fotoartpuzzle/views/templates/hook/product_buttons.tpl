@@ -13,7 +13,8 @@
      data-id-product="{$id_product|intval}"
      data-token-upload="{$token_upload|escape:'html':'UTF-8'}"
      data-token-preview="{$token_preview|escape:'html':'UTF-8'}"
-     data-token-summary="{$token_summary|escape:'html':'UTF-8'}">
+     data-token-summary="{$token_summary|escape:'html':'UTF-8'}"
+     data-token-ajax="{$token_ajax|escape:'html':'UTF-8'}">
     
     <button type="button" class="btn btn-primary fap-launch" aria-haspopup="dialog">
         <i class="material-icons">&#xE3F4;</i>
@@ -38,7 +39,8 @@ console.log('FotoArt Puzzle Debug Info:', {
     tokensPresent: {
         upload: '{$token_upload|escape:'javascript':'UTF-8'}' !== '',
         preview: '{$token_preview|escape:'javascript':'UTF-8'}' !== '',
-        summary: '{$token_summary|escape:'javascript':'UTF-8'}' !== ''
+        summary: '{$token_summary|escape:'javascript':'UTF-8'}' !== '',
+        ajax: '{$token_ajax|escape:'javascript':'UTF-8'}' !== ''
     }
 });
 </script>

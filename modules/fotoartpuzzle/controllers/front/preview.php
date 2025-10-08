@@ -25,11 +25,13 @@ class FotoartpuzzlePreviewModuleFrontController extends ModuleFrontController
 
             $this->validateBoxOptions($text, $color, $font);
 
-            if (!$file || !file_exists($file)) {
+            if (!$file) {
                 throw new Exception($this->module->l('File not found.'));
             }
 
-            $previewPath = $this->generatePreview($file, $text, $color, $font);
+            $canonicalPath = FAPPathValidator::assertReadablePath($file);
+
+            $previewPath = $this->generatePreview($canonicalPath, $text, $color, $font);
 
             return [
                 'success' => true,
@@ -47,7 +49,7 @@ class FotoartpuzzlePreviewModuleFrontController extends ModuleFrontController
     private function validateToken()
     {
         $token = Tools::getValue('token');
-        if (!$token || $token !== $this->module->getFrontToken('preview')) {
+        if (!$token || !$this->module->validateFrontToken($token, 'preview')) {
             throw new Exception($this->module->l('Invalid token.'));
         }
     }
@@ -65,10 +67,11 @@ class FotoartpuzzlePreviewModuleFrontController extends ModuleFrontController
         }
 
         $destination = $previewDir . '/' . (int) $cart->id . '_' . sha1($file . microtime(true)) . '.jpg';
+        $destination = FAPPathValidator::assertWritableDestination($destination);
         $renderer = new FAPBoxRenderer();
         $renderer->render($file, $text, $color, $font, $destination);
 
-        return $destination;
+        return FAPPathValidator::assertReadablePath($destination);
     }
 
     private function sanitizeBoxText($text)

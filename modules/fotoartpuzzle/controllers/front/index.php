@@ -76,6 +76,7 @@ class FotoartpuzzleIndexModuleFrontController extends ModuleFrontController
                 'token_upload' => $this->module->getFrontToken('upload'),
                 'token_preview' => $this->module->getFrontToken('preview'),
                 'token_summary' => $this->module->getFrontToken('summary'),
+                'token_ajax' => $this->module->getFrontToken('ajax'),
             ],
         ]);
 

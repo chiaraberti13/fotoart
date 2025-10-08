@@ -54,7 +54,13 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             $pdfNote = $this->sanitizeNote(Tools::getValue('pdf_note', ''));
             $downloadNote = $this->sanitizeNote(Tools::getValue('download_note', ''));
 
-            if (!$idProduct || !$imagePath || !file_exists($imagePath)) {
+            if (!$idProduct || !$imagePath) {
+                throw new Exception($this->module->l('Missing data to create customization.'));
+            }
+
+            try {
+                $imagePath = FAPPathValidator::assertReadablePath($imagePath);
+            } catch (Exception $exception) {
                 throw new Exception($this->module->l('Missing data to create customization.'));
             }
 
@@ -96,7 +102,11 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             }
 
             if ($previewPath && file_exists($previewPath)) {
-                $metadata['preview_path'] = $previewPath;
+                try {
+                    $metadata['preview_path'] = FAPPathValidator::assertReadablePath($previewPath);
+                } catch (Exception $exception) {
+                    // Ignore invalid preview path
+                }
             }
 
             if ($previewUrl !== '') {
@@ -104,7 +114,11 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
             }
 
             if ($thumbnailPath !== '' && file_exists($thumbnailPath)) {
-                $metadata['thumbnail_path'] = $thumbnailPath;
+                try {
+                    $metadata['thumbnail_path'] = FAPPathValidator::assertReadablePath($thumbnailPath);
+                } catch (Exception $exception) {
+                    // Ignore invalid thumbnail path
+                }
             }
 
             if ($thumbnailUrl !== '') {
@@ -188,7 +202,7 @@ class FotoartpuzzleSummaryModuleFrontController extends ModuleFrontController
     private function validateToken()
     {
         $token = Tools::getValue('token');
-        if (!$token || $token !== $this->module->getFrontToken('summary')) {
+        if (!$token || !$this->module->validateFrontToken($token, 'summary')) {
             throw new Exception($this->module->l('Invalid token.'));
         }
     }

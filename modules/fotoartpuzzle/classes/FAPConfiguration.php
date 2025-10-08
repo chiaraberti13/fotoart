@@ -22,6 +22,7 @@ class FAPConfiguration
     public const EMAIL_ADMIN_RECIPIENTS = 'FAP_EMAIL_ADMIN_RECIPIENTS';
     public const ENABLE_PDF_USER = 'FAP_ENABLE_PDF_USER';
     public const ENABLE_PDF_ADMIN = 'FAP_ENABLE_PDF_ADMIN';
+    public const ADMIN_DOWNLOAD_SECRET = 'FAP_ADMIN_DOWNLOAD_SECRET';
     public const ENABLE_ORIENTATION = 'FAP_ENABLE_ORIENTATION';
     public const ENABLE_INTERACTIVE_CROP = 'FAP_ENABLE_INTERACTIVE_CROP';
     public const TEMP_TTL_HOURS = 'FAP_TEMP_TTL_HOURS';
@@ -60,6 +61,7 @@ class FAPConfiguration
             self::EMAIL_ADMIN_RECIPIENTS => Configuration::get('PS_SHOP_EMAIL'),
             self::ENABLE_PDF_USER => 0,
             self::ENABLE_PDF_ADMIN => 0,
+            self::ADMIN_DOWNLOAD_SECRET => Tools::passwdGen(64),
             self::ENABLE_ORIENTATION => 1,
             self::ENABLE_INTERACTIVE_CROP => 1,
             self::TEMP_TTL_HOURS => 24,
@@ -103,6 +105,7 @@ class FAPConfiguration
             self::EMAIL_ADMIN_RECIPIENTS,
             self::ENABLE_PDF_USER,
             self::ENABLE_PDF_ADMIN,
+            self::ADMIN_DOWNLOAD_SECRET,
             self::ENABLE_ORIENTATION,
             self::ENABLE_INTERACTIVE_CROP,
             self::TEMP_TTL_HOURS,

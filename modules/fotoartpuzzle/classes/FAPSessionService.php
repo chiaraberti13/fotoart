@@ -16,8 +16,16 @@ class FAPSessionService
      */
     public function manage(array $payload)
     {
-        $sessionId = isset($payload['session_id']) ? $this->sanitizeSessionId($payload['session_id'], true) : '';
-        if (!$sessionId) {
+        $sessionId = '';
+        if (isset($payload['session_id'])) {
+            try {
+                $sessionId = $this->sanitizeSessionId($payload['session_id']);
+            } catch (Exception $exception) {
+                $sessionId = '';
+            }
+        }
+
+        if ($sessionId === '') {
             $sessionId = $this->generateSessionId();
         }
 
@@ -191,22 +199,17 @@ class FAPSessionService
      * Ensure the session identifier is safe to use on disk.
      *
      * @param mixed $sessionId
-     * @param bool $allowEmpty
      *
      * @return string
      */
-    private function sanitizeSessionId($sessionId, $allowEmpty = false)
+    private function sanitizeSessionId($sessionId)
     {
         $sessionId = trim((string) $sessionId);
         if ($sessionId === '') {
-            if ($allowEmpty) {
-                return '';
-            }
-
             throw new Exception('Missing session identifier');
         }
 
-        if (!preg_match('/^[A-Za-z0-9_-]+$/', $sessionId)) {
+        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $sessionId)) {
             throw new Exception('Invalid session identifier');
         }
 

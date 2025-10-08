@@ -24,6 +24,7 @@ class TokenServiceTest extends FAPTestCase
         $this->testFrontTokenRoundTrip();
         $this->testDownloadTokenTampering();
         $this->testDownloadTokenScopeMismatch();
+        $this->testAdminDownloadTokenCookieFallback();
         $this->testTokenServiceExpiration();
     }
 
@@ -64,6 +65,29 @@ class TokenServiceTest extends FAPTestCase
         parse_str($parts['query'], $params);
 
         $this->assertFalse($this->module->validateDownloadToken($params['token'], $params['path'], 'admin', $params['expires'], null, $params['disposition']), 'Using front token in admin scope must fail');
+    }
+
+    private function testAdminDownloadTokenCookieFallback()
+    {
+        $tempDir = FAPPathBuilder::getTempPath();
+        $file = tempnam($tempDir, 'fap');
+        file_put_contents($file, 'dummy');
+
+        $employee = new Employee();
+        $employee->id = 123;
+        $employee->loggedBack = true;
+        $this->module->context->employee = $employee;
+        $this->module->context->cookie->id_employee = $employee->id;
+
+        $adminLink = $this->module->getDownloadLink($file, 'admin', ['ttl' => 600]);
+        $this->assertNotEmpty($adminLink, 'Admin download link should be generated for logged employee');
+
+        $parts = parse_url($adminLink);
+        parse_str(isset($parts['query']) ? $parts['query'] : '', $params);
+
+        $this->module->context->employee = null;
+
+        $this->assertTrue($this->module->validateDownloadToken($params['token'], $params['path'], 'admin', $params['expires'], null, $params['disposition']), 'Admin download token should validate when cookie matches claims');
     }
 
     private function testTokenServiceExpiration()

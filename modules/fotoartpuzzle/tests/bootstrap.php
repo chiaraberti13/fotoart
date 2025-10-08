@@ -100,6 +100,12 @@ class Cart
 class Employee
 {
     public $id = 0;
+    public $loggedBack = false;
+
+    public function isLoggedBack()
+    {
+        return $this->loggedBack && (int) $this->id > 0;
+    }
 }
 
 class Language

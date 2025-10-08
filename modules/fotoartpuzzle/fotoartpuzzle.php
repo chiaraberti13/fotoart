@@ -1530,23 +1530,62 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
-        if (!isset($this->context) || !isset($this->context->employee) || !is_object($this->context->employee)) {
+        $expectedEmployeeId = (int) $claims['employee_id'];
+        if ($expectedEmployeeId <= 0) {
             return false;
         }
 
-        $employee = $this->context->employee;
-
-        if (!method_exists($employee, 'isLoggedBack') || !$employee->isLoggedBack()) {
+        $currentEmployeeId = $this->getCurrentEmployeeIdForAdminDownload();
+        if ($currentEmployeeId <= 0) {
             return false;
         }
 
-        $employeeId = (int) $employee->id;
+        return $currentEmployeeId === $expectedEmployeeId;
+    }
 
-        if ($employeeId <= 0) {
-            return false;
+    /**
+     * Resolve the identifier for the employee currently authenticated in back office.
+     *
+     * @return int
+     */
+    private function getCurrentEmployeeIdForAdminDownload()
+    {
+        $employeeId = $this->getAuthenticatedEmployeeId();
+        if ($employeeId > 0) {
+            return $employeeId;
         }
 
-        return $employeeId === (int) $claims['employee_id'];
+        return $this->getEmployeeIdFromAdminCookie();
+    }
+
+    /**
+     * Attempt to read the employee identifier from the back-office cookie.
+     *
+     * @return int
+     */
+    private function getEmployeeIdFromAdminCookie()
+    {
+        if (!isset($this->context) || !isset($this->context->cookie)) {
+            return 0;
+        }
+
+        $cookie = $this->context->cookie;
+
+        if (is_object($cookie) && isset($cookie->id_employee)) {
+            $employeeId = (int) $cookie->id_employee;
+            if ($employeeId > 0) {
+                return $employeeId;
+            }
+        }
+
+        if (is_array($cookie) && isset($cookie['id_employee'])) {
+            $employeeId = (int) $cookie['id_employee'];
+            if ($employeeId > 0) {
+                return $employeeId;
+            }
+        }
+
+        return 0;
     }
 
     /**

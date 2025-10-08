@@ -1435,6 +1435,19 @@ class FotoArtPuzzle extends Module
         }
 
         $scope = $this->normaliseDownloadScope($scope);
+        $authenticatedEmployeeId = 0;
+
+        if ($scope === 'admin') {
+            $authenticatedEmployeeId = $this->getAuthenticatedEmployeeId();
+
+            if ($authenticatedEmployeeId <= 0) {
+                FAPLogger::create()->warning('Download token validation refused without authenticated employee', [
+                    'scope' => $scope,
+                ]);
+
+                return false;
+            }
+        }
 
         try {
             $service = $this->buildDownloadTokenService();
@@ -1451,6 +1464,18 @@ class FotoArtPuzzle extends Module
         }
 
         $claims = isset($payload['claims']) && is_array($payload['claims']) ? $payload['claims'] : [];
+
+        if ($scope === 'admin') {
+            if (!isset($claims['employee_id']) || (int) $claims['employee_id'] !== $authenticatedEmployeeId) {
+                FAPLogger::create()->warning('Admin download token claims did not match authenticated employee', [
+                    'scope' => $scope,
+                    'claims_employee_id' => isset($claims['employee_id']) ? (int) $claims['employee_id'] : null,
+                ]);
+
+                return false;
+            }
+        }
+
         $expectedHash = hash('sha256', $canonicalPath);
 
         if (!isset($claims['path_hash']) || !hash_equals($expectedHash, (string) $claims['path_hash'])) {

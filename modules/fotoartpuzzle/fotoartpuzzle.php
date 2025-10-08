@@ -11,21 +11,29 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once __DIR__ . '/classes/FAPLogger.php';
-require_once __DIR__ . '/classes/FAPPuzzleRepository.php';
-require_once __DIR__ . '/classes/FAPConfiguration.php';
-require_once __DIR__ . '/classes/FAPPathBuilder.php';
-require_once __DIR__ . '/classes/FAPCleanupService.php';
-require_once __DIR__ . '/classes/FAPFormatManager.php';
-require_once __DIR__ . '/classes/FAPImageProcessor.php';
-require_once __DIR__ . '/classes/FAPQualityService.php';
-require_once __DIR__ . '/classes/FAPImageAnalysis.php';
-require_once __DIR__ . '/classes/FAPBoxRenderer.php';
-require_once __DIR__ . '/classes/FAPPdfGenerator.php';
-require_once __DIR__ . '/classes/FAPCustomizationService.php';
-require_once __DIR__ . '/classes/FAPAssetGenerationService.php';
-require_once __DIR__ . '/classes/FAPSessionService.php';
-require_once __DIR__ . '/classes/FAPFontManager.php';
+$fapDependencies = [
+    'FAPLogger' => '/classes/FAPLogger.php',
+    'FAPPuzzleRepository' => '/classes/FAPPuzzleRepository.php',
+    'FAPConfiguration' => '/classes/FAPConfiguration.php',
+    'FAPPathBuilder' => '/classes/FAPPathBuilder.php',
+    'FAPCleanupService' => '/classes/FAPCleanupService.php',
+    'FAPFormatManager' => '/classes/FAPFormatManager.php',
+    'FAPImageProcessor' => '/classes/FAPImageProcessor.php',
+    'FAPQualityService' => '/classes/FAPQualityService.php',
+    'FAPImageAnalysis' => '/classes/FAPImageAnalysis.php',
+    'FAPBoxRenderer' => '/classes/FAPBoxRenderer.php',
+    'FAPPdfGenerator' => '/classes/FAPPdfGenerator.php',
+    'FAPCustomizationService' => '/classes/FAPCustomizationService.php',
+    'FAPAssetGenerationService' => '/classes/FAPAssetGenerationService.php',
+    'FAPSessionService' => '/classes/FAPSessionService.php',
+    'FAPFontManager' => '/classes/FAPFontManager.php',
+];
+
+foreach ($fapDependencies as $className => $path) {
+    if (!class_exists($className)) {
+        require_once __DIR__ . $path;
+    }
+}
 
 class FotoArtPuzzle extends Module
 {
@@ -1254,7 +1262,7 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
-        if (!$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
+        if ($scope !== 'admin' && !$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
             return false;
         }
 
@@ -1310,7 +1318,7 @@ class FotoArtPuzzle extends Module
     private function isAuthorizedForDownload($scope, $idOrder)
     {
         if ($scope === 'admin') {
-            return isset($this->context->employee) && $this->context->employee->id;
+            return true;
         }
 
         if ($scope === 'front' && $idOrder) {

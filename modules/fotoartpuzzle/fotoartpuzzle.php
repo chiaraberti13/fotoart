@@ -1627,6 +1627,14 @@ class FotoArtPuzzle extends Module
      */
     private function loadAdminCookieInstance($cookieName)
     {
+        if (!is_string($cookieName) || $cookieName === '') {
+            return null;
+        }
+
+        if (!isset($_COOKIE[$cookieName])) {
+            return null;
+        }
+
         if (!class_exists('Cookie') || !method_exists('Cookie', '__construct')) {
             return null;
         }

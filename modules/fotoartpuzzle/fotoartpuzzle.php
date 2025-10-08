@@ -1571,15 +1571,25 @@ class FotoArtPuzzle extends Module
 
         $cookie = $this->context->cookie;
 
-        if (is_object($cookie) && isset($cookie->id_employee)) {
-            $employeeId = (int) $cookie->id_employee;
+        $employeeId = $this->extractEmployeeIdFromCookiePayload($cookie);
+        if ($employeeId > 0) {
+            return $employeeId;
+        }
+
+        foreach ($this->getCandidateAdminCookieNames() as $cookieName) {
+            $cookieInstance = $this->loadAdminCookieInstance($cookieName);
+            if ($cookieInstance === null) {
+                continue;
+            }
+
+            $employeeId = $this->extractEmployeeIdFromCookiePayload($cookieInstance);
             if ($employeeId > 0) {
                 return $employeeId;
             }
         }
 
-        if (is_array($cookie) && isset($cookie['id_employee'])) {
-            $employeeId = (int) $cookie['id_employee'];
+        if (!empty($_COOKIE)) {
+            $employeeId = $this->extractEmployeeIdFromCookiePayload($_COOKIE);
             if ($employeeId > 0) {
                 return $employeeId;
             }
@@ -1606,6 +1616,86 @@ class FotoArtPuzzle extends Module
         }
 
         return (int) $employee->id;
+    }
+
+    /**
+     * Attempt to instantiate the admin cookie for the provided name.
+     *
+     * @param string $cookieName
+     *
+     * @return Cookie|null
+     */
+    private function loadAdminCookieInstance($cookieName)
+    {
+        if (!class_exists('Cookie') || !method_exists('Cookie', '__construct')) {
+            return null;
+        }
+
+        try {
+            return new Cookie($cookieName, '/', null, false, null, false);
+        } catch (Exception $exception) {
+            return null;
+        } catch (Error $error) {
+            return null;
+        }
+    }
+
+    /**
+     * Build a list of candidate back-office cookie names.
+     *
+     * @return array
+     */
+    private function getCandidateAdminCookieNames()
+    {
+        $names = [];
+
+        if (defined('_PS_ADMIN_COOKIE_NAME_')) {
+            $names[] = (string) _PS_ADMIN_COOKIE_NAME_;
+        }
+
+        if (defined('_COOKIE_ADMIN_')) {
+            $names[] = (string) _COOKIE_ADMIN_;
+        }
+
+        if (defined('_PS_COOKIE_ADMIN_')) {
+            $names[] = (string) _PS_COOKIE_ADMIN_;
+        }
+
+        if (isset($this->context, $this->context->shop) && isset($this->context->shop->id)) {
+            $names[] = 'psAdmin' . (int) $this->context->shop->id;
+        }
+
+        $names[] = 'psAdmin';
+
+        if (!empty($_COOKIE)) {
+            foreach (array_keys($_COOKIE) as $cookieName) {
+                if (strpos($cookieName, 'psAdmin') === 0) {
+                    $names[] = (string) $cookieName;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter($names)));
+    }
+
+    /**
+     * Extract the employee identifier from the given cookie payload.
+     *
+     * @param mixed $cookie
+     *
+     * @return int
+     */
+    private function extractEmployeeIdFromCookiePayload($cookie)
+    {
+        if (is_object($cookie) && isset($cookie->id_employee)) {
+            return (int) $cookie->id_employee;
+        }
+
+        if (is_array($cookie) && isset($cookie['id_employee'])) {
+            return (int) $cookie['id_employee'];
+        }
+
+        return 0;
     }
 
     /**

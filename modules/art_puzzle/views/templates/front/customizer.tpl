@@ -121,7 +121,9 @@
     <script type="text/javascript">
     // Configurazione globale
     window.artPuzzleProductId = {$id_product|intval};
-    window.artPuzzleMaxUploadSize = {$upload_max_size|intval};
+    {assign var=uploadMaxSize value=$upload_max_size|intval}
+    window.artPuzzleMaxUploadSize = {$uploadMaxSize};
+    window.artPuzzleMaxUploadSizeBytes = {$uploadMaxSize*1024*1024};
     window.artPuzzleAllowedFileTypes = [{foreach from=$allowed_file_types item=type name=types}'{$type|escape:'javascript'}'{if !$smarty.foreach.types.last},{/if}{/foreach}];
     window.artPuzzleDefaultBoxText = "{$default_box_text|escape:'javascript'}";
     window.artPuzzleMaxBoxTextLength = {$max_box_text_length|intval};

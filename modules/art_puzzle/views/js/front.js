@@ -47,6 +47,41 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedTextColor = '#000000';
     let selectedFont = '';
     let cropData = null;
+
+    // Normalizzazione configurazioni provenienti dal template/Back Office
+    const configuredTypes = Array.isArray(window.artPuzzleAllowedFileTypes)
+        ? window.artPuzzleAllowedFileTypes
+        : [];
+
+    const normalizedTypes = configuredTypes
+        .map(type => String(type).trim().toLowerCase())
+        .filter(type => type.length);
+
+    const allowedMimeTypes = normalizedTypes.filter(type => type.indexOf('/') !== -1);
+    const allowedExtensions = normalizedTypes.filter(type => type.indexOf('/') === -1);
+
+    // Determina la dimensione massima di upload (in byte)
+    const defaultMaxUploadSizeMb = 20;
+    let rawMaxSize = typeof window.artPuzzleMaxUploadSize !== 'undefined'
+        ? window.artPuzzleMaxUploadSize
+        : (typeof window.artPuzzleMaxUploadSizeBytes !== 'undefined'
+            ? window.artPuzzleMaxUploadSizeBytes
+            : defaultMaxUploadSizeMb);
+
+    if (typeof rawMaxSize === 'string') {
+        rawMaxSize = rawMaxSize.replace(',', '.');
+    }
+
+    let maxUploadSizeBytes = parseFloat(rawMaxSize);
+
+    if (isNaN(maxUploadSizeBytes) || maxUploadSizeBytes <= 0) {
+        maxUploadSizeBytes = defaultMaxUploadSizeMb * 1024 * 1024;
+    } else if (maxUploadSizeBytes <= 500) {
+        // Valori piccoli sono considerati MB (es. 20)
+        maxUploadSizeBytes = maxUploadSizeBytes * 1024 * 1024;
+    }
+
+    const maxUploadSizeMb = maxUploadSizeBytes / 1024 / 1024;
     
     // Inizializzazione
     init();
@@ -175,15 +210,27 @@ document.addEventListener('DOMContentLoaded', function() {
      * Gestisce il caricamento del file
      */
     function handleFileUpload(file) {
-        // Verifica tipo file
-        if (artPuzzleAllowedFileTypes.indexOf(file.type) === -1) {
-            alert('Tipo di file non supportato. Utilizza solo immagini JPG, PNG o GIF.');
+        // Verifica tipo file (supporto sia per MIME type che per estensione)
+        const fileMime = (file.type || '').toLowerCase();
+        const fileExtension = file.name && file.name.indexOf('.') !== -1
+            ? file.name.split('.').pop().toLowerCase()
+            : '';
+
+        const mimeAllowed = !allowedMimeTypes.length || allowedMimeTypes.indexOf(fileMime) !== -1;
+        const extensionAllowed = !allowedExtensions.length || allowedExtensions.indexOf(fileExtension) !== -1;
+
+        if (!mimeAllowed && !extensionAllowed) {
+            const allowedList = allowedExtensions.length ? allowedExtensions : allowedMimeTypes;
+            alert(
+                'Tipo di file non supportato. Utilizza solo immagini con estensione: ' +
+                (allowedList.length ? allowedList.join(', ') : 'JPG, PNG o GIF') + '.'
+            );
             return;
         }
-        
+
         // Verifica dimensione file
-        if (file.size > artPuzzleMaxUploadSize) {
-            alert('File troppo grande. La dimensione massima è ' + (artPuzzleMaxUploadSize / (1024 * 1024)) + 'MB.');
+        if (file.size > maxUploadSizeBytes) {
+            alert('File troppo grande. La dimensione massima è ' + maxUploadSizeMb.toFixed(2) + 'MB.');
             return;
         }
         

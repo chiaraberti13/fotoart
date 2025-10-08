@@ -2,7 +2,7 @@
 
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
-class Art_puzzleUploadModuleFrontController extends ModuleFrontController
+class Art_PuzzleUploadModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {

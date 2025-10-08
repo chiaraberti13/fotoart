@@ -3,7 +3,7 @@
  * Art Puzzle - AJAX Controller
  */
 
-class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
+class Art_PuzzleAjaxModuleFrontController extends ModuleFrontController
 {
     /** @var bool Disattiva il rendering della colonna sinistra */
     public $display_column_left = false;
@@ -53,15 +53,19 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             exit;
         }
 
-        /*
-         * Debug: controllo del token temporaneamente disabilitato
-         *
-         * if (!Tools::getValue('preview_mode') &&
-         *     (!Tools::getValue('token') || Tools::getValue('token') != Tools::getToken(false))) {
-         *     $this->returnResponse(false, 'Token di sicurezza non valido - Expected: ' . Tools::getToken(false) . ' - Received: ' . Tools::getValue('token'));
-         *     exit;
-         * }
-         */
+        if (!Tools::getValue('preview_mode')) {
+            $token = Tools::getValue('token');
+            $expectedToken = Tools::getToken(false);
+
+            if (!$token || $token !== $expectedToken) {
+                if (class_exists('ArtPuzzleLogger')) {
+                    ArtPuzzleLogger::log('[AJAX] Token CSRF non valido. Atteso: ' . $expectedToken . ' - Ricevuto: ' . var_export($token, true), 'WARNING');
+                }
+
+                $this->returnResponse(false, 'Token di sicurezza non valido');
+                exit;
+            }
+        }
     }
     
     /**

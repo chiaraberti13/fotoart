@@ -4,7 +4,7 @@
  * Mostra il riepilogo finale e genera l'anteprima per il PDF
  */
 
-class Art_puzzleSummaryModuleFrontController extends ModuleFrontController
+class Art_PuzzleSummaryModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
     {

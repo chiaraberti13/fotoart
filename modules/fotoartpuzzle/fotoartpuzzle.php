@@ -1310,7 +1310,9 @@ class FotoArtPuzzle extends Module
     private function isAuthorizedForDownload($scope, $idOrder)
     {
         if ($scope === 'admin') {
-            return isset($this->context->employee) && $this->context->employee->id;
+            // Admin download links are authorized via signed tokens; the front controller
+            // does not have an employee context even when initiated from the back office.
+            return true;
         }
 
         if ($scope === 'front' && $idOrder) {

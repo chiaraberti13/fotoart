@@ -1356,14 +1356,32 @@ class FotoArtPuzzle extends Module
         $idOrder = isset($options['id_order']) ? (int) $options['id_order'] : 0;
         $disposition = isset($options['disposition']) && $options['disposition'] === 'inline' ? 'inline' : 'attachment';
 
+        $employeeId = 0;
+        if ($scope === 'admin') {
+            $employeeId = $this->getAuthenticatedEmployeeId();
+            if ($employeeId <= 0) {
+                FAPLogger::create()->warning('Refused to build admin download link without authenticated employee', [
+                    'path' => $path,
+                ]);
+
+                return '';
+            }
+        }
+
         try {
             $service = $this->buildDownloadTokenService();
-            $issued = $service->issue([
+            $claims = [
                 'scope' => 'download:' . $scope,
                 'path_hash' => hash('sha256', $canonicalPath),
                 'id_order' => $idOrder,
                 'disposition' => $disposition,
-            ], $ttl);
+            ];
+
+            if ($employeeId > 0) {
+                $claims['employee_id'] = $employeeId;
+            }
+
+            $issued = $service->issue($claims, $ttl);
         } catch (Exception $exception) {
             FAPLogger::create()->error('Unable to issue download token', [
                 'path' => $path,
@@ -1449,11 +1467,9 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
-        if ($scope !== 'admin') {
-            $orderToCheck = $payloadOrderId ?: (int) $idOrder;
-            if (!$this->isAuthorizedForDownload($scope, $orderToCheck)) {
-                return false;
-            }
+        $orderToCheck = $payloadOrderId ?: (int) $idOrder;
+        if (!$this->isAuthorizedForDownload($scope, $orderToCheck, $claims)) {
+            return false;
         }
 
         if ($expires !== null && (int) $payload['exp'] !== (int) $expires) {
@@ -1483,10 +1499,10 @@ class FotoArtPuzzle extends Module
      *
      * @return bool
      */
-    private function isAuthorizedForDownload($scope, $idOrder)
+    private function isAuthorizedForDownload($scope, $idOrder, array $claims = [])
     {
         if ($scope === 'admin') {
-            return true;
+            return $this->isCurrentEmployeeAuthorizedForAdminDownload($claims);
         }
 
         if ($scope === 'front' && $idOrder) {
@@ -1499,6 +1515,58 @@ class FotoArtPuzzle extends Module
         }
 
         return true;
+    }
+
+    /**
+     * Determine whether current employee session matches admin download claims.
+     *
+     * @param array $claims
+     *
+     * @return bool
+     */
+    private function isCurrentEmployeeAuthorizedForAdminDownload(array $claims)
+    {
+        if (!isset($claims['employee_id'])) {
+            return false;
+        }
+
+        if (!isset($this->context) || !isset($this->context->employee) || !is_object($this->context->employee)) {
+            return false;
+        }
+
+        $employee = $this->context->employee;
+
+        if (!method_exists($employee, 'isLoggedBack') || !$employee->isLoggedBack()) {
+            return false;
+        }
+
+        $employeeId = (int) $employee->id;
+
+        if ($employeeId <= 0) {
+            return false;
+        }
+
+        return $employeeId === (int) $claims['employee_id'];
+    }
+
+    /**
+     * Retrieve the identifier for the authenticated employee in back office context.
+     *
+     * @return int
+     */
+    private function getAuthenticatedEmployeeId()
+    {
+        if (!isset($this->context) || !isset($this->context->employee) || !is_object($this->context->employee)) {
+            return 0;
+        }
+
+        $employee = $this->context->employee;
+
+        if (!method_exists($employee, 'isLoggedBack') || !$employee->isLoggedBack()) {
+            return 0;
+        }
+
+        return (int) $employee->id;
     }
 
     /**

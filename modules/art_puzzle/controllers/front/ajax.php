@@ -36,9 +36,10 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
      */
     public function init()
     {
-        // Debug temporaneo - rimuovere dopo aver risolto il problema
-        error_reporting(E_ALL);
-        ini_set('display_errors', 1);
+        if (defined('_PS_MODE_DEV_') && _PS_MODE_DEV_) {
+            error_reporting(E_ALL);
+            ini_set('display_errors', 1);
+        }
 
         parent::init();
 
@@ -60,31 +61,6 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
                 'method' => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN',
             ]);
         }
-
-=======
-            if (file_exists($loggerPath)) {
-                require_once $loggerPath;
-            }
-        }
-
-        if (class_exists('ArtPuzzleLogger')) {
-            ArtPuzzleLogger::log('AJAX Request received - Action: ' . Tools::getValue('action'), 'DEBUG');
-        }
-
-        // Verifica se è una richiesta AJAX
-        if (!$this->isXmlHttpRequest() && !Tools::getValue('ajax')) {
-            $this->returnResponse(false, 'Richiesta non valida');
-            exit;
-        }
-        /*
-         * Debug: controllo del token temporaneamente disabilitato
-         *
-         * if (!Tools::getValue('preview_mode') &&
-         *     (!Tools::getValue('token') || Tools::getValue('token') != Tools::getToken(false))) {
-         *     $this->returnResponse(false, 'Token di sicurezza non valido - Expected: ' . Tools::getToken(false) . ' - Received: ' . Tools::getValue('token'));
-         *     exit;
-         * }
-         */
     }
     
     /**
@@ -121,6 +97,10 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         }
 
         $action = Tools::getValue('action');
+
+        if (!$this->isPreviewRequest($action) && !$this->validateSecurityToken($action)) {
+            return;
+        }
 
         try {
             switch ($action) {
@@ -179,7 +159,53 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             $this->handleException($e);
         }
     }
-    
+
+    /**
+     * Verifica la validità del token di sicurezza per le azioni sensibili
+     */
+    protected function validateSecurityToken($action)
+    {
+        $requestToken = Tools::getValue('token');
+        $expectedToken = Tools::getToken(false);
+
+        $isValid = $requestToken && (
+            function_exists('hash_equals')
+                ? hash_equals($expectedToken, $requestToken)
+                : $expectedToken === $requestToken
+        );
+
+        if ($isValid) {
+            return true;
+        }
+
+        $this->log('CSRF token validation failed', 'WARNING', [
+            'action' => $action,
+            'token_present' => (bool) $requestToken,
+        ]);
+
+        $this->returnResponse(false, 'Token di sicurezza non valido', [], 403);
+
+        return false;
+    }
+
+    /**
+     * Determina se la richiesta corrente è una richiesta di anteprima
+     */
+    protected function isPreviewRequest($action)
+    {
+        if (Tools::getValue('preview_mode')) {
+            return true;
+        }
+
+        $previewActions = [
+            'generateBoxPreview',
+            'generatePuzzlePreview',
+            'generateSummaryPreview',
+        ];
+
+        return in_array($action, $previewActions, true);
+    }
+
     /**
      * Restituisce una risposta JSON
      */

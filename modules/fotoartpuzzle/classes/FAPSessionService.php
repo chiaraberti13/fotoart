@@ -8,6 +8,11 @@ class FAPSessionService
     private const DEFAULT_TTL = 172800;
 
     /**
+     * Maximum length allowed for a session identifier.
+     */
+    private const SESSION_ID_MAX_LENGTH = 64;
+
+    /**
      * Create or update a session payload.
      *
      * @param array $payload
@@ -192,7 +197,9 @@ class FAPSessionService
     {
         $sessionId = $this->sanitizeSessionId($sessionId);
 
-        return rtrim(FAPPathBuilder::getSessionsPath(), '/\\') . '/' . $sessionId . '.json';
+        $basePath = rtrim(FAPPathBuilder::getSessionsPath(), '/\\');
+
+        return $basePath . '/' . $sessionId . '.json';
     }
 
     /**
@@ -209,7 +216,11 @@ class FAPSessionService
             throw new Exception('Missing session identifier');
         }
 
-        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $sessionId)) {
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $sessionId)) {
+            throw new Exception('Invalid session identifier');
+        }
+
+        if (strlen($sessionId) > self::SESSION_ID_MAX_LENGTH) {
             throw new Exception('Invalid session identifier');
         }
 

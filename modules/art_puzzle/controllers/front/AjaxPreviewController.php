@@ -4,7 +4,7 @@
  * Gestisce le richieste AJAX per generare anteprime
  */
 
-class Art_puzzleAjaxPreviewModuleFrontController extends ModuleFrontController
+class Art_PuzzleAjaxPreviewModuleFrontController extends ModuleFrontController
 {
     public $ajax = true;
     public $display_header = false;

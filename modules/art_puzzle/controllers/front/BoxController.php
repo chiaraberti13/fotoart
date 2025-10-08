@@ -4,7 +4,7 @@
  * Gestisce la selezione e il salvataggio della scatola personalizzata
  */
 
-class Art_puzzleBoxModuleFrontController extends ModuleFrontController
+class Art_PuzzleBoxModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

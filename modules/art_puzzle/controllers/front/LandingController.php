@@ -4,7 +4,7 @@
  * Mostra la pagina iniziale del modulo Art Puzzle
  */
 
-class Art_puzzleLandingModuleFrontController extends ModuleFrontController
+class Art_PuzzleLandingModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

@@ -9,6 +9,7 @@ class PathValidatorTest extends FAPTestCase
     {
         $this->testAcceptsModuleVarPath();
         $this->testRejectsTraversalOutsideModule();
+        $this->testRejectsPathsWithCommonPrefix();
     }
 
     private function testAcceptsModuleVarPath()
@@ -37,5 +38,29 @@ class PathValidatorTest extends FAPTestCase
             $this->assertTrue(true);
         }
         @unlink($outside);
+    }
+
+    private function testRejectsPathsWithCommonPrefix()
+    {
+        $base = FAPPathBuilder::getBasePath();
+        $sibling = $base . 'ious';
+        @mkdir($sibling, 0755, true);
+        $fake = $sibling . '/fake.txt';
+        file_put_contents($fake, 'fake');
+
+        $this->assertFalse(
+            FAPPathValidator::isAllowed($fake),
+            'Validator must reject paths that only share a prefix with allowed roots'
+        );
+
+        try {
+            FAPPathValidator::assertReadablePath($fake);
+            $this->assertTrue(false, 'Expected exception for path with common prefix');
+        } catch (Exception $exception) {
+            $this->assertTrue(true);
+        }
+
+        @unlink($fake);
+        @rmdir($sibling);
     }
 }

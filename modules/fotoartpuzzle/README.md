@@ -71,3 +71,5 @@ La pipeline GitHub Actions (`.github/workflows/ci.yml`) esegue automaticamente:
 
 ## Note
 Il wizard front-end è da completare con l’UI definitiva. Le classi forniscono i punti d’estensione necessari per integrare le logiche di produzione e invio email.
+
+Per un riepilogo delle correzioni e verifiche vedere anche `docs/CHANGELOG.md`.

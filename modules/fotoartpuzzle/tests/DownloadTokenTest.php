@@ -16,6 +16,7 @@ class FotoArtPuzzleDownloadTokenTest
     public function run()
     {
         $this->testAdminTokenValidWithoutEmployee();
+        $this->testAdminTokenValidAfterEmployeeContextChange();
         $this->testAdminTokenRejectedWhenTampered();
         $this->testAdminTokenRejectedWhenExpired();
         $this->testFrontTokenValidForOrderOwner();
@@ -37,6 +38,28 @@ class FotoArtPuzzleDownloadTokenTest
         $this->assertTrue(
             $this->module->validateDownloadToken($token, $path, 'admin', $expires, 0),
             'Admin token should be valid without employee context'
+        );
+    }
+
+    private function testAdminTokenValidAfterEmployeeContextChange()
+    {
+        $context = Context::getContext();
+        Configuration::deleteByName(FAPConfiguration::ADMIN_DOWNLOAD_SECRET);
+
+        $context->employee = new Employee();
+        $context->employee->id = 42;
+        $context->cookie->id_employee = 42;
+
+        $path = '/tmp/admin-context-change.pdf';
+        $expires = time() + 3600;
+        $token = $this->generateSignature($path, 'admin', $expires, 0);
+
+        $context->employee = null;
+        unset($context->cookie->id_employee);
+
+        $this->assertTrue(
+            $this->module->validateDownloadToken($token, $path, 'admin', $expires, 0),
+            'Admin token should remain valid after removing employee context'
         );
     }
 

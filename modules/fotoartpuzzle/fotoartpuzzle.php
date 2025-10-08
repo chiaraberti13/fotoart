@@ -1267,8 +1267,22 @@ class FotoArtPuzzle extends Module
         }
 
         $signature = $this->signDownloadPath($path, $scope, (int) $expires, (int) $idOrder, $secret);
+        if (hash_equals($signature, (string) $token)) {
+            return true;
+        }
 
-        return hash_equals($signature, (string) $token);
+        if ($scope === 'admin') {
+            $legacySecret = Tools::getAdminTokenLite('AdminOrders');
+            if (!empty($legacySecret) && $legacySecret !== $secret) {
+                $legacySignature = $this->signDownloadPath($path, $scope, (int) $expires, (int) $idOrder, $legacySecret);
+
+                if (hash_equals($legacySignature, (string) $token)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1314,19 +1328,12 @@ class FotoArtPuzzle extends Module
      */
     private function getAdminScopeSecret()
     {
-        $token = Tools::getAdminTokenLite('AdminOrders');
-        if (!empty($token)) {
-            return $token;
-        }
-
         $secret = (string) Configuration::get(FAPConfiguration::ADMIN_DOWNLOAD_SECRET);
-        if ($secret !== '') {
-            return $secret;
-        }
-
-        $secret = Tools::passwdGen(64);
-        if (!Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, $secret)) {
-            return '';
+        if ($secret === '') {
+            $secret = Tools::passwdGen(64);
+            if (!Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, $secret)) {
+                return '';
+            }
         }
 
         return $secret;

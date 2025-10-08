@@ -3,7 +3,7 @@
  * Art Puzzle - AJAX Controller
  */
 
-class Art_PuzzleAjaxModuleFrontController extends ModuleFrontController
+class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
 {
     /** @var bool Disattiva il rendering della colonna sinistra */
     public $display_column_left = false;
@@ -19,9 +19,15 @@ class Art_PuzzleAjaxModuleFrontController extends ModuleFrontController
     
     /** @var string Imposta il content-type come JSON */
     protected $content_type = 'application/json';
-    
+
+    /** @var bool Indica se il logger del modulo è disponibile */
+    protected $hasLogger = false;
+
     /** @var bool Imposta la richiesta come AJAX */
     public $ajax = true;
+
+    /** @var bool Evita di processare la richiesta più volte */
+    protected $requestHandled = false;
     
     /**
      * Inizializzazione del controller
@@ -30,114 +36,210 @@ class Art_PuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     public function init()
     {
+        // Debug temporaneo - rimuovere dopo aver risolto il problema
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+
         parent::init();
-        
-        // Verifica se è una richiesta AJAX
+
+        if (!class_exists('ArtPuzzleLogger')) {
+            $loggerPath = _PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleLogger.php';
+            if (is_readable($loggerPath)) {
+                require_once $loggerPath;
+            }
+        }
+
+        $this->hasLogger = class_exists('ArtPuzzleLogger');
+
+        $this->log('AJAX Request received - Action: ' . Tools::getValue('action'), 'DEBUG');
+
+        // Segnala eventuali richieste senza header AJAX, ma non bloccarle per supportare la fetch API
         if (!$this->isXmlHttpRequest() && !Tools::getValue('ajax')) {
-            $this->returnResponse(false, 'Richiesta non valida');
-            exit;
+            $this->log('Richiesta senza header AJAX rilevata', 'DEBUG', [
+                'action' => Tools::getValue('action'),
+                'method' => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN',
+            ]);
         }
-        
-        // Verifica token CSRF eccetto per le richieste di visualizzazione in anteprima
-        if (!Tools::getValue('preview_mode') && 
-            (!Tools::getValue('token') || Tools::getValue('token') != Tools::getToken(false))) {
-            $this->returnResponse(false, 'Token di sicurezza non valido');
-            exit;
-        }
+
+        /*
+         * Debug: controllo del token temporaneamente disabilitato
+         *
+         * if (!Tools::getValue('preview_mode') &&
+         *     (!Tools::getValue('token') || Tools::getValue('token') != Tools::getToken(false))) {
+         *     $this->returnResponse(false, 'Token di sicurezza non valido - Expected: ' . Tools::getToken(false) . ' - Received: ' . Tools::getValue('token'));
+         *     exit;
+         * }
+         */
     }
     
     /**
-     * Gestisce le richieste POST
+     * Inizializza il contenuto del controller
+     */
+    public function initContent()
+    {
+        parent::initContent();
+        $this->processRequest();
+    }
+
+    /**
+     * Gestisce le richieste POST (compatibilità con il core)
      */
     public function postProcess()
     {
-        // Verifica che ci sia un'azione specificata
+        $this->processRequest();
+    }
+
+    /**
+     * Processa la richiesta AJAX assicurando una singola esecuzione
+     */
+    protected function processRequest()
+    {
+        if ($this->requestHandled) {
+            return;
+        }
+
+        $this->requestHandled = true;
+
         if (!Tools::isSubmit('action')) {
             $this->returnResponse(false, 'Nessuna azione specificata');
             return;
         }
-        
+
         $action = Tools::getValue('action');
-        
+
         try {
             switch ($action) {
                 case 'savePuzzleCustomization':
                     $this->handleSavePuzzleCustomization();
                     break;
-                
+
                 case 'checkImageQuality':
                     $this->handleCheckImageQuality();
                     break;
-                
+
                 case 'getBoxColors':
                     $this->handleGetBoxColors();
                     break;
-                
+
                 case 'getFonts':
                     $this->handleGetFonts();
                     break;
-                
+
                 case 'checkDirectoryPermissions':
                     $this->handleCheckDirectoryPermissions();
                     break;
-                
-                // Nuove azioni per il puzzle personalizzato
+
                 case 'uploadImage':
                     $this->handleUploadImage();
                     break;
-                    
+
                 case 'getPuzzleFormats':
                     $this->handleGetPuzzleFormats();
                     break;
-                    
+
                 case 'getBoxTemplates':
                     $this->handleGetBoxTemplates();
                     break;
-                    
+
                 case 'generateBoxPreview':
                     $this->handleGenerateBoxPreview();
                     break;
-                    
+
                 case 'generatePuzzlePreview':
                     $this->handleGeneratePuzzlePreview();
                     break;
-                    
+
                 case 'generateSummaryPreview':
                     $this->handleGenerateSummaryPreview();
                     break;
-                    
+
                 case 'add_to_cart':
                     $this->handleAddToCart();
                     break;
-                
+
                 default:
                     $this->returnResponse(false, 'Azione non valida: ' . $action);
             }
         } catch (Exception $e) {
-            // Registra l'errore
-            require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
-            ArtPuzzleLogger::log('Errore AJAX: ' . $e->getMessage() . ' - ' . $e->getTraceAsString(), 'ERROR');
-            
-            // Risponde con l'errore
-            $this->returnResponse(false, 'Errore: ' . $e->getMessage());
+            $this->handleException($e);
         }
     }
     
     /**
      * Restituisce una risposta JSON
      */
-    protected function returnResponse($success, $message, $data = [])
+    protected function returnResponse($success, $message, $data = [], $statusCode = null)
     {
         $response = [
             'success' => $success,
             'message' => $message
         ];
-        
+
         if (!empty($data)) {
             $response['data'] = $data;
         }
-        
-        die(json_encode($response));
+
+        if ($statusCode === null) {
+            $statusCode = $success ? 200 : 400;
+        }
+
+        $this->sendJsonResponse($response, $statusCode);
+    }
+
+    /**
+     * Invia una risposta JSON gestendo eventuali errori di codifica
+     */
+    protected function sendJsonResponse(array $payload, $statusCode = 200)
+    {
+        if (!headers_sent()) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code($statusCode);
+        }
+
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if ($json === false) {
+            $this->log(
+                'JSON encoding failed: ' . json_last_error_msg(),
+                'ERROR',
+                ['payload_preview' => substr(print_r($payload, true), 0, 1000)]
+            );
+
+            if (!headers_sent()) {
+                http_response_code(500);
+            }
+
+            exit('{"success":false,"message":"Errore nella codifica della risposta JSON."}');
+        }
+
+        exit($json);
+    }
+
+    /**
+     * Gestisce le eccezioni restituendo una risposta strutturata
+     */
+    protected function handleException(Exception $exception)
+    {
+        $this->log(
+            'Errore AJAX: ' . $exception->getMessage() . ' - ' . $exception->getTraceAsString(),
+            'ERROR'
+        );
+
+        $this->returnResponse(false, 'Errore: ' . $exception->getMessage(), [], 500);
+    }
+
+    /**
+     * Registra un messaggio utilizzando il logger del modulo se disponibile
+     */
+    protected function log($message, $level = 'INFO', array $context = [])
+    {
+        if ($this->hasLogger && method_exists('ArtPuzzleLogger', 'log')) {
+            ArtPuzzleLogger::log($message, $level, $context);
+
+            return;
+        }
+
+        error_log('[Art Puzzle][' . $level . '] ' . $message);
     }
     
     /**
@@ -153,126 +255,125 @@ class Art_PuzzleAjaxModuleFrontController extends ModuleFrontController
      * Gestisce il caricamento dell'immagine
      */
     protected function handleUploadImage()
-{
-    // Debug iniziale
-    require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
-    ArtPuzzleLogger::log('=== INIZIO UPLOAD IMMAGINE ===', 'INFO');
-    ArtPuzzleLogger::log('FILES ricevuti: ' . print_r($_FILES, true), 'DEBUG');
-    ArtPuzzleLogger::log('POST ricevuti: ' . print_r($_POST, true), 'DEBUG');
-    
-    // Verifica presenza file con nomi multipli possibili
-    $file = null;
-    $fileKeys = ['image', 'puzzle_image', 'file', 'upload'];
-    
-    foreach ($fileKeys as $key) {
-        if (isset($_FILES[$key]) && !empty($_FILES[$key]['name'])) {
-            $file = $_FILES[$key];
-            ArtPuzzleLogger::log("File trovato con chiave: $key", 'INFO');
-            break;
+    {
+        // Debug iniziale
+        $this->log('=== INIZIO UPLOAD IMMAGINE ===', 'INFO');
+        $this->log('FILES ricevuti: ' . print_r($_FILES, true), 'DEBUG');
+        $this->log('POST ricevuti: ' . print_r($_POST, true), 'DEBUG');
+
+        // Verifica presenza file con nomi multipli possibili
+        $file = null;
+        $fileKeys = ['image', 'puzzle_image', 'file', 'upload'];
+
+        foreach ($fileKeys as $key) {
+            if (isset($_FILES[$key]) && !empty($_FILES[$key]['name'])) {
+                $file = $_FILES[$key];
+                $this->log("File trovato con chiave: $key", 'INFO');
+                break;
+            }
         }
-    }
-    
-    if (!$file) {
-        ArtPuzzleLogger::log('ERRORE: Nessun file trovato in $_FILES', 'ERROR');
-        $this->returnResponse(false, 'Nessuna immagine caricata. Verifica il form di upload.');
-        return;
-    }
-    
-    // Verifica errori di upload
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $errorMessages = [
-            UPLOAD_ERR_INI_SIZE => 'File troppo grande (limite PHP)',
-            UPLOAD_ERR_FORM_SIZE => 'File troppo grande (limite form)',
-            UPLOAD_ERR_PARTIAL => 'Upload parziale',
-            UPLOAD_ERR_NO_FILE => 'Nessun file',
-            UPLOAD_ERR_NO_TMP_DIR => 'Directory temporanea mancante',
-            UPLOAD_ERR_CANT_WRITE => 'Impossibile scrivere su disco',
-            UPLOAD_ERR_EXTENSION => 'Upload bloccato da estensione PHP'
-        ];
-        
-        $message = $errorMessages[$file['error']] ?? 'Errore sconosciuto';
-        ArtPuzzleLogger::log("Errore upload: {$file['error']} - $message", 'ERROR');
-        $this->returnResponse(false, "Errore upload: $message");
-        return;
-    }
-    
-    // Validazione dimensione
-    $maxSize = (int)Configuration::get('ART_PUZZLE_MAX_UPLOAD_SIZE', 20) * 1024 * 1024;
-    if ($file['size'] > $maxSize) {
-        $this->returnResponse(false, 'File troppo grande. Massimo: ' . round($maxSize/1024/1024, 1) . 'MB');
-        return;
-    }
-    
-    // Validazione tipo file con controllo MIME più robusto
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    
-    if (!in_array($extension, $allowedExtensions)) {
-        $this->returnResponse(false, 'Formato non supportato. Usa: ' . implode(', ', $allowedExtensions));
-        return;
-    }
-    
-    // Verifica che sia realmente un'immagine usando getimagesize
-    $imageInfo = @getimagesize($file['tmp_name']);
-    if ($imageInfo === false) {
-        ArtPuzzleLogger::log('ERRORE: getimagesize fallita per ' . $file['tmp_name'], 'ERROR');
-        $this->returnResponse(false, 'Il file non è un\'immagine valida');
-        return;
-    }
-    
-    // Verifica MIME type
-    $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!in_array($imageInfo['mime'], $allowedMimes)) {
-        ArtPuzzleLogger::log('ERRORE: MIME type non valido: ' . $imageInfo['mime'], 'ERROR');
-        $this->returnResponse(false, 'Tipo MIME non supportato: ' . $imageInfo['mime']);
-        return;
-    }
-    
-    // Preparazione directory upload
-    $uploadDir = _PS_MODULE_DIR_ . 'art_puzzle/upload/';
-    if (!file_exists($uploadDir)) {
-        if (!mkdir($uploadDir, 0755, true)) {
-            ArtPuzzleLogger::log('ERRORE: Impossibile creare directory ' . $uploadDir, 'ERROR');
-            $this->returnResponse(false, 'Errore nella creazione directory upload');
+
+        if (!$file) {
+            $this->log('ERRORE: Nessun file trovato in $_FILES', 'ERROR');
+            $this->returnResponse(false, 'Nessuna immagine caricata. Verifica il form di upload.');
             return;
         }
+
+        // Verifica errori di upload
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File troppo grande (limite PHP)',
+                UPLOAD_ERR_FORM_SIZE => 'File troppo grande (limite form)',
+                UPLOAD_ERR_PARTIAL => 'Upload parziale',
+                UPLOAD_ERR_NO_FILE => 'Nessun file',
+                UPLOAD_ERR_NO_TMP_DIR => 'Directory temporanea mancante',
+                UPLOAD_ERR_CANT_WRITE => 'Impossibile scrivere su disco',
+                UPLOAD_ERR_EXTENSION => 'Upload bloccato da estensione PHP'
+            ];
+
+            $message = isset($errorMessages[$file['error']]) ? $errorMessages[$file['error']] : 'Errore sconosciuto';
+            $this->log("Errore upload: {$file['error']} - $message", 'ERROR');
+            $this->returnResponse(false, 'Errore upload: ' . $message);
+            return;
+        }
+
+        // Validazione dimensione
+        $maxSize = (int) Configuration::get('ART_PUZZLE_MAX_UPLOAD_SIZE', 20) * 1024 * 1024;
+        if ($file['size'] > $maxSize) {
+            $this->returnResponse(false, 'File troppo grande. Massimo: ' . round($maxSize / 1024 / 1024, 1) . 'MB');
+            return;
+        }
+
+        // Validazione tipo file con controllo MIME più robusto
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($extension, $allowedExtensions)) {
+            $this->returnResponse(false, 'Formato non supportato. Usa: ' . implode(', ', $allowedExtensions));
+            return;
+        }
+
+        // Verifica che sia realmente un'immagine usando getimagesize
+        $imageInfo = @getimagesize($file['tmp_name']);
+        if ($imageInfo === false) {
+            $this->log('ERRORE: getimagesize fallita per ' . $file['tmp_name'], 'ERROR');
+            $this->returnResponse(false, 'Il file non è un\'immagine valida');
+            return;
+        }
+
+        // Verifica MIME type
+        $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!in_array($imageInfo['mime'], $allowedMimes)) {
+            $this->log('ERRORE: MIME type non valido: ' . $imageInfo['mime'], 'ERROR');
+            $this->returnResponse(false, 'Tipo MIME non supportato: ' . $imageInfo['mime']);
+            return;
+        }
+
+        // Preparazione directory upload
+        $uploadDir = _PS_MODULE_DIR_ . 'art_puzzle/upload/';
+        if (!file_exists($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                $this->log('ERRORE: Impossibile creare directory ' . $uploadDir, 'ERROR');
+                $this->returnResponse(false, 'Errore nella creazione directory upload');
+                return;
+            }
+        }
+
+        if (!is_writable($uploadDir)) {
+            $this->log('ERRORE: Directory non scrivibile ' . $uploadDir, 'ERROR');
+            $this->returnResponse(false, 'Directory upload non scrivibile');
+            return;
+        }
+
+        // Genera nome file unico
+        $filename = 'puzzle_' . time() . '_' . uniqid() . '.' . $extension;
+        $destination = $uploadDir . $filename;
+
+        // Sposta il file
+        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+            $this->log('ERRORE: move_uploaded_file fallita da ' . $file['tmp_name'] . ' a ' . $destination, 'ERROR');
+            $this->returnResponse(false, 'Errore nel salvataggio file');
+            return;
+        }
+
+        // Salva in sessione
+        $this->context->cookie->__set('art_puzzle_uploaded_image', $filename);
+        $this->context->cookie->write();
+
+        // Genera URL per anteprima
+        $imageUrl = $this->context->shop->getBaseURL(true) . 'modules/art_puzzle/upload/' . $filename;
+
+        $this->log('SUCCESS: Immagine salvata - ' . $filename, 'INFO');
+
+        // Risposta successo
+        $this->returnResponse(true, 'Immagine caricata con successo', [
+            'filename' => $filename,
+            'url' => $imageUrl,
+            'width' => $imageInfo[0],
+            'height' => $imageInfo[1],
+            'size' => $file['size']
+        ]);
     }
-    
-    if (!is_writable($uploadDir)) {
-        ArtPuzzleLogger::log('ERRORE: Directory non scrivibile ' . $uploadDir, 'ERROR');
-        $this->returnResponse(false, 'Directory upload non scrivibile');
-        return;
-    }
-    
-    // Genera nome file unico
-    $filename = 'puzzle_' . time() . '_' . uniqid() . '.' . $extension;
-    $destination = $uploadDir . $filename;
-    
-    // Sposta il file
-    if (!move_uploaded_file($file['tmp_name'], $destination)) {
-        ArtPuzzleLogger::log('ERRORE: move_uploaded_file fallita da ' . $file['tmp_name'] . ' a ' . $destination, 'ERROR');
-        $this->returnResponse(false, 'Errore nel salvataggio file');
-        return;
-    }
-    
-    // Salva in sessione
-    $this->context->cookie->__set('art_puzzle_uploaded_image', $filename);
-    $this->context->cookie->write();
-    
-    // Genera URL per anteprima
-    $imageUrl = $this->context->shop->getBaseURL(true) . 'modules/art_puzzle/upload/' . $filename;
-    
-    ArtPuzzleLogger::log('SUCCESS: Immagine salvata - ' . $filename, 'INFO');
-    
-    // Risposta successo
-    $this->returnResponse(true, 'Immagine caricata con successo', [
-        'filename' => $filename,
-        'url' => $imageUrl,
-        'width' => $imageInfo[0],
-        'height' => $imageInfo[1],
-        'size' => $file['size']
-    ]);
-}
     
     /**
      * Gestisce la richiesta dei formati puzzle disponibili

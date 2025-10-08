@@ -4,7 +4,7 @@
  * Gestisce la schermata di personalizzazione iniziale del puzzle
  */
 
-class Art_PuzzleCustomizerModuleFrontController extends ModuleFrontController
+class Art_puzzleCustomizerModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

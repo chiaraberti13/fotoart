@@ -1254,7 +1254,7 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
-        if (!$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
+        if ($scope !== 'admin' && !$this->isAuthorizedForDownload($scope, (int) $idOrder)) {
             return false;
         }
 
@@ -1321,7 +1321,12 @@ class FotoArtPuzzle extends Module
                 return false;
             }
 
-            return $this->context->customer->isLogged() && (int) $order->id_customer === (int) $this->context->customer->id;
+            $customer = $this->context->customer;
+            if (!$customer || !$customer->isLogged()) {
+                return false;
+            }
+
+            return (int) $order->id_customer === (int) $customer->id;
         }
 
         return true;

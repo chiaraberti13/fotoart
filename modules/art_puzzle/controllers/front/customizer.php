@@ -4,7 +4,7 @@
  * Controller per la pagina di personalizzazione puzzle
  */
 
-class Art_PuzzleCustomizerModuleFrontController extends ModuleFrontController
+class Art_puzzleCustomizerModuleFrontController extends ModuleFrontController
 {
     public function initContent()
     {

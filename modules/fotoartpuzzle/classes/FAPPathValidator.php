@@ -103,8 +103,14 @@ class FAPPathValidator
     private static function assertWithinAllowedRoots($canonicalPath)
     {
         $allowedRoots = self::getAllowedRoots();
+        $canonicalPath = rtrim($canonicalPath, '/\\');
+        $canonicalPathWithSeparator = $canonicalPath . DIRECTORY_SEPARATOR;
+
         foreach ($allowedRoots as $root) {
-            if (strpos($canonicalPath, $root) === 0) {
+            $normalisedRoot = rtrim($root, '/\\');
+            $rootWithSeparator = $normalisedRoot . DIRECTORY_SEPARATOR;
+
+            if ($canonicalPath === $normalisedRoot || strpos($canonicalPathWithSeparator, $rootWithSeparator) === 0) {
                 return;
             }
         }

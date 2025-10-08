@@ -1297,7 +1297,7 @@ class FotoArtPuzzle extends Module
     private function getScopeSecret($scope)
     {
         if ($scope === 'admin') {
-            return Tools::getAdminTokenLite('AdminOrders');
+            return $this->getAdminScopeSecret();
         }
 
         if ($scope === 'front') {
@@ -1305,6 +1305,31 @@ class FotoArtPuzzle extends Module
         }
 
         return null;
+    }
+
+    /**
+     * Retrieve or generate secret for admin scope downloads.
+     *
+     * @return string
+     */
+    private function getAdminScopeSecret()
+    {
+        $token = Tools::getAdminTokenLite('AdminOrders');
+        if (!empty($token)) {
+            return $token;
+        }
+
+        $secret = (string) Configuration::get(FAPConfiguration::ADMIN_DOWNLOAD_SECRET);
+        if ($secret !== '') {
+            return $secret;
+        }
+
+        $secret = Tools::passwdGen(64);
+        if (!Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, $secret)) {
+            return '';
+        }
+
+        return $secret;
     }
 
     /**

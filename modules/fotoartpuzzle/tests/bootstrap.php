@@ -109,7 +109,12 @@ class Tools
 {
     public static function getAdminTokenLite($controller)
     {
-        return 'admin-token-' . $controller;
+        $context = Context::getContext();
+        if (!$context->employee instanceof Employee || (int) $context->employee->id <= 0) {
+            return '';
+        }
+
+        return 'admin-token-' . $controller . '-' . (int) $context->employee->id;
     }
 
     public static function passwdGen($length = 8)
@@ -154,13 +159,23 @@ class Validate
 
 class Configuration
 {
+    private static $values = [];
+
     public static function get($key)
     {
-        return null;
+        return array_key_exists($key, self::$values) ? self::$values[$key] : null;
     }
 
     public static function updateValue($key, $value)
     {
+        self::$values[$key] = $value;
+        return true;
+    }
+
+    public static function deleteByName($key)
+    {
+        unset(self::$values[$key]);
+
         return true;
     }
 }
@@ -212,6 +227,7 @@ class FAPConfiguration
     public const EMAIL_ADMIN_RECIPIENTS = 'FAP_EMAIL_ADMIN_RECIPIENTS';
     public const ENABLE_PDF_USER = 'FAP_ENABLE_PDF_USER';
     public const ENABLE_PDF_ADMIN = 'FAP_ENABLE_PDF_ADMIN';
+    public const ADMIN_DOWNLOAD_SECRET = 'FAP_ADMIN_DOWNLOAD_SECRET';
     public const ENABLE_ORIENTATION = 'FAP_ENABLE_ORIENTATION';
     public const ENABLE_INTERACTIVE_CROP = 'FAP_ENABLE_INTERACTIVE_CROP';
     public const TEMP_TTL_HOURS = 'FAP_TEMP_TTL_HOURS';

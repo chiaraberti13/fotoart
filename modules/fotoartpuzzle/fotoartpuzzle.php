@@ -103,6 +103,10 @@ class FotoArtPuzzle extends Module
             return false;
         }
 
+        if (!$this->ensureAdminDownloadSecret()) {
+            return false;
+        }
+
         if (!FAPPathBuilder::ensureFilesystem()) {
             return false;
         }
@@ -1281,9 +1285,10 @@ class FotoArtPuzzle extends Module
      *
      * @return FAPSecurityTokenService
      */
-    private function buildDownloadTokenService()
+    private function buildDownloadTokenService($scope)
     {
-        $secret = hash('sha256', $this->getSecuritySecret() . '|' . _COOKIE_KEY_);
+        $scopeSecret = $this->getScopeSecret($scope);
+        $secret = hash('sha256', $scopeSecret . '|' . _COOKIE_KEY_);
 
         return new FAPSecurityTokenService($secret);
     }
@@ -1307,6 +1312,38 @@ class FotoArtPuzzle extends Module
     }
 
     /**
+     * Retrieve secret used for admin scoped download tokens.
+     *
+     * @return string
+     */
+    private function getAdminDownloadSecret()
+    {
+        $secret = (string) Configuration::get(FAPConfiguration::ADMIN_DOWNLOAD_SECRET);
+        if ($secret === '') {
+            $secret = Tools::passwdGen(64);
+            if (!Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, $secret)) {
+                throw new RuntimeException('Unable to persist admin download secret');
+            }
+        }
+
+        return $secret;
+    }
+
+    /**
+     * Resolve scope specific token secret.
+     *
+     * @param string $scope
+     *
+     * @return string
+     */
+    private function getScopeSecret($scope)
+    {
+        return $scope === 'admin'
+            ? $this->getAdminDownloadSecret()
+            : $this->getSecuritySecret();
+    }
+
+    /**
      * Ensure the security secret is available in configuration storage.
      *
      * @return bool
@@ -1319,6 +1356,26 @@ class FotoArtPuzzle extends Module
             return true;
         } catch (Exception $exception) {
             FAPLogger::create()->error('Unable to ensure FotoArt security secret', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Ensure the admin download secret is available in configuration storage.
+     *
+     * @return bool
+     */
+    private function ensureAdminDownloadSecret()
+    {
+        try {
+            $this->getAdminDownloadSecret();
+
+            return true;
+        } catch (Exception $exception) {
+            FAPLogger::create()->error('Unable to ensure FotoArt admin download secret', [
                 'error' => $exception->getMessage(),
             ]);
 
@@ -1357,7 +1414,7 @@ class FotoArtPuzzle extends Module
         $disposition = isset($options['disposition']) && $options['disposition'] === 'inline' ? 'inline' : 'attachment';
 
         try {
-            $service = $this->buildDownloadTokenService();
+            $service = $this->buildDownloadTokenService($scope);
             $issued = $service->issue([
                 'scope' => 'download:' . $scope,
                 'path_hash' => hash('sha256', $canonicalPath),
@@ -1419,7 +1476,7 @@ class FotoArtPuzzle extends Module
         $scope = $this->normaliseDownloadScope($scope);
 
         try {
-            $service = $this->buildDownloadTokenService();
+            $service = $this->buildDownloadTokenService($scope);
             $payload = $service->validate((string) $token, [
                 'scope' => 'download:' . $scope,
             ]);

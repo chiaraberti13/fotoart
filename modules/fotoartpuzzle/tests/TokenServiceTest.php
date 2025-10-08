@@ -17,6 +17,7 @@ class TokenServiceTest extends FAPTestCase
         $this->module->context->cookie->id_guest = 555;
         $this->module->context->cart->id = 321;
         Configuration::updateValue(FAPConfiguration::SECURITY_SECRET, 'tests-secret-key');
+        Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, 'tests-admin-secret-key');
     }
 
     public function run()
@@ -24,6 +25,7 @@ class TokenServiceTest extends FAPTestCase
         $this->testFrontTokenRoundTrip();
         $this->testDownloadTokenTampering();
         $this->testDownloadTokenScopeMismatch();
+        $this->testAdminDownloadTokenWithoutEmployee();
         $this->testTokenServiceExpiration();
     }
 
@@ -64,6 +66,34 @@ class TokenServiceTest extends FAPTestCase
         parse_str($parts['query'], $params);
 
         $this->assertFalse($this->module->validateDownloadToken($params['token'], $params['path'], 'admin', $params['expires'], null, $params['disposition']), 'Using front token in admin scope must fail');
+    }
+
+    private function testAdminDownloadTokenWithoutEmployee()
+    {
+        $tempDir = FAPPathBuilder::getTempPath();
+        @mkdir($tempDir, 0755, true);
+        $file = tempnam($tempDir, 'fap');
+        file_put_contents($file, 'dummy');
+
+        $previousEmployee = $this->module->context->employee;
+        $previousOverride = Tools::$adminTokenLiteOverride;
+        $this->module->context->employee = null;
+        Tools::$adminTokenLiteOverride = '';
+
+        try {
+            $link = $this->module->getDownloadLink($file, 'admin', ['ttl' => 600]);
+            $this->assertNotEmpty($link, 'Admin download link should be generated without employee context');
+
+            $parts = parse_url($link);
+            parse_str(isset($parts['query']) ? $parts['query'] : '', $params);
+
+            $this->assertTrue($this->module->validateDownloadToken($params['token'], $params['path'], 'admin', $params['expires'], null, $params['disposition']), 'Admin token must validate outside BO session');
+            $this->assertFalse($this->module->validateDownloadToken($params['token'] . 'tampered', $params['path'], 'admin', $params['expires'], null, $params['disposition']), 'Tampered admin token should be rejected');
+            $this->assertFalse($this->module->validateDownloadToken($params['token'], $params['path'], 'admin', $params['expires'] + 1, null, $params['disposition']), 'Admin token with mismatched expiration must fail');
+        } finally {
+            Tools::$adminTokenLiteOverride = $previousOverride;
+            $this->module->context->employee = $previousEmployee;
+        }
     }
 
     private function testTokenServiceExpiration()

@@ -127,8 +127,14 @@ class Link
 
 class Tools
 {
+    public static $adminTokenLiteOverride = null;
+
     public static function getAdminTokenLite($controller)
     {
+        if (self::$adminTokenLiteOverride !== null) {
+            return self::$adminTokenLiteOverride;
+        }
+
         return 'admin-token-' . $controller;
     }
 
@@ -352,5 +358,6 @@ Configuration::updateValue(FAPConfiguration::BOX_COLOR_COMBINATIONS, json_encode
 Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, json_encode([]));
 Configuration::updateValue(FAPConfiguration::PUZZLE_PRODUCTS, '');
 Configuration::updateValue(FAPConfiguration::SECURITY_SECRET, 'tests-secret-key');
+Configuration::updateValue(FAPConfiguration::ADMIN_DOWNLOAD_SECRET, 'tests-admin-secret-key');
 
 FAPPathBuilder::ensureFilesystem();

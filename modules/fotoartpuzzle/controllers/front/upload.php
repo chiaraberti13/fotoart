@@ -119,9 +119,7 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
     private function validateToken()
     {
         $token = Tools::getValue('token');
-        $expectedToken = $this->module->getFrontToken('upload');
-        
-        if (!$token || $token !== $expectedToken) {
+        if (!$token || !$this->module->validateFrontToken($token, 'upload')) {
             $this->logger->warning('Invalid upload token', [
                 'received' => $token ? 'present' : 'missing',
                 'ip' => Tools::getRemoteAddr(),
@@ -445,6 +443,16 @@ class FotoartpuzzleUploadModuleFrontController extends ModuleFrontController
             // Remove original temporary file if it differs from processed path
             if ($processed['path'] !== $destination && file_exists($destination)) {
                 @unlink($destination);
+            }
+
+            $processed['path'] = FAPPathValidator::assertReadablePath($processed['path']);
+
+            if (!empty($processed['preview_path'])) {
+                $processed['preview_path'] = FAPPathValidator::assertReadablePath($processed['preview_path']);
+            }
+
+            if (!empty($processed['thumb_path'])) {
+                $processed['thumb_path'] = FAPPathValidator::assertReadablePath($processed['thumb_path']);
             }
 
             return $processed;

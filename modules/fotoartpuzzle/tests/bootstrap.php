@@ -1,8 +1,13 @@
 <?php
 
-define('_PS_VERSION_', '1.7.8.0');
+define('_PS_VERSION_', '1.7.6.0');
 define('_COOKIE_KEY_', 'test-cookie-key');
-define('_PS_MODULE_DIR_', realpath(__DIR__ . '/..') . '/');
+define('_PS_MODULE_DIR_', realpath(__DIR__ . '/../..') . '/');
+define('_PS_DOWNLOAD_DIR_', sys_get_temp_dir() . '/fap_download/');
+define('_PS_UPLOAD_DIR_', sys_get_temp_dir() . '/fap_upload/');
+
+@mkdir(_PS_DOWNLOAD_DIR_, 0755, true);
+@mkdir(_PS_UPLOAD_DIR_, 0755, true);
 
 class Module
 {
@@ -33,6 +38,11 @@ class Module
     {
         return $message;
     }
+
+    public static function getInstanceByName($name)
+    {
+        return new self();
+    }
 }
 
 class Context
@@ -42,6 +52,8 @@ class Context
     public $employee;
     public $link;
     public $cart;
+    public $language;
+    public $shop;
 
     private static $instance;
 
@@ -54,6 +66,8 @@ class Context
             self::$instance->employee = null;
             self::$instance->link = new Link();
             self::$instance->cart = new Cart();
+            self::$instance->language = new Language();
+            self::$instance->shop = new Shop();
         }
 
         return self::$instance;
@@ -65,10 +79,6 @@ class Cookie
     public $fap_session_secret;
     public $id_employee;
     public $id_guest;
-
-    public function __construct()
-    {
-    }
 }
 
 class Customer
@@ -84,12 +94,22 @@ class Customer
 
 class Cart
 {
-    public $id = 0;
+    public $id = 1;
 }
 
 class Employee
 {
     public $id = 0;
+}
+
+class Language
+{
+    public $id = 1;
+}
+
+class Shop
+{
+    public $id = 1;
 }
 
 class Link
@@ -114,12 +134,95 @@ class Tools
 
     public static function passwdGen($length = 8)
     {
-        return str_repeat('a', max(1, (int) $length));
+        $length = max(1, (int) $length);
+        return substr(str_shuffle(str_repeat('abcdefghijklmnopqrstuvwxyz0123456789', $length)), 0, $length);
     }
 
     public static function getValue($key, $default = null)
     {
+        if (isset($_POST[$key])) {
+            return $_POST[$key];
+        }
+        if (isset($_GET[$key])) {
+            return $_GET[$key];
+        }
+
         return $default;
+    }
+
+    public static function getIsset($key)
+    {
+        return isset($_POST[$key]) || isset($_GET[$key]);
+    }
+
+    public static function isSubmit($key)
+    {
+        return self::getIsset($key);
+    }
+
+    public static function jsonEncode($value)
+    {
+        return json_encode($value);
+    }
+
+    public static function str2url($string)
+    {
+        $string = Tools::link_rewrite($string);
+
+        return $string;
+    }
+
+    public static function link_rewrite($string)
+    {
+        $string = strtolower((string) $string);
+        $string = preg_replace('/[^a-z0-9]+/', '-', $string);
+
+        return trim($string, '-');
+    }
+
+    public static function strtolower($string)
+    {
+        return strtolower($string);
+    }
+
+    public static function strtoupper($string)
+    {
+        return strtoupper($string);
+    }
+
+    public static function substr($string, $start, $length = null)
+    {
+        return $length === null ? substr($string, $start) : substr($string, $start, $length);
+    }
+
+    public static function strlen($string)
+    {
+        return strlen($string);
+    }
+
+    public static function file_get_contents($path)
+    {
+        return file_get_contents($path);
+    }
+
+    public static function copy($source, $destination)
+    {
+        return copy($source, $destination);
+    }
+
+    public static function displayDate($date)
+    {
+        return $date;
+    }
+
+    public static function ucfirst($string)
+    {
+        return ucfirst($string);
+    }
+
+    public static function getRemoteAddr()
+    {
+        return '127.0.0.1';
     }
 }
 
@@ -129,18 +232,20 @@ class Order
 
     public $id = 0;
     public $id_customer = 0;
+    public $date_add;
 
     public function __construct($id)
     {
         if (isset(self::$orders[$id])) {
             $this->id = (int) $id;
-            $this->id_customer = (int) self::$orders[$id];
+            $this->id_customer = (int) self::$orders[$id]['id_customer'];
+            $this->date_add = date('Y-m-d H:i:s');
         }
     }
 
     public static function seed($id, $idCustomer)
     {
-        self::$orders[(int) $id] = (int) $idCustomer;
+        self::$orders[(int) $id] = ['id_customer' => (int) $idCustomer];
     }
 }
 
@@ -154,140 +259,98 @@ class Validate
 
 class Configuration
 {
+    private static $storage = [];
+
     public static function get($key)
     {
-        return null;
+        return array_key_exists($key, self::$storage) ? self::$storage[$key] : null;
     }
 
     public static function updateValue($key, $value)
     {
+        self::$storage[$key] = $value;
+
+        return true;
+    }
+
+    public static function deleteByName($key)
+    {
+        unset(self::$storage[$key]);
+
         return true;
     }
 }
 
-class FAPPathBuilder
+class Db
 {
-    public static function getLogPath()
-    {
-        return sys_get_temp_dir();
-    }
-}
-
-class FAPLogger
-{
-    public static function create()
+    public static function getInstance()
     {
         return new self();
     }
 
-    public function info($message, array $context = [])
-    {
-    }
-
-    public function error($message, array $context = [])
-    {
-    }
-}
-
-class FAPPuzzleRepository
-{
-}
-
-class FAPConfiguration
-{
-    public const MAX_UPLOAD_SIZE = 'FAP_MAX_UPLOAD_SIZE';
-    public const MIN_WIDTH = 'FAP_MIN_WIDTH';
-    public const MIN_HEIGHT = 'FAP_MIN_HEIGHT';
-    public const ALLOWED_EXTENSIONS = 'FAP_ALLOWED_EXTENSIONS';
-    public const FORMATS = 'FAP_FORMATS';
-    public const UPLOAD_FOLDER = 'FAP_UPLOAD_FOLDER';
-    public const BOX_MAX_CHARS = 'FAP_BOX_MAX_CHARS';
-    public const BOX_DEFAULT_TEXT = 'FAP_BOX_DEFAULT_TEXT';
-    public const BOX_COLOR = 'FAP_BOX_COLOR';
-    public const BOX_TEXT_COLOR = 'FAP_BOX_TEXT_COLOR';
-    public const BOX_COLOR_COMBINATIONS = 'FAP_BOX_COLOR_COMBINATIONS';
-    public const CUSTOM_FONTS = 'FAP_CUSTOM_FONTS';
-    public const EMAIL_PREVIEW_USER = 'FAP_EMAIL_PREVIEW_USER';
-    public const EMAIL_PREVIEW_ADMIN = 'FAP_EMAIL_PREVIEW_ADMIN';
-    public const EMAIL_ADMIN_RECIPIENTS = 'FAP_EMAIL_ADMIN_RECIPIENTS';
-    public const ENABLE_PDF_USER = 'FAP_ENABLE_PDF_USER';
-    public const ENABLE_PDF_ADMIN = 'FAP_ENABLE_PDF_ADMIN';
-    public const ENABLE_ORIENTATION = 'FAP_ENABLE_ORIENTATION';
-    public const ENABLE_INTERACTIVE_CROP = 'FAP_ENABLE_INTERACTIVE_CROP';
-    public const TEMP_TTL_HOURS = 'FAP_TEMP_TTL_HOURS';
-    public const ANONYMIZE_FILENAMES = 'FAP_ANONYMIZE_FILENAMES';
-    public const LOG_LEVEL = 'FAP_LOG_LEVEL';
-    public const PUZZLE_PRODUCTS = 'FAP_PUZZLE_PRODUCTS';
-    public const PUZZLE_LEGACY_MAP = 'FAP_PUZZLE_LEGACY_MAP';
-
-    public static function installDefaults()
+    public function update($table, array $data, $where)
     {
         return true;
     }
 
-    public static function removeDefaults()
+    public function delete($table, $where)
     {
         return true;
     }
 
-    public static function getFrontConfig()
+    public function insert($table, array $data)
+    {
+        return true;
+    }
+
+    public function getValue($query)
+    {
+        return 0;
+    }
+
+    public function executeS($query)
     {
         return [];
     }
+}
 
-    public static function getEnabledProductIds()
+class Customization
+{
+    public $id;
+    public $id_cart;
+    public $id_product;
+    public $id_product_attribute;
+    public $id_shop;
+    public $quantity;
+    public $in_cart;
+
+    private static $nextId = 1;
+
+    public function __construct($id = null)
     {
-        return [];
+        if ($id) {
+            $this->id = (int) $id;
+        }
     }
 
-    public static function isProductEnabled($idProduct)
+    public function add()
     {
+        $this->id = self::$nextId++;
+
         return true;
     }
 }
 
-class FAPCleanupService
-{
-}
+require_once _PS_MODULE_DIR_ . 'fotoartpuzzle/fotoartpuzzle.php';
 
-class FAPFormatManager
-{
-}
+Configuration::updateValue(FAPConfiguration::LOG_LEVEL, 'DEBUG');
+Configuration::updateValue(FAPConfiguration::MAX_UPLOAD_SIZE, 25);
+Configuration::updateValue(FAPConfiguration::MIN_WIDTH, 3000);
+Configuration::updateValue(FAPConfiguration::MIN_HEIGHT, 2000);
+Configuration::updateValue(FAPConfiguration::ALLOWED_EXTENSIONS, 'jpg,jpeg,png');
+Configuration::updateValue(FAPConfiguration::BOX_COLOR_COMBINATIONS, json_encode([]));
+Configuration::updateValue(FAPConfiguration::CUSTOM_FONTS, json_encode([]));
+Configuration::updateValue(FAPConfiguration::PUZZLE_PRODUCTS, '');
+Configuration::updateValue(FAPConfiguration::SECURITY_SECRET, 'tests-secret-key');
 
-class FAPImageProcessor
-{
-}
-
-class FAPQualityService
-{
-}
-
-class FAPImageAnalysis
-{
-}
-
-class FAPBoxRenderer
-{
-}
-
-class FAPPdfGenerator
-{
-}
-
-class FAPCustomizationService
-{
-}
-
-class FAPAssetGenerationService
-{
-}
-
-class FAPSessionService
-{
-}
-
-class FAPFontManager
-{
-}
-
-require_once __DIR__ . '/../fotoartpuzzle.php';
+FAPPathBuilder::ensureFilesystem();

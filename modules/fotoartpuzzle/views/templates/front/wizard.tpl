@@ -27,7 +27,8 @@
            data-id-product="{$product->id|intval}"
            data-token-upload="{$wizard.token_upload|escape:'html':'UTF-8'}"
            data-token-preview="{$wizard.token_preview|escape:'html':'UTF-8'}"
-           data-token-summary="{$wizard.token_summary|escape:'html':'UTF-8'}">
+           data-token-summary="{$wizard.token_summary|escape:'html':'UTF-8'}"
+           data-token-ajax="{$wizard.token_ajax|escape:'html':'UTF-8'}">
         <button type="button" class="btn btn-primary fap-launch" aria-haspopup="dialog">
           <i class="material-icons">&#xE3F4;</i>
           <span>{l s='Launch customization wizard' mod='fotoartpuzzle'}</span>

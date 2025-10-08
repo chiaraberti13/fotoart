@@ -6,34 +6,36 @@ class FotoartpuzzleDownloadModuleFrontController extends ModuleFrontController
     {
         $token = Tools::getValue('token');
         $path = Tools::getValue('path');
-        $scope = Tools::getValue('scope', 'front');
-        $disposition = Tools::getValue('disposition', 'attachment');
+        $scope = Tools::getValue('scope', 'front') === 'admin' ? 'admin' : 'front';
+        $disposition = Tools::getValue('disposition', 'attachment') === 'inline' ? 'inline' : 'attachment';
         $expires = Tools::getValue('expires');
         $idOrder = Tools::getValue('id_order');
 
-        if (!$token || !$this->module->validateDownloadToken($token, $path, $scope, $expires, $idOrder)) {
-            header('HTTP/1.1 403 Forbidden');
-            exit;
-        }
-
-        if (!$path || !file_exists($path) || !$this->module->isAllowedDownloadPath($path)) {
+        try {
+            $canonicalPath = FAPPathValidator::assertReadablePath($path);
+        } catch (Exception $exception) {
             header('HTTP/1.1 404 Not Found');
             exit;
         }
 
-        $mime = function_exists('mime_content_type') ? @mime_content_type($path) : false;
+        if (!$token || !$this->module->validateDownloadToken($token, $canonicalPath, $scope, $expires, $idOrder, $disposition)) {
+            header('HTTP/1.1 403 Forbidden');
+            exit;
+        }
+
+        $mime = function_exists('mime_content_type') ? @mime_content_type($canonicalPath) : false;
         header('Content-Type: ' . ($mime ?: 'application/octet-stream'));
-        header('Content-Disposition: ' . ($disposition === 'inline' ? 'inline' : 'attachment') . '; filename="' . basename($path) . '"');
-        header('Content-Length: ' . filesize($path));
+        header('Content-Disposition: ' . ($disposition === 'inline' ? 'inline' : 'attachment') . '; filename="' . basename($canonicalPath) . '"');
+        header('Content-Length: ' . filesize($canonicalPath));
 
         FAPLogger::create()->info('Download delivered', [
-            'path' => $path,
+            'path' => $canonicalPath,
             'scope' => $scope,
             'expires' => $expires,
             'order' => $idOrder,
         ]);
 
-        readfile($path);
+        readfile($canonicalPath);
         exit;
     }
 }

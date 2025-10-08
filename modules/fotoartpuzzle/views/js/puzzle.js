@@ -23,6 +23,7 @@
         upload: wizard.dataset.tokenUpload || '',
         preview: wizard.dataset.tokenPreview || '',
         summary: wizard.dataset.tokenSummary || '',
+        ajax: wizard.dataset.tokenAjax || '',
     };
 
     if (!uploadUrl || !previewUrl || !summaryUrl) {
@@ -252,16 +253,26 @@
         }
 
         const separator = ajaxUrl.indexOf('?') === -1 ? '?' : '&';
-        const url = ajaxUrl + separator + 'action=' + encodeURIComponent(action);
+        let url = ajaxUrl + separator + 'action=' + encodeURIComponent(action);
+        if (tokens.ajax) {
+            url += '&token=' + encodeURIComponent(tokens.ajax);
+        }
 
         const options = {
             method: data ? 'POST' : 'GET',
             credentials: 'same-origin',
+            headers: {}
         };
 
+        if (tokens.ajax) {
+            options.headers['X-FAP-Token'] = tokens.ajax;
+        }
+
         if (data) {
-            options.headers = { 'Content-Type': 'application/json; charset=UTF-8' };
+            options.headers['Content-Type'] = 'application/json; charset=UTF-8';
             options.body = JSON.stringify(data);
+        } else if (Object.keys(options.headers).length === 0) {
+            delete options.headers;
         }
 
         return fetch(url, options)

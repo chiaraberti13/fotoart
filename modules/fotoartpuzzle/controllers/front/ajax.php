@@ -17,6 +17,11 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected $sessionService;
 
+    /**
+     * @var FAPLogger
+     */
+    protected $logger;
+
     public function __construct()
     {
         parent::__construct();
@@ -24,11 +29,13 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
         $this->repository = new FAPPuzzleRepository();
         $this->qualityService = new FAPQualityService();
         $this->sessionService = new FAPSessionService();
+        $this->logger = FAPLogger::create();
     }
 
     public function initContent()
     {
         parent::initContent();
+        $this->assertValidAjaxToken();
         $action = Tools::getValue('action');
         $payload = $this->getRequestPayload();
 
@@ -85,6 +92,31 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
                     'message' => $this->module->l('Unknown action'),
                 ]);
         }
+    }
+
+    /**
+     * Validate AJAX security token against current context.
+     */
+    protected function assertValidAjaxToken()
+    {
+        $token = Tools::getValue('token');
+        if (!$token && isset($_SERVER['HTTP_X_FAP_TOKEN'])) {
+            $token = (string) $_SERVER['HTTP_X_FAP_TOKEN'];
+        }
+
+        if ($token && $this->module->validateFrontToken($token, 'ajax')) {
+            return;
+        }
+
+        $this->logger->warning('Invalid AJAX token received', [
+            'ip' => Tools::getRemoteAddr(),
+        ]);
+
+        http_response_code(403);
+        $this->sendJsonResponse([
+            'success' => false,
+            'message' => $this->module->l('Invalid security token.'),
+        ]);
     }
 
     /**
@@ -259,16 +291,30 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
             return;
         }
 
+        try {
+            $imagePath = FAPPathValidator::assertReadablePath($payload['image']);
+        } catch (Exception $exception) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Invalid image path']);
+            return;
+        }
+
         $destinationDir = rtrim(FAPPathBuilder::getBoxesPath(), '/\\') . '/renders';
         if (!is_dir($destinationDir)) {
             @mkdir($destinationDir, 0750, true);
         }
 
-        $destination = $destinationDir . '/' . sha1($payload['image'] . microtime(true)) . '.png';
+        $destinationCandidate = $destinationDir . '/' . sha1($imagePath . microtime(true)) . '.png';
+
+        try {
+            $destination = FAPPathValidator::assertWritableDestination($destinationCandidate);
+        } catch (Exception $exception) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Destination path is not writable']);
+            return;
+        }
         $renderer = new FAPBoxRenderer();
 
         try {
-            $renderer->renderFromImage($payload['image'], $destination, [
+            $renderer->renderFromImage($imagePath, $destination, [
                 'text' => isset($payload['text']) ? $payload['text'] : '',
                 'color' => isset($payload['color']) ? $payload['color'] : null,
                 'font' => isset($payload['font']) ? $payload['font'] : null,
@@ -279,11 +325,19 @@ class FotoartpuzzleAjaxModuleFrontController extends ModuleFrontController
             return;
         }
 
+        try {
+            $destination = FAPPathValidator::assertReadablePath($destination);
+        } catch (Exception $exception) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Generated preview is not accessible']);
+            return;
+        }
+
         $this->sendJsonResponse([
             'success' => true,
             'box' => [
                 'path' => $destination,
                 'filename' => basename($destination),
+                'download_url' => $this->module->getDownloadLink($destination, 'admin', ['disposition' => 'inline']),
             ],
         ]);
     }

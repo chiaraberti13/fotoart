@@ -17,10 +17,23 @@ class FAPAssetGenerationService
             return $metadata;
         }
 
+        try {
+            $source = FAPPathValidator::assertReadablePath($source);
+        } catch (Exception $exception) {
+            return $metadata;
+        }
+
         $fingerprint = sha1($source . '|' . json_encode(isset($metadata['crop']) ? $metadata['crop'] : []));
         $basePath = rtrim(FAPPathBuilder::getCropsPath(), '/\\') . '/' . $fingerprint;
         if (!is_dir($basePath)) {
             @mkdir($basePath, 0750, true);
+        }
+
+        try {
+            $basePath = FAPPathValidator::assertWritableDestination($basePath . '/.keep');
+            $basePath = dirname($basePath);
+        } catch (Exception $exception) {
+            return $metadata;
         }
 
         $metadata['asset_map']['original']['path'] = $source;
@@ -146,6 +159,8 @@ class FAPAssetGenerationService
         imagedestroy($cropped);
         imagedestroy($image);
 
+        $destination = FAPPathValidator::assertReadablePath($destination);
+
         return [
             'path' => $destination,
             'filename' => basename($destination),
@@ -190,6 +205,8 @@ class FAPAssetGenerationService
 
         imagedestroy($resampled);
         imagedestroy($image);
+
+        $destination = FAPPathValidator::assertReadablePath($destination);
 
         return [
             'path' => $destination,
@@ -253,6 +270,12 @@ class FAPAssetGenerationService
         }
 
         if (!file_exists($destination)) {
+            return null;
+        }
+
+        try {
+            $destination = FAPPathValidator::assertReadablePath($destination);
+        } catch (Exception $exception) {
             return null;
         }
 
@@ -334,6 +357,8 @@ class FAPAssetGenerationService
      */
     private function writeResource($resource, $destination, $extension)
     {
+        $destination = FAPPathValidator::assertWritableDestination($destination);
+
         switch ($extension) {
             case 'png':
                 imagepng($resource, $destination, 6);

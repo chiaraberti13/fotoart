@@ -147,7 +147,11 @@ class FAPSessionService
         }
 
         $encoded = json_encode($data);
-        if (false === file_put_contents($file, $encoded)) {
+        if (false === $encoded) {
+            throw new Exception('Unable to encode session data');
+        }
+
+        if (false === file_put_contents($file, $encoded, LOCK_EX)) {
             throw new Exception('Unable to persist session data');
         }
     }

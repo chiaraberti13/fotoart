@@ -1,0 +1,11 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 5
+    paths:
+        - modules/fotoartpuzzle
+    bootstrapFiles:
+        - modules/fotoartpuzzle/tests/bootstrap.php
+    ignoreErrors:
+        - '#^Call to an undefined method Module::getInstanceByName#'

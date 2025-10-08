@@ -29,6 +29,7 @@ class FAPConfiguration
     public const LOG_LEVEL = 'FAP_LOG_LEVEL';
     public const PUZZLE_PRODUCTS = 'FAP_PUZZLE_PRODUCTS';
     public const PUZZLE_LEGACY_MAP = 'FAP_PUZZLE_LEGACY_MAP';
+    public const SECURITY_SECRET = 'FAP_SECURITY_SECRET';
 
     /**
      * Install default configuration values
@@ -67,6 +68,7 @@ class FAPConfiguration
             self::LOG_LEVEL => 'INFO',
             self::PUZZLE_PRODUCTS => '',
             self::PUZZLE_LEGACY_MAP => json_encode([]),
+            self::SECURITY_SECRET => Tools::passwdGen(64),
         ];
 
         foreach ($defaults as $key => $value) {
@@ -110,6 +112,7 @@ class FAPConfiguration
             self::LOG_LEVEL,
             self::PUZZLE_PRODUCTS,
             self::PUZZLE_LEGACY_MAP,
+            self::SECURITY_SECRET,
         ];
 
         foreach ($keys as $key) {

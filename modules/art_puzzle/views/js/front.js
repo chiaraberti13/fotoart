@@ -216,11 +216,15 @@ document.addEventListener('DOMContentLoaded', function() {
             ? file.name.split('.').pop().toLowerCase()
             : '';
 
-        const mimeAllowed = !allowedMimeTypes.length || allowedMimeTypes.indexOf(fileMime) !== -1;
-        const extensionAllowed = !allowedExtensions.length || allowedExtensions.indexOf(fileExtension) !== -1;
+        const hasMimeConfig = allowedMimeTypes.length > 0;
+        const hasExtensionConfig = allowedExtensions.length > 0;
 
-        if (!mimeAllowed && !extensionAllowed) {
-            const allowedList = allowedExtensions.length ? allowedExtensions : allowedMimeTypes;
+        const mimeAllowed = hasMimeConfig && allowedMimeTypes.indexOf(fileMime) !== -1;
+        const extensionAllowed = hasExtensionConfig && allowedExtensions.indexOf(fileExtension) !== -1;
+        const validationConfigured = hasMimeConfig || hasExtensionConfig;
+
+        if (validationConfigured && !mimeAllowed && !extensionAllowed) {
+            const allowedList = hasExtensionConfig ? allowedExtensions : allowedMimeTypes;
             alert(
                 'Tipo di file non supportato. Utilizza solo immagini con estensione: ' +
                 (allowedList.length ? allowedList.join(', ') : 'JPG, PNG o GIF') + '.'

@@ -143,17 +143,22 @@ console.log('- File type:', file.type);
 console.log('- Token:', window.artPuzzleToken || 'MANCANTE');
 console.log('- Action: uploadImage');
     
-    // URL AJAX corretto con fallback robusto
+    // URL AJAX corretto con fallback basato su attributi generati da PrestaShop
 var ajaxUrl;
 if (typeof window.artPuzzleAjaxUrl !== 'undefined' && window.artPuzzleAjaxUrl) {
     ajaxUrl = window.artPuzzleAjaxUrl;
-} else if (typeof window.baseUrl !== 'undefined') {
-    ajaxUrl = window.baseUrl + 'index.php?fc=module&module=art_puzzle&controller=ajax';
 } else {
-    // Fallback più robusto
-    var currentUrl = window.location.href;
-    var baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/')) + '/';
-    ajaxUrl = baseUrl + 'index.php?fc=module&module=art_puzzle&controller=ajax';
+    var ajaxUrlElement = document.querySelector('[data-art-puzzle-ajax-url]');
+    if (ajaxUrlElement) {
+        ajaxUrl = ajaxUrlElement.getAttribute('data-art-puzzle-ajax-url');
+    }
+}
+
+if (!ajaxUrl) {
+    console.error('Impossibile determinare l\'URL AJAX di Art Puzzle');
+    alert('Errore di configurazione: impossibile determinare l\'URL di caricamento. Contatta l\'assistenza.');
+    loadingSpinner.hide();
+    return;
 }
 
 console.log('URL AJAX:', ajaxUrl);

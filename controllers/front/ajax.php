@@ -972,29 +972,70 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected function handleCheckDirectoryPermissions()
     {
+        $result = $this->checkDirectoryPermissions();
+
+        if ($result['is_valid']) {
+            $this->returnResponse(true, 'Tutte le directory sono scrivibili', [
+                'directories' => $result['directories'],
+            ]);
+        } else {
+            $this->returnResponse(false, implode('; ', $result['errors']), [
+                'directories' => $result['directories'],
+            ]);
+        }
+    }
+
+    /**
+     * Verifica lo stato delle directory necessarie al modulo
+     *
+     * @return array
+     */
+    protected function checkDirectoryPermissions()
+    {
         $directories = [
             'upload' => _PS_MODULE_DIR_.'art_puzzle/upload/',
             'logs' => _PS_MODULE_DIR_.'art_puzzle/logs/',
-            'fonts' => _PS_MODULE_DIR_.'art_puzzle/views/fonts/'
+            'fonts' => _PS_MODULE_DIR_.'art_puzzle/views/fonts/',
         ];
-        
-        $errors = [];
-        
+
+        $status = [
+            'is_valid' => true,
+            'directories' => [],
+            'errors' => [],
+        ];
+
         foreach ($directories as $name => $path) {
-            if (!file_exists($path)) {
-                if (!@mkdir($path, 0755, true)) {
-                    $errors[] = "Impossibile creare la directory '$name': $path";
+            $directoryStatus = [
+                'path' => $path,
+                'exists' => file_exists($path),
+                'is_writable' => false,
+                'created' => false,
+            ];
+
+            if (!$directoryStatus['exists']) {
+                if (@mkdir($path, 0755, true)) {
+                    $directoryStatus['exists'] = true;
+                    $directoryStatus['created'] = true;
+                } else {
+                    $status['is_valid'] = false;
+                    $directoryStatus['error'] = "Impossibile creare la directory '$name': $path";
+                    $status['errors'][] = $directoryStatus['error'];
                 }
-            } elseif (!is_writable($path)) {
-                $errors[] = "La directory '$name' non è scrivibile: $path";
             }
+
+            if ($directoryStatus['exists']) {
+                $directoryStatus['is_writable'] = is_writable($path);
+                if (!$directoryStatus['is_writable']) {
+                    $status['is_valid'] = false;
+                    $directoryStatus['error'] = "La directory '$name' non è scrivibile: $path";
+                    $status['errors'][] = $directoryStatus['error'];
+                }
+            }
+
+            $status['directories'][$name] = $directoryStatus;
         }
-        
-        if (empty($errors)) {
-            $this->returnResponse(true, 'Tutte le directory sono scrivibili');
-        } else {
-            $this->returnResponse(false, implode('; ', $errors));
-        }
+
+        return $status;
     }
     
     /**

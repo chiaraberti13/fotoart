@@ -4,6 +4,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+use PrestaShop\PrestaShop\Core\Product\ProductExtraContent;
+
 class Art_Puzzle extends Module
 {
     public function __construct()
@@ -278,7 +280,8 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
                 'securityToken' => Tools::getToken(false)
             ]);
 
-            $extraContent = new PrestaShop\PrestaShop\Core\Product\ProductExtraContent();
+            $extraContent = new ProductExtraContent();
+            $extraContent->setType(ProductExtraContent::TYPE_TAB);
             $extraContent->setTitle($this->l('Personalizza il tuo puzzle'));
             $extraContent->setContent($this->display(__FILE__, 'views/templates/hook/displayProductExtraContent.tpl'));
 

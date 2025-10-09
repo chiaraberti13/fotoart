@@ -20,15 +20,15 @@ class ArtPuzzleCustomizerModuleFrontController extends ModuleFrontController
         
         // Verificare che il prodotto esista e sia un puzzle personalizzabile
         if (!$id_product || !$this->module->isPuzzleProduct($id_product)) {
-            $this->errors[] = $this->trans('Questo prodotto non è disponibile o non è personalizzabile.', [], 'Modules.Artpuzzle.Shop');
+            $this->errors[] = $this->l('Questo prodotto non è disponibile o non è personalizzabile.');
             $this->redirectWithNotifications($this->context->link->getPageLink('index'));
             return;
         }
-        
+
         // Carica i dati del prodotto
         $product = new Product($id_product, true, $this->context->language->id);
         if (!Validate::isLoadedObject($product)) {
-            $this->errors[] = $this->trans('Prodotto non trovato', [], 'Modules.Artpuzzle.Shop');
+            $this->errors[] = $this->l('Prodotto non trovato');
             $this->redirectWithNotifications($this->context->link->getPageLink('index'));
             return;
         }

@@ -519,11 +519,13 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             }
 
             // Salva i dati nel cookie per utilizzi successivi
-            $sessionKey = 'art_puzzle_preview_data';
+            $previewSessionKey = 'art_puzzle_preview_data';
+            $imageSessionKey = 'art_puzzle_image';
+            $formatSessionKey = 'art_puzzle_format';
             $boxSessionKey = 'art_puzzle_box_data';
-            $cropSessionKey = 'art_puzzle_crop_data';
+            $cropSessionKey = 'art_puzzle_crop';
 
-            $this->context->cookie->{$sessionKey} = json_encode([
+            $this->context->cookie->{$previewSessionKey} = json_encode([
                 'format' => $format,
                 'preview' => $previewData,
                 'image_path' => $imagePath,
@@ -533,7 +535,9 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     'saturation' => $saturation
                 ]
             ]);
-            $this->context->cookie->write();
+
+            $this->context->cookie->{$imageSessionKey} = $imagePath;
+            $this->context->cookie->{$formatSessionKey} = $formatId;
 
             if (!empty($boxData)) {
                 $boxDataDecoded = json_decode($boxData, true);
@@ -544,6 +548,8 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
             if (!empty($cropOptions)) {
                 $this->context->cookie->{$cropSessionKey} = json_encode($cropOptions);
+            } else {
+                unset($this->context->cookie->{$cropSessionKey});
             }
 
             $this->context->cookie->write();
@@ -1401,7 +1407,292 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             }
         }
     }
-    
+
+    /**
+     * Salva un'immagine ricevuta in base64 nella directory upload.
+     *
+     * @param string $imageBase64
+     * @return string|false Percorso del file salvato oppure false in caso di errore
+     */
+    protected function saveBase64Image($imageBase64)
+    {
+        if (empty($imageBase64)) {
+            return false;
+        }
+
+        $extension = 'png';
+        if (preg_match('/^data:image\/(\w+);base64,/', $imageBase64, $matches)) {
+            $extension = strtolower($matches[1]);
+            $imageBase64 = substr($imageBase64, strpos($imageBase64, 'base64,') + 7);
+        }
+
+        $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif'];
+        if (!in_array($extension, $allowedExtensions, true)) {
+            $extension = 'png';
+        }
+
+        $imageData = base64_decode($imageBase64);
+        if ($imageData === false) {
+            return false;
+        }
+
+        $resource = @imagecreatefromstring($imageData);
+        if (!$resource) {
+            return false;
+        }
+
+        $uploadDir = _PS_MODULE_DIR_ . 'art_puzzle/upload/';
+        if (!file_exists($uploadDir)) {
+            if (!@mkdir($uploadDir, 0755, true)) {
+                imagedestroy($resource);
+                return false;
+            }
+        }
+
+        if (!is_writable($uploadDir)) {
+            imagedestroy($resource);
+            return false;
+        }
+
+        $filename = 'puzzle_' . time() . '_' . Tools::passwdGen(8) . '.' . $extension;
+        $filePath = $uploadDir . $filename;
+
+        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
+        if (!PuzzleImageProcessor::saveImage($resource, $filePath, 100)) {
+            imagedestroy($resource);
+            return false;
+        }
+
+        imagedestroy($resource);
+
+        $this->context->cookie->__set('art_puzzle_uploaded_image', $filename);
+        $this->context->cookie->write();
+
+        return $filePath;
+    }
+
+    /**
+     * Applica i dati di crop all'immagine fornita.
+     *
+     * @param string $imagePath
+     * @param array $cropOptions
+     * @return string
+     */
+    protected function applyImageCrop($imagePath, array $cropOptions)
+    {
+        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
+
+        $image = PuzzleImageProcessor::loadImage($imagePath);
+        if (!$image) {
+            return $imagePath;
+        }
+
+        $x = isset($cropOptions['x']) ? (int)round($cropOptions['x']) : 0;
+        $y = isset($cropOptions['y']) ? (int)round($cropOptions['y']) : 0;
+        $width = isset($cropOptions['width']) ? (int)round($cropOptions['width']) : imagesx($image);
+        $height = isset($cropOptions['height']) ? (int)round($cropOptions['height']) : imagesy($image);
+
+        $width = max(1, $width);
+        $height = max(1, $height);
+
+        $cropped = PuzzleImageProcessor::cropImage($image, $x, $y, $width, $height);
+
+        return $this->saveImageResource($cropped, $imagePath) ?: $imagePath;
+    }
+
+    /**
+     * Applica filtri di luminosità, contrasto e saturazione.
+     *
+     * @param string $imagePath
+     * @param array $filters
+     * @return string
+     */
+    protected function applyImageFilters($imagePath, array $filters)
+    {
+        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
+
+        $image = PuzzleImageProcessor::loadImage($imagePath);
+        if (!$image) {
+            return $imagePath;
+        }
+
+        if (!empty($filters['brightness'])) {
+            $brightness = (int)$filters['brightness'];
+            $brightness = max(-255, min(255, $brightness));
+            imagefilter($image, IMG_FILTER_BRIGHTNESS, $brightness);
+        }
+
+        if (!empty($filters['contrast'])) {
+            $contrast = (int)$filters['contrast'];
+            $contrast = max(-100, min(100, $contrast));
+            imagefilter($image, IMG_FILTER_CONTRAST, -$contrast);
+        }
+
+        if (!empty($filters['saturation'])) {
+            $saturation = (int)$filters['saturation'];
+            $saturation = max(-100, min(100, $saturation));
+            $image = $this->adjustImageSaturation($image, $saturation);
+        }
+
+        return $this->saveImageResource($image, $imagePath) ?: $imagePath;
+    }
+
+    /**
+     * Applica rotazioni e flip all'immagine.
+     *
+     * @param string $imagePath
+     * @param int $rotate
+     * @param string $flip
+     * @return string
+     */
+    protected function applyImageTransformations($imagePath, $rotate, $flip)
+    {
+        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
+
+        $image = PuzzleImageProcessor::loadImage($imagePath);
+        if (!$image) {
+            return $imagePath;
+        }
+
+        if (!empty($rotate)) {
+            $image = PuzzleImageProcessor::rotateImage($image, (int)$rotate);
+        }
+
+        $flip = strtolower((string)$flip);
+        if (in_array($flip, ['horizontal', 'vertical', 'both'], true)) {
+            $image = $this->flipImageResource($image, $flip);
+        }
+
+        return $this->saveImageResource($image, $imagePath) ?: $imagePath;
+    }
+
+    /**
+     * Salva una risorsa immagine sul percorso indicato.
+     *
+     * @param resource $imageResource
+     * @param string $destinationPath
+     * @return string|false
+     */
+    protected function saveImageResource($imageResource, $destinationPath)
+    {
+        if (!$imageResource) {
+            return false;
+        }
+
+        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
+
+        $result = PuzzleImageProcessor::saveImage($imageResource, $destinationPath, 100);
+        imagedestroy($imageResource);
+
+        return $result ? $destinationPath : false;
+    }
+
+    /**
+     * Regola la saturazione di un'immagine GD.
+     *
+     * @param resource $image
+     * @param int $saturation
+     * @return resource
+     */
+    protected function adjustImageSaturation($image, $saturation)
+    {
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $factor = 1 + ($saturation / 100);
+
+        $adjusted = imagecreatetruecolor($width, $height);
+        imagealphablending($adjusted, false);
+        imagesavealpha($adjusted, true);
+
+        for ($y = 0; $y < $height; $y++) {
+            for ($x = 0; $x < $width; $x++) {
+                $color = imagecolorat($image, $x, $y);
+                $rgba = imagecolorsforindex($image, $color);
+
+                $gray = (int)round(0.299 * $rgba['red'] + 0.587 * $rgba['green'] + 0.114 * $rgba['blue']);
+
+                $red = $gray + ($rgba['red'] - $gray) * $factor;
+                $green = $gray + ($rgba['green'] - $gray) * $factor;
+                $blue = $gray + ($rgba['blue'] - $gray) * $factor;
+
+                $red = max(0, min(255, (int)round($red)));
+                $green = max(0, min(255, (int)round($green)));
+                $blue = max(0, min(255, (int)round($blue)));
+
+                $pixelColor = imagecolorallocatealpha($adjusted, $red, $green, $blue, $rgba['alpha']);
+                imagesetpixel($adjusted, $x, $y, $pixelColor);
+            }
+        }
+
+        imagedestroy($image);
+
+        return $adjusted;
+    }
+
+    /**
+     * Esegue il flip dell'immagine secondo la direzione richiesta.
+     *
+     * @param resource $image
+     * @param string $mode
+     * @return resource
+     */
+    protected function flipImageResource($image, $mode)
+    {
+        if (function_exists('imageflip')) {
+            $types = [
+                'horizontal' => defined('IMG_FLIP_HORIZONTAL') ? IMG_FLIP_HORIZONTAL : 1,
+                'vertical' => defined('IMG_FLIP_VERTICAL') ? IMG_FLIP_VERTICAL : 2,
+                'both' => defined('IMG_FLIP_BOTH') ? IMG_FLIP_BOTH : 3,
+            ];
+
+            $type = isset($types[$mode]) ? $types[$mode] : $types['horizontal'];
+            imageflip($image, $type);
+
+            return $image;
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        $flipped = imagecreatetruecolor($width, $height);
+        imagealphablending($flipped, false);
+        imagesavealpha($flipped, true);
+
+        switch ($mode) {
+            case 'vertical':
+                for ($y = 0; $y < $height; $y++) {
+                    imagecopy($flipped, $image, 0, $height - $y - 1, 0, $y, $width, 1);
+                }
+                break;
+
+            case 'both':
+                for ($x = 0; $x < $width; $x++) {
+                    imagecopy($flipped, $image, $width - $x - 1, 0, $x, 0, 1, $height);
+                }
+                $temp = imagecreatetruecolor($width, $height);
+                imagealphablending($temp, false);
+                imagesavealpha($temp, true);
+                for ($y = 0; $y < $height; $y++) {
+                    imagecopy($temp, $flipped, 0, $height - $y - 1, 0, $y, $width, 1);
+                }
+                imagedestroy($flipped);
+                $flipped = $temp;
+                break;
+
+            case 'horizontal':
+            default:
+                for ($x = 0; $x < $width; $x++) {
+                    imagecopy($flipped, $image, $width - $x - 1, 0, $x, 0, 1, $height);
+                }
+                break;
+        }
+
+        imagedestroy($image);
+
+        return $flipped;
+    }
+
     /**
      * Pulisce i file temporanei
      */

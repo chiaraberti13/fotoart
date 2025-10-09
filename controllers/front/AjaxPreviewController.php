@@ -1,4 +1,6 @@
 <?php
+require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleAjaxErrorHandler.php';
+
 /**
  * Controller: art_puzzle/controllers/front/AjaxPreviewController.php
  * Gestisce le richieste AJAX per generare anteprime
@@ -14,6 +16,10 @@ class ArtPuzzleAjaxPreviewModuleFrontController extends ModuleFrontController
     {
         parent::init();
 
+        ArtPuzzleAjaxErrorHandler::register(function (\Throwable $throwable) {
+            $this->handleAjaxThrowable($throwable);
+        });
+
         // Verifica token di sicurezza
         if (!Tools::getIsset('token') || Tools::getValue('token') !== Tools::getToken(false)) {
             $this->ajaxError('Token di sicurezza non valido');
@@ -22,61 +28,77 @@ class ArtPuzzleAjaxPreviewModuleFrontController extends ModuleFrontController
 
     public function postProcess()
     {
-        $action = Tools::getValue('action');
+        try {
+            $action = Tools::getValue('action');
 
-        if (!$action) {
-            $this->ajaxError('Nessuna azione specificata');
-        }
+            if (!$action) {
+                $this->ajaxError('Nessuna azione specificata');
+            }
 
-        switch ($action) {
-            case 'generateBoxPreview':
-                $this->generateBoxPreview();
-                break;
+            switch ($action) {
+                case 'generateBoxPreview':
+                    $this->generateBoxPreview();
+                    break;
 
-            case 'generatePuzzlePreview':
-                $this->generatePuzzlePreview();
-                break;
+                case 'generatePuzzlePreview':
+                    $this->generatePuzzlePreview();
+                    break;
 
-            case 'generateSummaryPreview':
-                $this->generateSummaryPreview();
-                break;
+                case 'generateSummaryPreview':
+                    $this->generateSummaryPreview();
+                    break;
 
-            default:
-                $this->ajaxError('Azione non riconosciuta: ' . $action);
+                default:
+                    $this->ajaxError('Azione non riconosciuta: ' . $action);
+            }
+        } catch (\Throwable $throwable) {
+            $this->handleAjaxThrowable($throwable);
         }
     }
 
     private function generateBoxPreview()
     {
-        $result = [
-            'success' => true,
-            'preview_url' => _MODULE_DIR_ . 'art_puzzle/views/img/anteprima_scatola.png'
-        ];
-        $this->ajaxDie(json_encode($result));
+        try {
+            $result = [
+                'success' => true,
+                'preview_url' => _MODULE_DIR_ . 'art_puzzle/views/img/anteprima_scatola.png'
+            ];
+            $this->ajaxDie(json_encode($result));
+        } catch (\Throwable $throwable) {
+            $this->handleAjaxThrowable($throwable);
+        }
     }
 
     private function generatePuzzlePreview()
     {
-        $uploaded_image = $this->context->cookie->__get('art_puzzle_uploaded_image');
+        try {
+            $uploaded_image = $this->context->cookie->__get('art_puzzle_uploaded_image');
 
-        if (!$uploaded_image || !file_exists(_PS_MODULE_DIR_ . 'art_puzzle/upload/' . $uploaded_image)) {
-            $this->ajaxError('Immagine puzzle non disponibile');
+            if (!$uploaded_image || !file_exists(_PS_MODULE_DIR_ . 'art_puzzle/upload/' . $uploaded_image)) {
+                $this->ajaxError('Immagine puzzle non disponibile');
+            }
+
+            $result = [
+                'success' => true,
+                'preview_url' => _MODULE_DIR_ . 'art_puzzle/upload/' . $uploaded_image
+            ];
+            $this->ajaxDie(json_encode($result));
+        } catch (\Throwable $throwable) {
+            $this->handleAjaxThrowable($throwable);
         }
-
-        $result = [
-            'success' => true,
-            'preview_url' => _MODULE_DIR_ . 'art_puzzle/upload/' . $uploaded_image
-        ];
-        $this->ajaxDie(json_encode($result));
     }
 
     private function generateSummaryPreview()
     {
-        $result = [
-            'success' => true,
-            'summary_html' => '<div class="summary-box">Preview riepilogo generata.</div>'
-        ];
-        $this->ajaxDie(json_encode($result));
+        try {
+            $result = [
+                'success' => true,
+                'summary_html' => '<div class="summary-box">Preview riepilogo generata.</div>'
+            ];
+            $this->ajaxDie(json_encode($result));
+        } catch (\Throwable $throwable) {
+            $this->handleAjaxThrowable($throwable);
+        }
     }
 
     private function ajaxError($message)
@@ -88,5 +110,10 @@ class ArtPuzzleAjaxPreviewModuleFrontController extends ModuleFrontController
             'success' => false,
             'message' => $message
         ]));
+    }
+
+    private function handleAjaxThrowable(\Throwable $throwable)
+    {
+        $this->ajaxError($throwable->getMessage());
     }
 }

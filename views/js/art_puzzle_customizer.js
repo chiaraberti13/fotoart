@@ -143,16 +143,8 @@ console.log('- File type:', file.type);
 console.log('- Token:', window.artPuzzleToken || 'MANCANTE');
 console.log('- Action: uploadImage');
     
-    // URL AJAX corretto con fallback basato su attributi generati da PrestaShop
-var ajaxUrl;
-if (typeof window.artPuzzleAjaxUrl !== 'undefined' && window.artPuzzleAjaxUrl) {
-    ajaxUrl = window.artPuzzleAjaxUrl;
-} else {
-    var ajaxUrlElement = document.querySelector('[data-art-puzzle-ajax-url]');
-    if (ajaxUrlElement) {
-        ajaxUrl = ajaxUrlElement.getAttribute('data-art-puzzle-ajax-url');
-    }
-}
+    // URL AJAX fornito dal template Smarty
+var ajaxUrl = typeof window.artPuzzleAjaxUrl !== 'undefined' ? window.artPuzzleAjaxUrl : '';
 
 if (!ajaxUrl) {
     console.error('Impossibile determinare l\'URL AJAX di Art Puzzle');

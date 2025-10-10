@@ -12,7 +12,7 @@
                     <i class="material-icons">arrow_back</i> {l s='Torna al prodotto' mod='art_puzzle'}
                 </a>
                 
-                <div class="art-puzzle-container" data-art-puzzle-ajax-url="{$puzzleAjaxUrl|escape:'htmlall':'UTF-8'}">
+                <div class="art-puzzle-container">
                     <h3>{l s='Personalizza il tuo' mod='art_puzzle'} {$product->name}</h3>
                     <div class="art-puzzle-steps">
                         <div class="step step-1 active">

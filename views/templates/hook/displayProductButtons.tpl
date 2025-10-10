@@ -21,13 +21,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 var tabFound = false;
                 
                 if (tabs && tabs.length > 0) {
+                    var targetTabTitle = "{l s='Personalizza il tuo puzzle' mod='art_puzzle' js=1}".toLowerCase().trim();
                     // Log per debug
                     console.log('Art Puzzle: Trovati ' + tabs.length + ' tab');
-                    
+
                     for (var i = 0; i < tabs.length; i++) {
                         // Migliorata la ricerca del testo indipendentemente dalla lingua e case-insensitive
                         var tabText = tabs[i].textContent.toLowerCase().trim();
-                        if (tabText.indexOf('personalizza') !== -1 && tabText.indexOf('puzzle') !== -1) {
+                        if (tabText === targetTabTitle) {
                             console.log('Art Puzzle: Tab del puzzle trovato e attivato');
                             // Attiva questo tab
                             tabs[i].click();

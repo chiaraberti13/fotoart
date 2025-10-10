@@ -340,30 +340,29 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
 
     public function hookDisplayHeader($params)
     {
-        // Solo per le pagine prodotto
-        if ($this->context->controller instanceof ProductControllerCore) {
-            $product_id = (int)Tools::getValue('id_product');
-            if ($this->isPuzzleProduct($product_id)) {
-                $this->context->controller->addJS($this->_path . 'views/js/front.js');
-                $this->context->controller->addCSS($this->_path . 'views/css/front.css');
-                
-                // Aggiungi Cropper.js se abilitato
-                if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
-                    $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js');
-                    $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css');
-                }
-                
-                // Carica CSS per i font personalizzati
-                $this->loadCustomFontsCSS();
-                
-                // Aggiungi variabili JS
-                Media::addJsDef([
-                    'art_puzzle_ajax_url' => $this->context->link->getModuleLink('art_puzzle', 'ajax'),
-                    'art_puzzle_product_id' => $product_id,
-                    'art_puzzle_token' => Tools::getToken(false)
-                ]);
-            }
+        if (!$this->shouldLoadPuzzleAssets()) {
+            return '';
         }
+
+        $product_id = (int)Tools::getValue('id_product');
+
+        $this->context->controller->addJS($this->_path . 'views/js/front.bundle.min.js');
+        $this->context->controller->addCSS($this->_path . 'views/css/front.css');
+
+        if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
+            $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js');
+            $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css');
+        }
+
+        $fontsCss = $this->loadCustomFontsCSS();
+
+        Media::addJsDef([
+            'art_puzzle_ajax_url' => $this->context->link->getModuleLink('art_puzzle', 'ajax'),
+            'art_puzzle_product_id' => $product_id,
+            'art_puzzle_token' => Tools::getToken(false),
+        ]);
+
+        return $fontsCss ?: '';
     }
 
     private function loadCustomFontsCSS()
@@ -521,19 +520,47 @@ public function hookDisplayAdminProductsExtra($params)
 }
 
     public function isPuzzleProduct($id_product)
-{
-    if (!$id_product) {
-        return false;
+    {
+        $id_product = (int) $id_product;
+        if ($id_product <= 0) {
+            return false;
+        }
+
+        $product_ids = $this->getConfiguredPuzzleProductIds();
+
+        return in_array((string) $id_product, $product_ids, true);
     }
-    
-    $product_ids_str = Configuration::get('ART_PUZZLE_PRODUCT_IDS');
-    if (!$product_ids_str) {
-        return false;
+
+    private function shouldLoadPuzzleAssets()
+    {
+        $controller = $this->context->controller;
+
+        if (!$controller || !property_exists($controller, 'php_self')) {
+            return false;
+        }
+
+        if ($controller->php_self !== 'product') {
+            return false;
+        }
+
+        $product_id = (int) Tools::getValue('id_product');
+
+        return $product_id > 0 && $this->isPuzzleProduct($product_id);
     }
-    
-    $product_ids = explode(',', $product_ids_str);
-    return in_array((string)$id_product, $product_ids);
-}
+
+    private function getConfiguredPuzzleProductIds()
+    {
+        $product_ids_str = Configuration::get('ART_PUZZLE_PRODUCT_IDS');
+        if (!$product_ids_str) {
+            return [];
+        }
+
+        $ids = array_map('trim', explode(',', $product_ids_str));
+
+        return array_values(array_filter($ids, static function ($id) {
+            return $id !== '';
+        }));
+    }
 
 public function hookDisplayShoppingCartFooter($params)
 {

@@ -127,78 +127,209 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
         $output = '';
 
         if (Tools::isSubmit('submitArtPuzzle')) {
+            $errors = [];
+
             // Elaborazione degli ID prodotto inviati (vengono inviati come array)
-            $product_ids = Tools::getValue('ART_PUZZLE_PRODUCT_IDS');
-            if (is_array($product_ids)) {
-                // Rimuove eventuali voci vuote e pulisce gli spazi
-                $product_ids = array_filter($product_ids, function($v) { return trim($v) != ''; });
-                $product_ids = array_map('trim', $product_ids);
-                $product_ids = implode(',', $product_ids);
+            $product_ids_input = Tools::getValue('ART_PUZZLE_PRODUCT_IDS', []);
+            $product_ids_clean = [];
+            if (is_array($product_ids_input)) {
+                foreach ($product_ids_input as $product_id) {
+                    $product_id = trim((string) $product_id);
+                    if ($product_id === '') {
+                        continue;
+                    }
+
+                    if (!Validate::isUnsignedId($product_id)) {
+                        $errors[] = $this->l('Gli ID prodotto devono contenere solo numeri positivi.');
+                        break;
+                    }
+
+                    $product_ids_clean[] = $product_id;
+                }
+            } elseif ($product_ids_input !== '' && !Validate::isUnsignedId($product_ids_input)) {
+                $errors[] = $this->l('Gli ID prodotto devono contenere solo numeri positivi.');
+            } elseif ($product_ids_input !== '') {
+                $product_ids_clean[] = trim((string) $product_ids_input);
             }
-            Configuration::updateValue('ART_PUZZLE_PRODUCT_IDS', $product_ids);
+            $product_ids = implode(',', $product_ids_clean);
 
-            Configuration::updateValue('ART_PUZZLE_MAX_UPLOAD_SIZE', Tools::getValue('ART_PUZZLE_MAX_UPLOAD_SIZE'));
-            Configuration::updateValue('ART_PUZZLE_ALLOWED_FILE_TYPES', Tools::getValue('ART_PUZZLE_ALLOWED_FILE_TYPES'));
-            Configuration::updateValue('ART_PUZZLE_UPLOAD_FOLDER', Tools::getValue('ART_PUZZLE_UPLOAD_FOLDER'));
-            Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_USER_EMAIL', Tools::getValue('ART_PUZZLE_SEND_PREVIEW_USER_EMAIL'));
-            Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL', Tools::getValue('ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL'));
-            Configuration::updateValue('ART_PUZZLE_DEFAULT_BOX_TEXT', Tools::getValue('ART_PUZZLE_DEFAULT_BOX_TEXT'));
-            Configuration::updateValue('ART_PUZZLE_MAX_BOX_TEXT_LENGTH', Tools::getValue('ART_PUZZLE_MAX_BOX_TEXT_LENGTH'));
-            Configuration::updateValue('ART_PUZZLE_ENABLE_ORIENTATION', Tools::getValue('ART_PUZZLE_ENABLE_ORIENTATION'));
-            Configuration::updateValue('ART_PUZZLE_ENABLE_CROP_TOOL', Tools::getValue('ART_PUZZLE_ENABLE_CROP_TOOL'));
-            Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_USER', Tools::getValue('ART_PUZZLE_ENABLE_PDF_USER'));
-            Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_ADMIN', Tools::getValue('ART_PUZZLE_ENABLE_PDF_ADMIN'));
-            Configuration::updateValue('ART_PUZZLE_ADMIN_EMAIL', Tools::getValue('ART_PUZZLE_ADMIN_EMAIL'));
+            $max_upload_size = Tools::getValue('ART_PUZZLE_MAX_UPLOAD_SIZE');
+            if ($max_upload_size === null || $max_upload_size === '' || !Validate::isUnsignedInt($max_upload_size) || (int) $max_upload_size <= 0) {
+                $errors[] = $this->l('La dimensione massima di upload deve essere un numero intero positivo.');
+            } else {
+                $max_upload_size = (int) $max_upload_size;
+            }
 
-            // Salvataggio combinazioni colori
-            $box_colors = Tools::getValue('ART_PUZZLE_BOX_COLORS');
-            if (is_array($box_colors)) {
-                $colors_array = [];
-                foreach ($box_colors as $color_json) {
-                    $color_set = json_decode($color_json, true);
-                    if ($color_set && isset($color_set['box']) && isset($color_set['text'])) {
-                        $colors_array[] = $color_set;
+            $allowed_file_types_raw = Tools::getValue('ART_PUZZLE_ALLOWED_FILE_TYPES');
+            $allowed_file_types_list = [];
+            if ($allowed_file_types_raw === null || trim((string) $allowed_file_types_raw) === '') {
+                $errors[] = $this->l('Inserisci almeno un formato file consentito.');
+            } else {
+                $candidate_types = array_filter(array_map('trim', explode(',', (string) $allowed_file_types_raw)));
+                if (empty($candidate_types)) {
+                    $errors[] = $this->l('Inserisci almeno un formato file consentito.');
+                } else {
+                    foreach ($candidate_types as $candidate) {
+                        if (!preg_match('/^[a-z0-9]+$/i', $candidate)) {
+                            $errors[] = $this->l('I formati file consentiti possono contenere solo lettere e numeri, separati da virgola.');
+                            break;
+                        }
+                        $allowed_file_types_list[] = Tools::strtolower($candidate);
                     }
                 }
-                Configuration::updateValue('ART_PUZZLE_BOX_COLORS', json_encode($colors_array));
+            }
+            $allowed_file_types = implode(',', $allowed_file_types_list);
+
+            $upload_folder = Tools::getValue('ART_PUZZLE_UPLOAD_FOLDER');
+            $upload_folder = $upload_folder !== null ? trim((string) $upload_folder) : '';
+            if ($upload_folder === '') {
+                $errors[] = $this->l('La cartella di upload non può essere vuota.');
+            } elseif (!Validate::isCleanHtml($upload_folder)) {
+                $errors[] = $this->l('La cartella di upload contiene caratteri non validi.');
+            } else {
+                if (substr($upload_folder, 0, 1) !== '/') {
+                    $upload_folder = '/' . $upload_folder;
+                }
+                if (substr($upload_folder, -1) !== '/') {
+                    $upload_folder .= '/';
+                }
             }
 
-            // Gestione del caricamento dei file dei fonts (massimo 10 file)
-            $upload_folder = _PS_MODULE_DIR_ . $this->name . '/views/fonts/';
-            if (!file_exists($upload_folder)) {
-                mkdir($upload_folder, 0755, true);
+            $booleanFields = [
+                'ART_PUZZLE_SEND_PREVIEW_USER_EMAIL' => $this->l('Valore non valido per l\'opzione di invio email all\'utente.'),
+                'ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL' => $this->l('Valore non valido per l\'opzione di invio email all\'amministratore.'),
+                'ART_PUZZLE_ENABLE_ORIENTATION' => $this->l('Valore non valido per l\'opzione di orientamento.'),
+                'ART_PUZZLE_ENABLE_CROP_TOOL' => $this->l('Valore non valido per l\'opzione di ritaglio.'),
+                'ART_PUZZLE_ENABLE_PDF_USER' => $this->l('Valore non valido per l\'opzione PDF utente.'),
+                'ART_PUZZLE_ENABLE_PDF_ADMIN' => $this->l('Valore non valido per l\'opzione PDF amministratore.'),
+            ];
+            $booleanValues = [];
+            foreach ($booleanFields as $field => $errorMessage) {
+                $rawValue = Tools::getValue($field, null);
+
+                if ($rawValue === null) {
+                    $value = 0;
+                } elseif (in_array($rawValue, ['on', 'true'], true)) {
+                    $value = 1;
+                } elseif (in_array($rawValue, ['off', 'false'], true)) {
+                    $value = 0;
+                } else {
+                    $value = (int) $rawValue;
+                }
+
+                if (!in_array($value, [0, 1], true)) {
+                    $errors[] = $errorMessage;
+                }
+
+                $booleanValues[$field] = $value;
             }
-            $uploaded_fonts = array();
-            
-            // Recupera font esistenti
-            $current_fonts = Configuration::get('ART_PUZZLE_FONTS');
-            if ($current_fonts) {
-                $uploaded_fonts = explode(',', $current_fonts);
+
+            $default_box_text = Tools::getValue('ART_PUZZLE_DEFAULT_BOX_TEXT', '');
+            if ($default_box_text !== '' && !Validate::isCleanHtml($default_box_text)) {
+                $errors[] = $this->l('Il testo predefinito della scatola contiene caratteri non validi.');
             }
-            
+
+            $max_box_text_length = Tools::getValue('ART_PUZZLE_MAX_BOX_TEXT_LENGTH');
+            if ($max_box_text_length === null || $max_box_text_length === '' || !Validate::isUnsignedInt($max_box_text_length) || (int) $max_box_text_length <= 0) {
+                $errors[] = $this->l('La lunghezza massima del testo deve essere un numero intero positivo.');
+            } else {
+                $max_box_text_length = (int) $max_box_text_length;
+            }
+
+            $admin_email = trim((string) Tools::getValue('ART_PUZZLE_ADMIN_EMAIL'));
+            if ($admin_email === '' || !Validate::isEmail($admin_email)) {
+                $errors[] = $this->l('Inserisci un indirizzo email amministratore valido.');
+            }
+
+            $box_colors_raw = Tools::getValue('ART_PUZZLE_BOX_COLORS', []);
+            $box_colors_clean = [];
+            if (is_array($box_colors_raw)) {
+                foreach ($box_colors_raw as $color_json) {
+                    $color_set = json_decode($color_json, true);
+                    if (!$color_set || !isset($color_set['box'], $color_set['text'])) {
+                        $errors[] = $this->l('Una delle combinazioni di colori non è valida.');
+                        break;
+                    }
+
+                    if (!$this->isValidHexColor($color_set['box']) || !$this->isValidHexColor($color_set['text'])) {
+                        $errors[] = $this->l('I colori devono essere in formato esadecimale a 6 caratteri.');
+                        break;
+                    }
+
+                    $box_colors_clean[] = [
+                        'box' => Tools::strtoupper($color_set['box']),
+                        'text' => Tools::strtoupper($color_set['text']),
+                    ];
+                }
+            } else {
+                $errors[] = $this->l('Una delle combinazioni di colori non è valida.');
+            }
+
+            $fonts_to_upload = [];
             for ($i = 1; $i <= 10; $i++) {
                 if (isset($_FILES['ART_PUZZLE_FONT_' . $i]) && !empty($_FILES['ART_PUZZLE_FONT_' . $i]['name'])) {
                     $file = $_FILES['ART_PUZZLE_FONT_' . $i];
                     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-                    if (strtolower($ext) == 'ttf') {
-                        $new_filename = 'font_' . $i . '.' . $ext;
-                        if (move_uploaded_file($file['tmp_name'], $upload_folder . $new_filename)) {
+                    if (Tools::strtolower($ext) !== 'ttf') {
+                        $errors[] = $this->l('I file dei font devono essere in formato TTF.');
+                        break;
+                    }
+                    $fonts_to_upload[$i] = $file;
+                }
+            }
+
+            if (empty($errors)) {
+                Configuration::updateValue('ART_PUZZLE_PRODUCT_IDS', $product_ids);
+                Configuration::updateValue('ART_PUZZLE_MAX_UPLOAD_SIZE', (string) $max_upload_size);
+                Configuration::updateValue('ART_PUZZLE_ALLOWED_FILE_TYPES', $allowed_file_types);
+                Configuration::updateValue('ART_PUZZLE_UPLOAD_FOLDER', $upload_folder);
+                Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_USER_EMAIL', $booleanValues['ART_PUZZLE_SEND_PREVIEW_USER_EMAIL']);
+                Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL', $booleanValues['ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL']);
+                Configuration::updateValue('ART_PUZZLE_DEFAULT_BOX_TEXT', $default_box_text);
+                Configuration::updateValue('ART_PUZZLE_MAX_BOX_TEXT_LENGTH', (string) $max_box_text_length);
+                Configuration::updateValue('ART_PUZZLE_ENABLE_ORIENTATION', $booleanValues['ART_PUZZLE_ENABLE_ORIENTATION']);
+                Configuration::updateValue('ART_PUZZLE_ENABLE_CROP_TOOL', $booleanValues['ART_PUZZLE_ENABLE_CROP_TOOL']);
+                Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_USER', $booleanValues['ART_PUZZLE_ENABLE_PDF_USER']);
+                Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_ADMIN', $booleanValues['ART_PUZZLE_ENABLE_PDF_ADMIN']);
+                Configuration::updateValue('ART_PUZZLE_ADMIN_EMAIL', $admin_email);
+                Configuration::updateValue('ART_PUZZLE_BOX_COLORS', json_encode($box_colors_clean));
+
+                // Gestione del caricamento dei file dei fonts (massimo 10 file)
+                if (!empty($fonts_to_upload)) {
+                    $upload_folder_path = _PS_MODULE_DIR_ . $this->name . '/views/fonts/';
+                    if (!file_exists($upload_folder_path)) {
+                        mkdir($upload_folder_path, 0755, true);
+                    }
+
+                    $uploaded_fonts = [];
+                    $current_fonts = Configuration::get('ART_PUZZLE_FONTS');
+                    if ($current_fonts) {
+                        $uploaded_fonts = explode(',', $current_fonts);
+                    }
+
+                    foreach ($fonts_to_upload as $index => $file) {
+                        $new_filename = 'font_' . $index . '.ttf';
+                        if (move_uploaded_file($file['tmp_name'], $upload_folder_path . $new_filename)) {
                             if (!in_array($new_filename, $uploaded_fonts)) {
                                 $uploaded_fonts[] = $new_filename;
                             }
                         }
                     }
+
+                    if (count($uploaded_fonts) > 0) {
+                        Configuration::updateValue('ART_PUZZLE_FONTS', implode(',', $uploaded_fonts));
+                    }
+                }
+
+                $output .= $this->displayConfirmation($this->l('Impostazioni aggiornate'));
+
+                // Verifica e crea directory se necessario
+                $this->createRequiredDirectories();
+            } else {
+                foreach ($errors as $error) {
+                    $output .= $this->displayError($error);
                 }
             }
-            
-            if (count($uploaded_fonts) > 0) {
-                Configuration::updateValue('ART_PUZZLE_FONTS', implode(',', $uploaded_fonts));
-            }
-
-            $output .= $this->displayConfirmation($this->l('Impostazioni aggiornate'));
-            
-            // Verifica e crea directory se necessario
-            $this->createRequiredDirectories();
         }
 
         return $output . $this->displayForm();
@@ -733,7 +864,7 @@ public function hookDisplayShoppingCartFooter($params)
     {
         $box_colors = Configuration::get('ART_PUZZLE_BOX_COLORS') ? Configuration::get('ART_PUZZLE_BOX_COLORS') : '[]';
         $colors_array = json_decode($box_colors, true) ?: [];
-        
+
         $html = '<div id="box_colors_container">';
         
         // Prima riga per aggiungere nuovi colori
@@ -790,6 +921,11 @@ public function hookDisplayShoppingCartFooter($params)
         $html .= '</div>';
         
         return $html;
+    }
+
+    private function isValidHexColor($color)
+    {
+        return is_string($color) && preg_match('/^#[0-9A-Fa-f]{6}$/', $color);
     }
 
     private function getContrastColor($hexColor)

@@ -35,19 +35,19 @@ class Art_Puzzle extends Module
         
         // Assicurati che tutti gli hook necessari siano registrati
         return parent::install() &&
-$this->registerHook('displayProductButtons') &&
-$this->registerHook('actionFrontControllerSetMedia') &&
-$this->registerHook('displayProductExtraContent') &&
-$this->registerHook('displayBackOfficeHeader') &&
-$this->registerHook('displayAdminProductsExtra') &&
-$this->registerHook('displayAdminProductsMainStepLeftColumnMiddle') &&
-$this->registerHook('displayShoppingCartFooter') &&
-$this->registerHook('actionCartSave') &&
-$this->registerHook('actionOrderStatusPostUpdate') &&
-$this->registerHook('displayOrderConfirmation') &&
-$this->registerHook('actionValidateOrder') &&          // NUOVO
-$this->registerHook('actionPaymentConfirmation') &&    // NUOVO
-            
+            $this->registerHook('displayProductButtons') &&
+            $this->registerHook('actionFrontControllerSetMedia') &&
+            $this->registerHook('displayProductExtraContent') &&
+            $this->registerHook('displayBackOfficeHeader') &&
+            $this->registerHook('displayAdminProductsExtra') &&
+            $this->registerHook('displayAdminProductsMainStepLeftColumnMiddle') &&
+            $this->registerHook('displayShoppingCartFooter') &&
+            $this->registerHook('actionCartSave') &&
+            $this->registerHook('actionOrderStatusPostUpdate') &&
+            $this->registerHook('displayOrderConfirmation') &&
+            $this->registerHook('actionValidateOrder') &&          // NUOVO
+            $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
+
             // Inizializza le configurazioni di default
             Configuration::updateValue('ART_PUZZLE_PRODUCT_IDS', '') &&
             Configuration::updateValue('ART_PUZZLE_MAX_UPLOAD_SIZE', '20') &&
@@ -67,7 +67,8 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
                 ['box' => '#FF0000', 'text' => '#FFFFFF'],
                 ['box' => '#0000FF', 'text' => '#FFFFFF'],
             ])) &&
-            Configuration::updateValue('ART_PUZZLE_ADMIN_EMAIL', Configuration::get('PS_SHOP_EMAIL'));
+            Configuration::updateValue('ART_PUZZLE_ADMIN_EMAIL', Configuration::get('PS_SHOP_EMAIL')) &&
+            $this->ensureCustomizationTableIndexes();
     }
 
     private function createRequiredDirectories()
@@ -100,6 +101,52 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
         chmod($uploadDir, 0755);
         chmod($logDir, 0755);
         
+        return true;
+    }
+
+    /**
+     * Garantisce la presenza degli indici necessari sulla tabella di personalizzazione del modulo.
+     *
+     * @return bool
+     */
+    private function ensureCustomizationTableIndexes()
+    {
+        $db = Db::getInstance();
+        $tableName = _DB_PREFIX_ . 'art_puzzle_customization';
+
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . pSQL($tableName) . "'");
+        if (empty($tableExists)) {
+            return true;
+        }
+
+        $indexes = [
+            'idx_id_product' => 'id_product',
+            'idx_id_cart' => 'id_cart',
+            'idx_id_order' => 'id_order',
+        ];
+
+        foreach ($indexes as $indexName => $column) {
+            $query = sprintf(
+                "SHOW INDEX FROM `%s` WHERE Key_name = '%s'",
+                pSQL($tableName),
+                pSQL($indexName)
+            );
+
+            $exists = $db->getRow($query);
+            if (!$exists) {
+                $sql = sprintf(
+                    "ALTER TABLE `%s` ADD INDEX `%s` (`%s`)",
+                    pSQL($tableName),
+                    pSQL($indexName),
+                    pSQL($column)
+                );
+
+                if (!$db->execute($sql)) {
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 

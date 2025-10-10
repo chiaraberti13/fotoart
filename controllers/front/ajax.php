@@ -15,6 +15,12 @@ use ArtPuzzle\PuzzleImageProcessor;
 
 class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 {
+    /** @var bool Flag per assicurare la creazione degli indici */
+    protected static $customizationIndexesEnsured = false;
+
+    /** @var array Cache per i campi di personalizzazione */
+    protected static $customizationFieldCache = [];
+
     /** @var bool Disattiva il rendering della colonna sinistra */
     public $display_column_left = false;
     
@@ -763,22 +769,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 }
 
                 // Verifica e crea campi di personalizzazione
-                $customization_fields = Db::getInstance()->executeS('
-                    SELECT cf.`id_customization_field`, cf.`type`
-                    FROM `'._DB_PREFIX_.'customization_field` cf
-                    WHERE cf.`id_product` = '.(int)$id_product
-                );
+                $customization_fields = $this->getCustomizationFields($id_product);
 
                 if (!$customization_fields) {
                     // Se non ci sono campi di personalizzazione, creali
                     $this->createCustomizationFields($id_product);
 
                     // Ricarica i campi
-                    $customization_fields = Db::getInstance()->executeS('
-                        SELECT cf.`id_customization_field`, cf.`type`
-                        FROM `'._DB_PREFIX_.'customization_field` cf
-                        WHERE cf.`id_product` = '.(int)$id_product
-                    );
+                    $customization_fields = $this->getCustomizationFields($id_product, true);
                 }
 
                 // Assicurati che ci sia un carrello valido
@@ -926,22 +924,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 file_put_contents($filepath, $image_decoded);
 
                 // Verifica e crea campi di personalizzazione
-                $customization_fields = Db::getInstance()->executeS('
-                    SELECT cf.`id_customization_field`, cf.`type`
-                    FROM `'._DB_PREFIX_.'customization_field` cf
-                    WHERE cf.`id_product` = '.(int)$product_id
-                );
+                $customization_fields = $this->getCustomizationFields($product_id);
 
                 if (!$customization_fields) {
                     // Se non ci sono campi di personalizzazione, creali
                     $this->createCustomizationFields($product_id);
 
                     // Ricarica i campi
-                    $customization_fields = Db::getInstance()->executeS('
-                        SELECT cf.`id_customization_field`, cf.`type`
-                        FROM `'._DB_PREFIX_.'customization_field` cf
-                        WHERE cf.`id_product` = '.(int)$product_id
-                    );
+                    $customization_fields = $this->getCustomizationFields($product_id, true);
                 }
 
                 // Assicurati che ci sia un carrello valido
@@ -1156,7 +1146,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     {
         // Crea campo per l'immagine
         Db::getInstance()->execute('
-            INSERT INTO `'._DB_PREFIX_.'customization_field` 
+            INSERT INTO `'._DB_PREFIX_.'customization_field`
             (`id_product`, `type`, `required`) 
             VALUES ('.(int)$product_id.', 0, 0)'
         );
@@ -1206,17 +1196,104 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
         $product->text_fields = 1;
         $product->save();
     }
-    
+
+    /**
+     * Recupera i campi di personalizzazione utilizzando la cache.
+     */
+    protected function getCustomizationFields($id_product, $forceRefresh = false)
+    {
+        $id_product = (int)$id_product;
+
+        if ($forceRefresh) {
+            unset(self::$customizationFieldCache[$id_product]);
+        }
+
+        if (isset(self::$customizationFieldCache[$id_product])) {
+            return self::$customizationFieldCache[$id_product];
+        }
+
+        $this->ensureCustomizationIndexes();
+
+        $fields = Db::getInstance()->executeS('
+            SELECT cf.`id_customization_field`, cf.`type`
+            FROM `'._DB_PREFIX_.'customization_field` cf
+            WHERE cf.`id_product` = '.$id_product
+        );
+
+        self::$customizationFieldCache[$id_product] = $fields ?: [];
+
+        return self::$customizationFieldCache[$id_product];
+    }
+
+    /**
+     * Garantisce la presenza degli indici necessari sulle tabelle coinvolte.
+     */
+    protected function ensureCustomizationIndexes()
+    {
+        if (self::$customizationIndexesEnsured) {
+            return;
+        }
+
+        $db = Db::getInstance();
+        $indexes = [
+            [
+                'table' => _DB_PREFIX_.'customization',
+                'name' => 'idx_customization_cart_product',
+                'sql' => 'ALTER TABLE `'._DB_PREFIX_.'customization` ADD INDEX `idx_customization_cart_product` (`id_cart`, `id_product`)' 
+            ],
+            [
+                'table' => _DB_PREFIX_.'customized_data',
+                'name' => 'idx_customized_data_customization_index',
+                'sql' => 'ALTER TABLE `'._DB_PREFIX_.'customized_data` ADD INDEX `idx_customized_data_customization_index` (`id_customization`, `index`)' 
+            ],
+            [
+                'table' => _DB_PREFIX_.'customization_field',
+                'name' => 'idx_customization_field_product',
+                'sql' => 'ALTER TABLE `'._DB_PREFIX_.'customization_field` ADD INDEX `idx_customization_field_product` (`id_product`)' 
+            ],
+        ];
+
+        foreach ($indexes as $index) {
+            try {
+                $query = sprintf(
+                    'SHOW INDEX FROM `%s` WHERE Key_name = \'%s\'',
+                    pSQL($index['table']),
+                    pSQL($index['name'])
+                );
+
+                $exists = $db->getRow($query);
+
+                if (!$exists) {
+                    $db->execute($index['sql']);
+                }
+            } catch (Exception $exception) {
+                ArtPuzzleLogger::log(
+                    sprintf(
+                        'Impossibile creare l\'indice %s su %s: %s',
+                        $index['name'],
+                        $index['table'],
+                        $exception->getMessage()
+                    ),
+                    'ERROR'
+                );
+            }
+        }
+
+        self::$customizationIndexesEnsured = true;
+    }
+
     /**
      * Ottieni o crea un ID personalizzazione
      */
     protected function getOrCreateCustomization($id_cart, $id_product)
     {
+        $this->ensureCustomizationIndexes();
+
         $id_customization = null;
-        
+
         // Controlla se esiste già una personalizzazione per questo prodotto nel carrello
         $result = Db::getInstance()->getRow('
-            SELECT `id_customization` 
+            SELECT `id_customization`
             FROM `'._DB_PREFIX_.'customization` 
             WHERE `id_cart` = '.(int)$id_cart.' 
             AND `id_product` = '.(int)$id_product.'
@@ -1250,11 +1327,13 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected function saveFileCustomization($id_customization, $id_customization_field, $filepath, $filename)
     {
+        $this->ensureCustomizationIndexes();
+
         // Controlla se esiste già una personalizzazione per questo campo
         $exists = Db::getInstance()->getValue('
-            SELECT COUNT(*) 
-            FROM `'._DB_PREFIX_.'customized_data` 
-            WHERE `id_customization` = '.(int)$id_customization.' 
+            SELECT COUNT(*)
+            FROM `'._DB_PREFIX_.'customized_data`
+            WHERE `id_customization` = '.(int)$id_customization.'
             AND `type` = 0 
             AND `index` = '.(int)$id_customization_field
         );
@@ -1288,11 +1367,13 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
      */
     protected function saveTextCustomization($id_customization, $id_customization_field, $value)
     {
+        $this->ensureCustomizationIndexes();
+
         // Controlla se esiste già una personalizzazione per questo campo
         $exists = Db::getInstance()->getValue('
-            SELECT COUNT(*) 
-            FROM `'._DB_PREFIX_.'customized_data` 
-            WHERE `id_customization` = '.(int)$id_customization.' 
+            SELECT COUNT(*)
+            FROM `'._DB_PREFIX_.'customized_data`
+            WHERE `id_customization` = '.(int)$id_customization.'
             AND `type` = 1 
             AND `index` = '.(int)$id_customization_field
         );

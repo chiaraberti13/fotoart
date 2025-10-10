@@ -71,7 +71,7 @@ class ArtPuzzleCustomizerModuleFrontController extends ModuleFrontController
 
         $this->registerJavascript(
             'module-art-puzzle-script',
-            'modules/art_puzzle/views/js/front.bundle.min.js',
+            'modules/art_puzzle/views/js/front.js',
             ['position' => 'bottom', 'priority' => 150]
         );
 

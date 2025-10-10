@@ -556,7 +556,7 @@ class Art_Puzzle extends Module
 
         $controller->registerJavascript(
             'module-art-puzzle-front',
-            'modules/' . $this->name . '/views/js/front.bundle.min.js',
+            'modules/' . $this->name . '/views/js/front.js',
             ['position' => 'bottom', 'priority' => 150]
         );
 

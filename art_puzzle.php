@@ -36,7 +36,6 @@ class Art_Puzzle extends Module
         // Assicurati che tutti gli hook necessari siano registrati
         return parent::install() &&
 $this->registerHook('displayProductButtons') &&
-$this->registerHook('displayHeader') &&
 $this->registerHook('actionFrontControllerSetMedia') &&
 $this->registerHook('displayProductExtraContent') &&
 $this->registerHook('displayBackOfficeHeader') &&
@@ -338,23 +337,46 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
         return $output . $this->displayForm();
     }
 
-    public function hookDisplayHeader($params)
+    public function hookActionFrontControllerSetMedia($params)
     {
         if (!$this->shouldLoadPuzzleAssets()) {
-            return '';
+            return;
         }
 
         $product_id = (int)Tools::getValue('id_product');
+        $controller = $this->context->controller;
 
-        $this->context->controller->addJS($this->_path . 'views/js/front.bundle.min.js');
-        $this->context->controller->addCSS($this->_path . 'views/css/front.css');
-
-        if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
-            $this->context->controller->addJS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js');
-            $this->context->controller->addCSS('https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css');
+        if (!$controller) {
+            return;
         }
 
-        $fontsCss = $this->loadCustomFontsCSS();
+        $controller->registerJavascript(
+            'module-art-puzzle-front',
+            'modules/' . $this->name . '/views/js/front.bundle.min.js',
+            ['position' => 'bottom', 'priority' => 150]
+        );
+
+        $controller->registerStylesheet(
+            'module-art-puzzle-front',
+            'modules/' . $this->name . '/views/css/front.css',
+            ['media' => 'all', 'priority' => 150]
+        );
+
+        if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
+            $controller->registerJavascript(
+                'module-art-puzzle-cropper',
+                'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js',
+                ['server' => 'remote', 'position' => 'bottom', 'priority' => 140]
+            );
+
+            $controller->registerStylesheet(
+                'module-art-puzzle-cropper',
+                'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css',
+                ['server' => 'remote', 'media' => 'all', 'priority' => 140]
+            );
+        }
+
+        $this->registerCustomFontsStylesheet($controller);
 
         Media::addJsDef([
             'art_puzzle_ajax_url' => $this->context->link->getModuleLink('art_puzzle', 'ajax'),
@@ -362,19 +384,18 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
             'art_puzzle_token' => Tools::getToken(false),
         ]);
 
-        return $fontsCss ?: '';
     }
 
-    private function loadCustomFontsCSS()
+    public function registerCustomFontsStylesheet($controller)
     {
         $fonts = Configuration::get('ART_PUZZLE_FONTS');
         if (!$fonts) {
             return;
         }
-        
+
         $fonts_array = explode(',', $fonts);
-        $css = '<style type="text/css">';
-        
+        $css = '';
+
         foreach ($fonts_array as $index => $font) {
             $font_url = $this->_path . 'views/fonts/' . $font;
             $css .= '@font-face {
@@ -384,11 +405,19 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
                 font-style: normal;
             }';
         }
-        
-        $css .= '</style>';
-        
-        $this->context->smarty->assign('art_puzzle_fonts_css', $css);
-        return $this->display(__FILE__, 'views/templates/hook/fonts_css.tpl');
+
+        if ($css !== '') {
+            $controller->registerStylesheet(
+                'module-art-puzzle-fonts',
+                null,
+                [
+                    'inline' => true,
+                    'media' => 'all',
+                    'priority' => 155,
+                    'content' => $css,
+                ]
+            );
+        }
     }
 
     public function hookDisplayProductExtraContent($params)
@@ -422,50 +451,6 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
         }
 
         return [];
-    }
-
-    public function hookActionFrontControllerSetMedia($params)
-    {
-        // Aggiungi JS e CSS solo nelle pagine prodotto
-        if ($this->context->controller->php_self == 'product') {
-            $product_id = (int)Tools::getValue('id_product');
-            
-            if ($this->isPuzzleProduct($product_id)) {
-                $this->context->controller->registerStylesheet(
-                    'module-art-puzzle-style',
-                    'modules/'.$this->name.'/views/css/front.css',
-                    ['media' => 'all', 'priority' => 150]
-                );
-                
-                $this->context->controller->registerJavascript(
-                    'module-art-puzzle-script',
-                    'modules/'.$this->name.'/views/js/front.js',
-                    ['position' => 'bottom', 'priority' => 150]
-                );
-                
-                // Aggiungi Cropper.js se abilitato
-                if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
-                    $this->context->controller->registerJavascript(
-                        'cropperjs',
-                        'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js',
-                        ['server' => 'remote', 'position' => 'bottom', 'priority' => 140]
-                    );
-                    
-                    $this->context->controller->registerStylesheet(
-                        'cropperjs-style',
-                        'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css',
-                        ['server' => 'remote', 'media' => 'all', 'priority' => 140]
-                    );
-                }
-                
-                // Assegna variabili JavaScript
-                Media::addJsDef([
-                    'artPuzzleAjaxUrl' => $this->context->link->getModuleLink('art_puzzle', 'ajax'),
-                    'artPuzzleProductId' => $product_id,
-                    'artPuzzleToken' => Tools::getToken(false)
-                ]);
-            }
-        }
     }
 
     public function hookDisplayProductButtons($params)

@@ -55,42 +55,48 @@ class ArtPuzzleCustomizerModuleFrontController extends ModuleFrontController
             'cart_url' => $this->context->link->getPageLink('cart')
         ]);
         
-        // Registra CSS e JS
+        // Assegna il template della pagina di personalizzazione
+        $this->setTemplate('module:art_puzzle/views/templates/front/customizer.tpl');
+    }
+
+    public function setMedia()
+    {
+        parent::setMedia();
+
         $this->registerStylesheet(
             'module-art-puzzle-style',
             'modules/art_puzzle/views/css/front.css',
             ['media' => 'all', 'priority' => 150]
         );
-        
+
         $this->registerJavascript(
             'module-art-puzzle-script',
             'modules/art_puzzle/views/js/front.bundle.min.js',
             ['position' => 'bottom', 'priority' => 150]
         );
-        
-        // Aggiungi Cropper.js se abilitato
+
         if (Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')) {
             $this->registerJavascript(
                 'cropperjs',
                 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js',
                 ['server' => 'remote', 'position' => 'bottom', 'priority' => 140]
             );
-            
+
             $this->registerStylesheet(
                 'cropperjs-style',
                 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css',
                 ['server' => 'remote', 'media' => 'all', 'priority' => 140]
             );
         }
-        
-        // Assegna variabili JavaScript
+
         Media::addJsDef([
             'artPuzzleAjaxUrl' => $this->context->link->getModuleLink('art_puzzle', 'ajax'),
-            'artPuzzleProductId' => $id_product,
+            'artPuzzleProductId' => (int) Tools::getValue('id_product'),
             'artPuzzleToken' => Tools::getToken(false)
         ]);
-        
-        // Assegna il template della pagina di personalizzazione
-        $this->setTemplate('module:art_puzzle/views/templates/front/customizer.tpl');
+
+        if (is_object($this->module) && method_exists($this->module, 'registerCustomFontsStylesheet')) {
+            $this->module->registerCustomFontsStylesheet($this);
+        }
     }
 }

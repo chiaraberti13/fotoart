@@ -54,14 +54,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
         // Verifica se è una richiesta AJAX
         if (!$this->isXmlHttpRequest() && !Tools::getValue('ajax')) {
-    $this->returnResponse(false, 'Richiesta non valida');
+    $this->returnResponse(false, $this->module->l('Richiesta non valida', 'ajax'));
     // exit; <- rimosso, returnResponse fa già die()
 }
         
         // Verifica token CSRF eccetto per le richieste di visualizzazione in anteprima
-        if (!Tools::getValue('preview_mode') && 
+        if (!Tools::getValue('preview_mode') &&
     (!Tools::getValue('token') || Tools::getValue('token') != Tools::getToken(false))) {
-    $this->returnResponse(false, 'Token di sicurezza non valido');
+    $this->returnResponse(false, $this->module->l('Token di sicurezza non valido', 'ajax'));
     // exit; <- rimosso
 }
     }
@@ -73,7 +73,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     {
         // Verifica che ci sia un'azione specificata
         if (!Tools::isSubmit('action')) {
-            $this->returnResponse(false, 'Nessuna azione specificata');
+            $this->returnResponse(false, $this->module->l('Nessuna azione specificata', 'ajax'));
             return;
         }
         
@@ -131,7 +131,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     break;
 
                 default:
-                    $this->returnResponse(false, 'Azione non valida: ' . $action);
+                    $this->returnResponse(false, sprintf($this->module->l('Azione non valida: %s', 'ajax'), $action));
             }
         });
     }
@@ -184,7 +184,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
     protected function formatAjaxErrorMessage(\Throwable $throwable)
     {
-        return sprintf('Errore: %s', Tools::safeOutput($throwable->getMessage()));
+        return sprintf($this->module->l('Errore: %s', 'ajax'), Tools::safeOutput($throwable->getMessage()));
     }
     
     /**
@@ -221,32 +221,35 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
                 if (!$file) {
                     ArtPuzzleLogger::log('ERRORE: Nessun file trovato in $_FILES', 'ERROR');
-                    $this->returnResponse(false, 'Nessuna immagine caricata. Verifica il form di upload.');
+                    $this->returnResponse(false, $this->module->l('Nessuna immagine caricata. Verifica il form di upload.', 'ajax'));
                     return;
                 }
 
                 // Verifica errori di upload
                 if ($file['error'] !== UPLOAD_ERR_OK) {
                     $errorMessages = [
-                        UPLOAD_ERR_INI_SIZE => 'File troppo grande (limite PHP)',
-                        UPLOAD_ERR_FORM_SIZE => 'File troppo grande (limite form)',
-                        UPLOAD_ERR_PARTIAL => 'Upload parziale',
-                        UPLOAD_ERR_NO_FILE => 'Nessun file',
-                        UPLOAD_ERR_NO_TMP_DIR => 'Directory temporanea mancante',
-                        UPLOAD_ERR_CANT_WRITE => 'Impossibile scrivere su disco',
-                        UPLOAD_ERR_EXTENSION => 'Upload bloccato da estensione PHP'
+                        UPLOAD_ERR_INI_SIZE => $this->module->l('File troppo grande (limite PHP)', 'ajax'),
+                        UPLOAD_ERR_FORM_SIZE => $this->module->l('File troppo grande (limite form)', 'ajax'),
+                        UPLOAD_ERR_PARTIAL => $this->module->l('Upload parziale', 'ajax'),
+                        UPLOAD_ERR_NO_FILE => $this->module->l('Nessun file', 'ajax'),
+                        UPLOAD_ERR_NO_TMP_DIR => $this->module->l('Directory temporanea mancante', 'ajax'),
+                        UPLOAD_ERR_CANT_WRITE => $this->module->l('Impossibile scrivere su disco', 'ajax'),
+                        UPLOAD_ERR_EXTENSION => $this->module->l('Upload bloccato da estensione PHP', 'ajax')
                     ];
 
-                    $message = $errorMessages[$file['error']] ?? 'Errore sconosciuto';
+                    $message = $errorMessages[$file['error']] ?? $this->module->l('Errore sconosciuto', 'ajax');
                     ArtPuzzleLogger::log("Errore upload: {$file['error']} - $message", 'ERROR');
-                    $this->returnResponse(false, "Errore upload: $message");
+                    $this->returnResponse(false, sprintf($this->module->l('Errore upload: %s', 'ajax'), $message));
                     return;
                 }
 
                 // Validazione dimensione
                 $maxSize = (int)Configuration::get('ART_PUZZLE_MAX_UPLOAD_SIZE', 20) * 1024 * 1024;
                 if ($file['size'] > $maxSize) {
-                    $this->returnResponse(false, 'File troppo grande. Massimo: ' . round($maxSize/1024/1024, 1) . 'MB');
+                    $this->returnResponse(false, sprintf(
+                        $this->module->l('File troppo grande. Massimo: %sMB', 'ajax'),
+                        round($maxSize / 1024 / 1024, 1)
+                    ));
                     return;
                 }
 
@@ -255,7 +258,10 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
                 if (!in_array($extension, $allowedExtensions)) {
-                    $this->returnResponse(false, 'Formato non supportato. Usa: ' . implode(', ', $allowedExtensions));
+                    $this->returnResponse(false, sprintf(
+                        $this->module->l('Formato non supportato. Usa: %s', 'ajax'),
+                        implode(', ', $allowedExtensions)
+                    ));
                     return;
                 }
 
@@ -281,7 +287,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
                 if ($detectedType === false || !isset($allowedImageTypes[$detectedType])) {
                     ArtPuzzleLogger::log('ERRORE: Tipo immagine non valido o non consentito per ' . $file['tmp_name'], 'ERROR');
-                    $this->returnResponse(false, 'Il file caricato non è un\'immagine supportata');
+                    $this->returnResponse(false, $this->module->l('Il file caricato non è un\'immagine supportata', 'ajax'));
                     return;
                 }
 
@@ -291,7 +297,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $imageInfo = @getimagesize($file['tmp_name']);
                 if ($imageInfo === false) {
                     ArtPuzzleLogger::log('ERRORE: getimagesize fallita per ' . $file['tmp_name'], 'ERROR');
-                    $this->returnResponse(false, 'Il file non è un\'immagine valida');
+                    $this->returnResponse(false, $this->module->l('Il file non è un\'immagine valida', 'ajax'));
                     return;
                 }
 
@@ -304,12 +310,20 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $maxHeight = (int) Configuration::get('ART_PUZZLE_MAX_UPLOAD_HEIGHT', null, null, null, 8000);
 
                 if ($width < $minWidth || $height < $minHeight) {
-                    $this->returnResponse(false, sprintf('L\'immagine deve essere almeno %dx%d pixel', $minWidth, $minHeight));
+                    $this->returnResponse(false, sprintf(
+                        $this->module->l('L\'immagine deve essere almeno %dx%d pixel', 'ajax'),
+                        $minWidth,
+                        $minHeight
+                    ));
                     return;
                 }
 
                 if ($width > $maxWidth || $height > $maxHeight) {
-                    $this->returnResponse(false, sprintf('L\'immagine non può superare %dx%d pixel', $maxWidth, $maxHeight));
+                    $this->returnResponse(false, sprintf(
+                        $this->module->l('L\'immagine non può superare %dx%d pixel', 'ajax'),
+                        $maxWidth,
+                        $maxHeight
+                    ));
                     return;
                 }
 
@@ -318,14 +332,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 if (!file_exists($uploadDir)) {
                     if (!mkdir($uploadDir, 0755, true)) {
                         ArtPuzzleLogger::log('ERRORE: Impossibile creare directory ' . $uploadDir, 'ERROR');
-                        $this->returnResponse(false, 'Errore nella creazione directory upload');
+                        $this->returnResponse(false, $this->module->l('Errore nella creazione directory upload', 'ajax'));
                         return;
                     }
                 }
 
                 if (!is_writable($uploadDir)) {
                     ArtPuzzleLogger::log('ERRORE: Directory non scrivibile ' . $uploadDir, 'ERROR');
-                    $this->returnResponse(false, 'Directory upload non scrivibile');
+                    $this->returnResponse(false, $this->module->l('Directory upload non scrivibile', 'ajax'));
                     return;
                 }
 
@@ -348,7 +362,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 // Sposta il file
                 if (!move_uploaded_file($file['tmp_name'], $destination)) {
                     ArtPuzzleLogger::log('ERRORE: move_uploaded_file fallita da ' . $file['tmp_name'] . ' a ' . $destination, 'ERROR');
-                    $this->returnResponse(false, 'Errore nel salvataggio file');
+                    $this->returnResponse(false, $this->module->l('Errore nel salvataggio file', 'ajax'));
                     return;
                 }
 
@@ -362,7 +376,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 ArtPuzzleLogger::log('SUCCESS: Immagine salvata - ' . $filename, 'INFO');
 
                 // Risposta successo
-                $this->returnResponse(true, 'Immagine caricata con successo', [
+                $this->returnResponse(true, $this->module->l('Immagine caricata con successo', 'ajax'), [
                     'filename' => $filename,
                     'url' => $imageUrl,
                     'width' => $width,
@@ -398,7 +412,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     ];
                 }
 
-                $this->returnResponse(true, 'Formati puzzle caricati con successo', $formats);
+                $this->returnResponse(true, $this->module->l('Formati puzzle caricati con successo', 'ajax'), $formats);
         });
     }
     
@@ -412,7 +426,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $templates = PuzzleBoxManager::getAllBoxTemplates();
                 $fonts = PuzzleBoxManager::getAllFonts();
 
-                $this->returnResponse(true, 'Template scatole caricati con successo', [
+                $this->returnResponse(true, $this->module->l('Template scatole caricati con successo', 'ajax'), [
                     'templates' => $templates,
                     'fonts' => $fonts
                 ]);
@@ -460,11 +474,11 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     $this->context->cookie->{$sessionKey} = json_encode($boxData);
                     $this->context->cookie->write();
 
-                    $this->returnResponse(true, 'Anteprima generata con successo', [
+                    $this->returnResponse(true, $this->module->l('Anteprima generata con successo', 'ajax'), [
                         'preview' => $previewData
                     ]);
                 } else {
-                    $this->returnResponse(false, 'Impossibile generare l\'anteprima della scatola');
+                    $this->returnResponse(false, $this->module->l('Impossibile generare l\'anteprima della scatola', 'ajax'));
                 }
         });
     }
@@ -497,14 +511,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             ArtPuzzleLogger::log('Saturation: ' . $saturation, 'INFO');
 
             if (empty($formatId)) {
-                $this->returnResponse(false, 'Formato puzzle non specificato');
+                $this->returnResponse(false, $this->module->l('Formato puzzle non specificato', 'ajax'));
                 return;
             }
 
             // Recupera i dettagli del formato
             $format = PuzzleFormatManager::getFormat($formatId);
             if (!$format) {
-                $this->returnResponse(false, 'Formato puzzle non valido');
+                $this->returnResponse(false, $this->module->l('Formato puzzle non valido', 'ajax'));
                 return;
             }
 
@@ -514,7 +528,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             if (!empty($imageBase64)) {
                 $imagePath = $this->saveBase64Image($imageBase64);
                 if (!$imagePath) {
-                    $this->returnResponse(false, 'Impossibile salvare l\'immagine fornita');
+                    $this->returnResponse(false, $this->module->l('Impossibile salvare l\'immagine fornita', 'ajax'));
                     return;
                 }
             } else {
@@ -525,14 +539,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     $imagePath = _PS_MODULE_DIR_ . 'art_puzzle/upload/' . $imageFilename;
 
                     if (!file_exists($imagePath)) {
-                        $this->returnResponse(false, 'L\'immagine caricata non è più disponibile. Ricarica il file.');
+                        $this->returnResponse(false, $this->module->l('L\'immagine caricata non è più disponibile. Ricarica il file.', 'ajax'));
                         return;
                     }
                 }
             }
 
             if (!$imagePath || !file_exists($imagePath)) {
-                $this->returnResponse(false, 'Nessuna immagine disponibile per generare l\'anteprima');
+                $this->returnResponse(false, $this->module->l('Nessuna immagine disponibile per generare l\'anteprima', 'ajax'));
                 return;
             }
 
@@ -572,7 +586,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             ]);
 
             if (!$previewData) {
-                $this->returnResponse(false, 'Impossibile generare l\'anteprima del puzzle. Riprova.');
+                $this->returnResponse(false, $this->module->l('Impossibile generare l\'anteprima del puzzle. Riprova.', 'ajax'));
                 return;
             }
 
@@ -606,7 +620,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
             $this->context->cookie->write();
 
-            $this->returnResponse(true, 'Anteprima puzzle generata con successo', [
+            $this->returnResponse(true, $this->module->l('Anteprima puzzle generata con successo', 'ajax'), [
                 'preview' => $previewData,
                 'format' => $format,
                 'image_path' => $imagePath,
@@ -639,7 +653,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             $cropDataJson = isset($this->context->cookie->{$cropSessionKey}) ? $this->context->cookie->{$cropSessionKey} : null;
 
             if (!$imagePath || !file_exists($imagePath) || !$formatId || !$boxDataJson) {
-                $this->returnResponse(false, 'Dati di personalizzazione mancanti');
+                $this->returnResponse(false, $this->module->l('Dati di personalizzazione mancanti', 'ajax'));
                 return;
             }
 
@@ -648,14 +662,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             $cropData = $cropDataJson ? json_decode($cropDataJson, true) : null;
 
             if (!$boxData) {
-                $this->returnResponse(false, 'Dati della scatola non validi');
+                $this->returnResponse(false, $this->module->l('Dati della scatola non validi', 'ajax'));
                 return;
             }
 
             // Recupera il formato
             $format = PuzzleFormatManager::getFormat($formatId);
             if (!$format) {
-                $this->returnResponse(false, 'Formato puzzle non valido');
+                $this->returnResponse(false, $this->module->l('Formato puzzle non valido', 'ajax'));
                 return;
             }
 
@@ -677,14 +691,14 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             $boxPreview = PuzzleBoxManager::generateBoxPreview($boxData, $imagePath, true);
 
                 if ($puzzlePreview && $boxPreview) {
-                    $this->returnResponse(true, 'Anteprime generate con successo', [
+                    $this->returnResponse(true, $this->module->l('Anteprime generate con successo', 'ajax'), [
                         'puzzlePreview' => $puzzlePreview,
                         'boxPreview' => $boxPreview,
                         'format' => $format,
                         'boxData' => $boxData
                     ]);
                 } else {
-                    $this->returnResponse(false, 'Impossibile generare le anteprime');
+                    $this->returnResponse(false, $this->module->l('Impossibile generare le anteprime', 'ajax'));
                 }
         });
     }
@@ -697,21 +711,21 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
         $this->executeAjax(function () {
                 // Verifica che l'utente abbia confermato la personalizzazione
                 if (!Tools::getValue('confirm-customization')) {
-                    $this->returnResponse(false, 'È necessario confermare la personalizzazione');
+                    $this->returnResponse(false, $this->module->l('È necessario confermare la personalizzazione', 'ajax'));
                     return;
                 }
 
                 // Recupera l'ID prodotto
                 $id_product = (int)Tools::getValue('id_product');
                 if (!$id_product) {
-                    $this->returnResponse(false, 'ID prodotto non valido');
+                    $this->returnResponse(false, $this->module->l('ID prodotto non valido', 'ajax'));
                     return;
                 }
 
                 // Verifica che sia un puzzle personalizzabile
                 $module = Module::getInstanceByName('art_puzzle');
                 if (!$module->isPuzzleProduct($id_product)) {
-                    $this->returnResponse(false, 'Questo prodotto non è personalizzabile come puzzle');
+                    $this->returnResponse(false, $this->module->l('Questo prodotto non è personalizzabile come puzzle', 'ajax'));
                     return;
                 }
 
@@ -727,7 +741,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $cropDataJson = isset($this->context->cookie->{$cropSessionKey}) ? $this->context->cookie->{$cropSessionKey} : null;
 
                 if (!$imagePath || !file_exists($imagePath) || !$formatId || !$boxDataJson) {
-                    $this->returnResponse(false, 'Dati di personalizzazione mancanti');
+                    $this->returnResponse(false, $this->module->l('Dati di personalizzazione mancanti', 'ajax'));
                     return;
                 }
 
@@ -741,7 +755,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $format = PuzzleFormatManager::getFormat($formatId);
 
                 if (!$format) {
-                    $this->returnResponse(false, 'Formato puzzle non valido');
+                    $this->returnResponse(false, $this->module->l('Formato puzzle non valido', 'ajax'));
                     return;
                 }
 
@@ -764,7 +778,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $processedImage = PuzzleImageProcessor::processImage($imagePath, $finalPath, $processOptions);
 
                 if (!$processedImage) {
-                    $this->returnResponse(false, 'Errore durante l\'elaborazione dell\'immagine finale');
+                    $this->returnResponse(false, $this->module->l('Errore durante l\'elaborazione dell\'immagine finale', 'ajax'));
                     return;
                 }
 
@@ -841,7 +855,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 PuzzleImageProcessor::cleanupTempFiles($uploadDir, 86400); // 86400 secondi = 24 ore
 
                 // Restituisci successo
-                $this->returnResponse(true, 'Puzzle personalizzato aggiunto al carrello', [
+                $this->returnResponse(true, $this->module->l('Puzzle personalizzato aggiunto al carrello', 'ajax'), [
                     'idCustomization' => $customization_id,
                     'idProduct' => $id_product,
                     'idProductAttribute' => 0, // 0 per i prodotti senza attributi
@@ -858,28 +872,28 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
         $this->executeAjax(function () {
                 // Verifica che l'utente sia loggato
                 if (!$this->context->customer->isLogged()) {
-                    $this->returnResponse(false, 'Utente non autenticato');
+                    $this->returnResponse(false, $this->module->l('Utente non autenticato', 'ajax'));
                     return;
                 }
 
                 $data = json_decode(Tools::getValue('data'), true);
 
                 if (!$data) {
-                    $this->returnResponse(false, 'Dati non validi');
+                    $this->returnResponse(false, $this->module->l('Dati non validi', 'ajax'));
                     return;
                 }
 
                 // Verifica ID prodotto
                 $product_id = (int)$data['product_id'];
                 if (!$product_id) {
-                    $this->returnResponse(false, 'ID prodotto non valido');
+                    $this->returnResponse(false, $this->module->l('ID prodotto non valido', 'ajax'));
                     return;
                 }
 
                 // Verifica che il prodotto sia un puzzle personalizzabile
                 $product_ids = explode(',', Configuration::get('ART_PUZZLE_PRODUCT_IDS'));
                 if (!in_array((string)$product_id, $product_ids)) {
-                    $this->returnResponse(false, 'Questo prodotto non è personalizzabile');
+                    $this->returnResponse(false, $this->module->l('Questo prodotto non è personalizzabile', 'ajax'));
                     return;
                 }
 
@@ -901,21 +915,21 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $image_base64 = isset($image_parts[1]) ? $image_parts[1] : null;
 
                 if (!$image_base64) {
-                    $this->returnResponse(false, 'Formato immagine non valido');
+                    $this->returnResponse(false, $this->module->l('Formato immagine non valido', 'ajax'));
                     return;
                 }
 
                 // Verifica validità immagine
                 $image_decoded = base64_decode($image_base64);
                 if (!$image_decoded) {
-                    $this->returnResponse(false, 'Immagine non valida');
+                    $this->returnResponse(false, $this->module->l('Immagine non valida', 'ajax'));
                     return;
                 }
 
                 // Verifica che sia un'immagine reale
                 $img = @imagecreatefromstring($image_decoded);
                 if (!$img) {
-                    $this->returnResponse(false, 'Il file caricato non è un\'immagine valida');
+                    $this->returnResponse(false, $this->module->l('Il file caricato non è un\'immagine valida', 'ajax'));
                     return;
                 }
                 imagedestroy($img);
@@ -981,7 +995,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 ArtPuzzleLogger::log('Personalizzazione puzzle salvata con successo. ID: ' . $customization_id);
 
                 // Restituisci successo
-                $this->returnResponse(true, 'Personalizzazione salvata con successo', [
+                $this->returnResponse(true, $this->module->l('Personalizzazione salvata con successo', 'ajax'), [
                     'idCustomization' => $customization_id,
                     'idProductAttribute' => 0, // 0 per i prodotti senza attributi
                     'filename' => $filename
@@ -1000,7 +1014,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $image_base64 = isset($image_parts[1]) ? $image_parts[1] : null;
 
                 if (!$image_base64) {
-                    $this->returnResponse(false, 'Formato immagine non valido');
+                    $this->returnResponse(false, $this->module->l('Formato immagine non valido', 'ajax'));
                     return;
                 }
 
@@ -1009,7 +1023,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 // Verifica che sia un'immagine valida
                 $img = @imagecreatefromstring($image_decoded);
                 if (!$img) {
-                    $this->returnResponse(false, 'Immagine non valida');
+                    $this->returnResponse(false, $this->module->l('Immagine non valida', 'ajax'));
                     return;
                 }
 
@@ -1019,15 +1033,15 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
 
                 // Valuta qualità
                 $quality = 'alta';
-                $message = 'L\'immagine è di ottima qualità!';
+                $message = $this->module->l('L\'immagine è di ottima qualità!', 'ajax');
 
                 // Se l'immagine è troppo piccola, avvisa l'utente
                 if ($width < 800 || $height < 800) {
                     $quality = 'bassa';
-                    $message = 'L\'immagine è di bassa risoluzione. Potrebbe apparire pixelata sul puzzle.';
+                    $message = $this->module->l('L\'immagine è di bassa risoluzione. Potrebbe apparire pixelata sul puzzle.', 'ajax');
                 } else if ($width < 1200 || $height < 1200) {
                     $quality = 'media';
-                    $message = 'L\'immagine è di media risoluzione. La qualità dovrebbe essere accettabile.';
+                    $message = $this->module->l('L\'immagine è di media risoluzione. La qualità dovrebbe essere accettabile.', 'ajax');
                 }
 
                 imagedestroy($img);
@@ -1049,7 +1063,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $box_colors = Configuration::get('ART_PUZZLE_BOX_COLORS');
                 $colors_array = json_decode($box_colors, true) ?: [];
 
-                $this->returnResponse(true, 'Colori caricati con successo', $colors_array);
+                $this->returnResponse(true, $this->module->l('Colori caricati con successo', 'ajax'), $colors_array);
         });
     }
     
@@ -1062,7 +1076,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $fonts = Configuration::get('ART_PUZZLE_FONTS');
                 $fonts_array = $fonts ? explode(',', $fonts) : [];
 
-                $this->returnResponse(true, 'Font caricati con successo', $fonts_array);
+                $this->returnResponse(true, $this->module->l('Font caricati con successo', 'ajax'), $fonts_array);
         });
     }
     
@@ -1075,7 +1089,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $result = $this->checkDirectoryPermissions();
 
                 if ($result['is_valid']) {
-                    $this->returnResponse(true, 'Tutte le directory sono scrivibili', [
+                    $this->returnResponse(true, $this->module->l('Tutte le directory sono scrivibili', 'ajax'), [
                         'directories' => $result['directories'],
                     ]);
                 } else {
@@ -1119,7 +1133,11 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     $directoryStatus['created'] = true;
                 } else {
                     $status['is_valid'] = false;
-                    $directoryStatus['error'] = "Impossibile creare la directory '$name': $path";
+                    $directoryStatus['error'] = sprintf(
+                        $this->module->l("Impossibile creare la directory '%s': %s", 'ajax'),
+                        $name,
+                        $path
+                    );
                     $status['errors'][] = $directoryStatus['error'];
                 }
             }
@@ -1128,7 +1146,11 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $directoryStatus['is_writable'] = is_writable($path);
                 if (!$directoryStatus['is_writable']) {
                     $status['is_valid'] = false;
-                    $directoryStatus['error'] = "La directory '$name' non è scrivibile: $path";
+                    $directoryStatus['error'] = sprintf(
+                        $this->module->l("La directory '%s' non è scrivibile: %s", 'ajax'),
+                        $name,
+                        $path
+                    );
                     $status['errors'][] = $directoryStatus['error'];
                 }
             }
@@ -1451,7 +1473,7 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             Mail::Send(
                 (int)$this->context->language->id,
                 'art_puzzle_user',
-                'La tua personalizzazione del puzzle',
+                $this->module->l('La tua personalizzazione del puzzle', 'ajax'),
                 $userTemplateVars,
                 $customer->email,
                 $customer->firstname . ' ' . $customer->lastname,
@@ -1478,8 +1500,8 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     $adminTemplateVars['{customer_name}'] = $customer->firstname . ' ' . $customer->lastname;
                     $adminTemplateVars['{customer_email}'] = $customer->email;
                 } else {
-                    $adminTemplateVars['{customer_name}'] = 'Visitatore';
-                    $adminTemplateVars['{customer_email}'] = 'N/A';
+                    $adminTemplateVars['{customer_name}'] = $this->module->l('Visitatore', 'ajax');
+                    $adminTemplateVars['{customer_email}'] = $this->module->l('N/A', 'ajax');
                 }
                 
                 // Allega l'immagine o PDF
@@ -1509,10 +1531,10 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 Mail::Send(
                     (int)$this->context->language->id,
                     'art_puzzle_admin',
-                    'Nuova personalizzazione puzzle',
+                    $this->module->l('Nuova personalizzazione puzzle', 'ajax'),
                     $adminTemplateVars,
                     $adminEmail,
-                    'Amministratore',
+                    $this->module->l('Amministratore', 'ajax'),
                     null,
                     null,
                     $fileAttachment,

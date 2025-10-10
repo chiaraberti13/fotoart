@@ -1,4 +1,7 @@
 <?php
+
+namespace ArtPuzzle;
+
 /**
  * Art Puzzle - Box Manager
  * Classe che gestisce i template delle scatole puzzle e la loro personalizzazione
@@ -13,7 +16,7 @@ class PuzzleBoxManager
     public static function getAllBoxTemplates()
     {
         // Recupera i template dalla configurazione
-        $templatesJson = Configuration::get('ART_PUZZLE_BOX_TEMPLATES');
+        $templatesJson = \Configuration::get('ART_PUZZLE_BOX_TEMPLATES');
         
         // Se non ci sono template configurati, restituisci i template predefiniti
         if (!$templatesJson) {
@@ -50,7 +53,7 @@ class PuzzleBoxManager
     public static function getAllBoxColors()
     {
         // Recupera i colori dalla configurazione
-        $colorsJson = Configuration::get('ART_PUZZLE_BOX_COLORS');
+        $colorsJson = \Configuration::get('ART_PUZZLE_BOX_COLORS');
         
         // Se non ci sono colori configurati, restituisci i colori predefiniti
         if (!$colorsJson) {
@@ -93,7 +96,7 @@ class PuzzleBoxManager
     public static function getAllFonts()
     {
         // Recupera i font dalla configurazione
-        $fonts = Configuration::get('ART_PUZZLE_FONTS');
+        $fonts = \Configuration::get('ART_PUZZLE_FONTS');
         
         // Se non ci sono font configurati, restituisci i font predefiniti
         if (!$fonts) {
@@ -667,7 +670,7 @@ class PuzzleBoxManager
         $templatesJson = json_encode($templates);
         
         // Salva nella configurazione
-        return Configuration::updateValue('ART_PUZZLE_BOX_TEMPLATES', $templatesJson);
+        return \Configuration::updateValue('ART_PUZZLE_BOX_TEMPLATES', $templatesJson);
     }
     
     /**
@@ -681,7 +684,7 @@ class PuzzleBoxManager
         $colorsJson = json_encode($colors);
         
         // Salva nella configurazione
-        return Configuration::updateValue('ART_PUZZLE_BOX_COLORS', $colorsJson);
+        return \Configuration::updateValue('ART_PUZZLE_BOX_COLORS', $colorsJson);
     }
     
     /**
@@ -695,7 +698,7 @@ class PuzzleBoxManager
         $fontsString = implode(',', $fonts);
         
         // Salva nella configurazione
-        return Configuration::updateValue('ART_PUZZLE_FONTS', $fontsString);
+        return \Configuration::updateValue('ART_PUZZLE_FONTS', $fontsString);
     }
     
     /**

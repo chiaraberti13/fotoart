@@ -13,8 +13,8 @@ if (!defined('_PS_VERSION_')) {
 function upgrade_module_1_0_0($module)
 {
     // Registra l'evento di aggiornamento
-    require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleLogger.php');
-    ArtPuzzleLogger::log('Inizio aggiornamento alla versione 1.0.0', 'INFO');
+    require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+    \ArtPuzzle\ArtPuzzleLogger::log('Inizio aggiornamento alla versione 1.0.0', 'INFO');
     
     $upgrade_success = true;
     
@@ -31,9 +31,9 @@ function upgrade_module_1_0_0($module)
     $upgrade_success &= validateProductAssociations();
     
     if ($upgrade_success) {
-        ArtPuzzleLogger::log('Aggiornamento alla versione 1.0.0 completato con successo', 'INFO');
+        \ArtPuzzle\ArtPuzzleLogger::log('Aggiornamento alla versione 1.0.0 completato con successo', 'INFO');
     } else {
-        ArtPuzzleLogger::log('Errori durante l\'aggiornamento alla versione 1.0.0', 'ERROR');
+        \ArtPuzzle\ArtPuzzleLogger::log('Errori durante l\'aggiornamento alla versione 1.0.0', 'ERROR');
     }
     
     return $upgrade_success;

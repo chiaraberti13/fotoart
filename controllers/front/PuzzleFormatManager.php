@@ -1,4 +1,10 @@
 <?php
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
+use ArtPuzzle\PuzzleFormatManager;
+
 /**
  * Controller: art_puzzle/controllers/front/FormatController.php
  * Gestisce la selezione dei formati puzzle
@@ -17,15 +23,11 @@ class ArtPuzzleFormatModuleFrontController extends ModuleFrontController
             $this->context->cookie->__set('art_puzzle_box_text', $box_text);
         }
 
-        if (!class_exists('PuzzleFormatManager')) {
-            require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php';
-        }
-
         try {
             $formats = PuzzleFormatManager::getAllFormats();
         } catch (Exception $e) {
             $this->errors[] = $this->module->l('Errore durante il recupero dei formati.');
-            if (class_exists('ArtPuzzleLogger')) {
+            if (class_exists(ArtPuzzleLogger::class)) {
                 ArtPuzzleLogger::log('[FORMAT] Errore getAllFormats: ' . $e->getMessage());
             }
             $formats = [];

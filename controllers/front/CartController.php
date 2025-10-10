@@ -1,9 +1,8 @@
 <?php
-/**
- * Controller: art_puzzle/controllers/front/CartController.php
- * Aggiunge i dati della personalizzazione al carrello PrestaShop
- */
 
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
 class ArtPuzzleCartModuleFrontController extends ModuleFrontController
@@ -105,7 +104,7 @@ class ArtPuzzleCartModuleFrontController extends ModuleFrontController
     private function logAndError($message)
     {
         $this->errors[] = $this->module->l($message);
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[CART] ' . $message);
         }
     }

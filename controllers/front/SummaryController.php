@@ -1,4 +1,10 @@
 <?php
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
+use ArtPuzzle\PDFGeneratorPuzzle;
+
 /**
  * Controller: art_puzzle/controllers/front/SummaryController.php
  * Mostra il riepilogo finale e genera l'anteprima per il PDF
@@ -22,7 +28,6 @@ class ArtPuzzleSummaryModuleFrontController extends ModuleFrontController
             return;
         }
 
-        require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/PDFGeneratorPuzzle.php';
         $pdfGenerator = new PDFGeneratorPuzzle();
 
         $pdfPath = $pdfGenerator->generateCustomerPreview($image, $format, $box_text);
@@ -59,7 +64,7 @@ class ArtPuzzleSummaryModuleFrontController extends ModuleFrontController
     private function logAndError($message)
     {
         $this->errors[] = $this->module->l($message);
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[SUMMARY] ' . $message);
         }
     }

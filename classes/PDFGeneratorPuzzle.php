@@ -1,4 +1,7 @@
 <?php
+
+namespace ArtPuzzle;
+
 /**
  * Art Puzzle - Generatore PDF
  * Classe che gestisce la creazione di PDF per i puzzle personalizzati
@@ -23,7 +26,7 @@ class PDFGeneratorPuzzle
         // Crea un nuovo documento PDF
         require_once(_PS_TOOL_DIR_ . 'tcpdf/tcpdf.php');
         
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         
         // Imposta le informazioni del documento
         $pdf->SetCreator('Art Puzzle');
@@ -102,7 +105,7 @@ class PDFGeneratorPuzzle
         // Crea un nuovo documento PDF
         require_once(_PS_TOOL_DIR_ . 'tcpdf/tcpdf.php');
         
-        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        $pdf = new \TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
         
         // Imposta le informazioni del documento
         $pdf->SetCreator('Art Puzzle');
@@ -316,7 +319,6 @@ class PDFGeneratorPuzzle
         $pdf->Ln(10);
         
         // Carica la classe del box manager
-        require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleBoxManager.php');
         
         // Imposta l'orientamento del documento per adattarsi allo schema
         $pdf->setPageOrientation('L');

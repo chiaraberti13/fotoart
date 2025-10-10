@@ -246,6 +246,34 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     return;
                 }
 
+                $allowedImageTypes = [
+                    IMAGETYPE_JPEG => 'jpg',
+                    IMAGETYPE_PNG => 'png',
+                    IMAGETYPE_GIF => 'gif',
+                ];
+
+                $detectedType = @exif_imagetype($file['tmp_name']);
+                if ($detectedType === false && function_exists('finfo_open')) {
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    if ($finfo) {
+                        $mime = finfo_file($finfo, $file['tmp_name']);
+                        finfo_close($finfo);
+                        $detectedType = array_search($mime, [
+                            IMAGETYPE_JPEG => 'image/jpeg',
+                            IMAGETYPE_PNG => 'image/png',
+                            IMAGETYPE_GIF => 'image/gif',
+                        ], true);
+                    }
+                }
+
+                if ($detectedType === false || !isset($allowedImageTypes[$detectedType])) {
+                    ArtPuzzleLogger::log('ERRORE: Tipo immagine non valido o non consentito per ' . $file['tmp_name'], 'ERROR');
+                    $this->returnResponse(false, 'Il file caricato non è un\'immagine supportata');
+                    return;
+                }
+
+                $extension = $allowedImageTypes[$detectedType];
+
                 // Verifica che sia realmente un'immagine usando getimagesize
                 $imageInfo = @getimagesize($file['tmp_name']);
                 if ($imageInfo === false) {
@@ -254,11 +282,21 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     return;
                 }
 
-                // Verifica MIME type
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-                if (!in_array($imageInfo['mime'], $allowedMimes)) {
-                    ArtPuzzleLogger::log('ERRORE: MIME type non valido: ' . $imageInfo['mime'], 'ERROR');
-                    $this->returnResponse(false, 'Tipo MIME non supportato: ' . $imageInfo['mime']);
+                // Verifica dimensioni immagine
+                $width = (int) $imageInfo[0];
+                $height = (int) $imageInfo[1];
+                $minWidth = (int) Configuration::get('ART_PUZZLE_MIN_UPLOAD_WIDTH', null, null, null, 200);
+                $minHeight = (int) Configuration::get('ART_PUZZLE_MIN_UPLOAD_HEIGHT', null, null, null, 200);
+                $maxWidth = (int) Configuration::get('ART_PUZZLE_MAX_UPLOAD_WIDTH', null, null, null, 8000);
+                $maxHeight = (int) Configuration::get('ART_PUZZLE_MAX_UPLOAD_HEIGHT', null, null, null, 8000);
+
+                if ($width < $minWidth || $height < $minHeight) {
+                    $this->returnResponse(false, sprintf('L\'immagine deve essere almeno %dx%d pixel', $minWidth, $minHeight));
+                    return;
+                }
+
+                if ($width > $maxWidth || $height > $maxHeight) {
+                    $this->returnResponse(false, sprintf('L\'immagine non può superare %dx%d pixel', $maxWidth, $maxHeight));
                     return;
                 }
 
@@ -278,8 +316,20 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     return;
                 }
 
-                // Genera nome file unico
-                $filename = 'puzzle_' . time() . '_' . uniqid() . '.' . $extension;
+                // Genera nome file unico e sanificato
+                $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
+                $sanitizedBaseName = Tools::link_rewrite($originalName);
+                if (empty($sanitizedBaseName)) {
+                    $sanitizedBaseName = 'immagine';
+                }
+                $sanitizedBaseName = Tools::substr($sanitizedBaseName, 0, 60);
+                $filename = sprintf(
+                    'puzzle_%s_%s_%s.%s',
+                    date('YmdHis'),
+                    $sanitizedBaseName,
+                    uniqid(),
+                    $extension
+                );
                 $destination = $uploadDir . $filename;
 
                 // Sposta il file
@@ -302,8 +352,8 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $this->returnResponse(true, 'Immagine caricata con successo', [
                     'filename' => $filename,
                     'url' => $imageUrl,
-                    'width' => $imageInfo[0],
-                    'height' => $imageInfo[1],
+                    'width' => $width,
+                    'height' => $height,
                     'size' => $file['size']
                 ]);
         });

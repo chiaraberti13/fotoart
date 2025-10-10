@@ -439,7 +439,7 @@ $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
                 
                 $this->context->controller->registerJavascript(
                     'module-art-puzzle-script',
-                    'modules/'.$this->name.'/views/js/front.js',
+                    'modules/'.$this->name.'/views/js/front.bundle.min.js',
                     ['position' => 'bottom', 'priority' => 150]
                 );
                 

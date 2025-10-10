@@ -11,6 +11,24 @@ use ArtPuzzle\ArtPuzzleLogger;
 
 class Art_Puzzle extends Module
 {
+    private const BOOLEAN_CONFIGURATION_KEYS = [
+        'ART_PUZZLE_SEND_PREVIEW_USER_EMAIL',
+        'ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL',
+        'ART_PUZZLE_ENABLE_ORIENTATION',
+        'ART_PUZZLE_ENABLE_CROP_TOOL',
+        'ART_PUZZLE_ENABLE_PDF_USER',
+        'ART_PUZZLE_ENABLE_PDF_ADMIN',
+    ];
+
+    private const DEFAULT_BOX_COLORS = [
+        ['box' => '#FFFFFF', 'text' => '#000000'],
+        ['box' => '#000000', 'text' => '#FFFFFF'],
+        ['box' => '#FF0000', 'text' => '#FFFFFF'],
+        ['box' => '#0000FF', 'text' => '#FFFFFF'],
+    ];
+
+    private const HEX_COLOR_PATTERN = '/^#[0-9A-Fa-f]{6}$/';
+
     public function __construct()
     {
         $this->name = 'art_puzzle';
@@ -32,7 +50,15 @@ class Art_Puzzle extends Module
     {
         // Crea le directory necessarie
         $this->createRequiredDirectories();
-        
+
+        $defaultConfiguration = $this->getConfigurationDefaultValues();
+
+        if (!$this->validateConfigurationValues($defaultConfiguration)) {
+            ArtPuzzleLogger::log('Valori di default della configurazione non validi durante l\'installazione.', 'ERROR');
+
+            return false;
+        }
+
         // Assicurati che tutti gli hook necessari siano registrati
         return parent::install() &&
             $this->registerHook('displayProductButtons') &&
@@ -47,27 +73,7 @@ class Art_Puzzle extends Module
             $this->registerHook('displayOrderConfirmation') &&
             $this->registerHook('actionValidateOrder') &&          // NUOVO
             $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
-
-            // Inizializza le configurazioni di default
-            Configuration::updateValue('ART_PUZZLE_PRODUCT_IDS', '') &&
-            Configuration::updateValue('ART_PUZZLE_MAX_UPLOAD_SIZE', '20') &&
-            Configuration::updateValue('ART_PUZZLE_ALLOWED_FILE_TYPES', 'jpg,jpeg,png') &&
-            Configuration::updateValue('ART_PUZZLE_UPLOAD_FOLDER', '/upload/') &&
-            Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_USER_EMAIL', 1) &&
-            Configuration::updateValue('ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL', 1) &&
-            Configuration::updateValue('ART_PUZZLE_DEFAULT_BOX_TEXT', 'Il mio puzzle') &&
-            Configuration::updateValue('ART_PUZZLE_MAX_BOX_TEXT_LENGTH', '30') &&
-            Configuration::updateValue('ART_PUZZLE_ENABLE_ORIENTATION', 1) &&
-            Configuration::updateValue('ART_PUZZLE_ENABLE_CROP_TOOL', 1) &&
-            Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_USER', 1) &&
-            Configuration::updateValue('ART_PUZZLE_ENABLE_PDF_ADMIN', 1) &&
-            Configuration::updateValue('ART_PUZZLE_BOX_COLORS', json_encode([
-                ['box' => '#FFFFFF', 'text' => '#000000'],
-                ['box' => '#000000', 'text' => '#FFFFFF'],
-                ['box' => '#FF0000', 'text' => '#FFFFFF'],
-                ['box' => '#0000FF', 'text' => '#FFFFFF'],
-            ])) &&
-            Configuration::updateValue('ART_PUZZLE_ADMIN_EMAIL', Configuration::get('PS_SHOP_EMAIL')) &&
+            $this->initializeConfiguration($defaultConfiguration) &&
             $this->ensureCustomizationTableIndexes();
     }
 
@@ -152,23 +158,174 @@ class Art_Puzzle extends Module
 
     public function uninstall()
     {
-        // Rimuovi tutte le configurazioni salvate
-        return parent::uninstall() &&
-            Configuration::deleteByName('ART_PUZZLE_PRODUCT_IDS') &&
-            Configuration::deleteByName('ART_PUZZLE_MAX_UPLOAD_SIZE') &&
-            Configuration::deleteByName('ART_PUZZLE_ALLOWED_FILE_TYPES') &&
-            Configuration::deleteByName('ART_PUZZLE_UPLOAD_FOLDER') &&
-            Configuration::deleteByName('ART_PUZZLE_SEND_PREVIEW_USER_EMAIL') &&
-            Configuration::deleteByName('ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL') &&
-            Configuration::deleteByName('ART_PUZZLE_DEFAULT_BOX_TEXT') &&
-            Configuration::deleteByName('ART_PUZZLE_MAX_BOX_TEXT_LENGTH') &&
-            Configuration::deleteByName('ART_PUZZLE_ENABLE_ORIENTATION') &&
-            Configuration::deleteByName('ART_PUZZLE_ENABLE_CROP_TOOL') &&
-            Configuration::deleteByName('ART_PUZZLE_ENABLE_PDF_USER') &&
-            Configuration::deleteByName('ART_PUZZLE_ENABLE_PDF_ADMIN') &&
-            Configuration::deleteByName('ART_PUZZLE_BOX_COLORS') &&
-            Configuration::deleteByName('ART_PUZZLE_ADMIN_EMAIL') &&
-            Configuration::deleteByName('ART_PUZZLE_FONTS');
+        if (!parent::uninstall()) {
+            return false;
+        }
+
+        $success = true;
+
+        foreach (array_keys($this->getConfigurationDefaultValues()) as $configurationKey) {
+            $success &= Configuration::deleteByName($configurationKey);
+        }
+
+        return (bool) $success;
+    }
+
+    public function getConfigurationDefaultValues()
+    {
+        $adminEmail = Configuration::get('PS_SHOP_EMAIL');
+        if (!is_string($adminEmail) || !Validate::isEmail($adminEmail)) {
+            $adminEmail = '';
+        }
+
+        return [
+            'ART_PUZZLE_PRODUCT_IDS' => '',
+            'ART_PUZZLE_MAX_UPLOAD_SIZE' => '20',
+            'ART_PUZZLE_ALLOWED_FILE_TYPES' => 'jpg,jpeg,png',
+            'ART_PUZZLE_UPLOAD_FOLDER' => '/upload/',
+            'ART_PUZZLE_SEND_PREVIEW_USER_EMAIL' => 1,
+            'ART_PUZZLE_SEND_PREVIEW_ADMIN_EMAIL' => 1,
+            'ART_PUZZLE_DEFAULT_BOX_TEXT' => 'Il mio puzzle',
+            'ART_PUZZLE_MAX_BOX_TEXT_LENGTH' => '30',
+            'ART_PUZZLE_ENABLE_ORIENTATION' => 1,
+            'ART_PUZZLE_ENABLE_CROP_TOOL' => 1,
+            'ART_PUZZLE_ENABLE_PDF_USER' => 1,
+            'ART_PUZZLE_ENABLE_PDF_ADMIN' => 1,
+            'ART_PUZZLE_BOX_COLORS' => json_encode(self::DEFAULT_BOX_COLORS),
+            'ART_PUZZLE_ADMIN_EMAIL' => $adminEmail,
+            'ART_PUZZLE_FONTS' => '',
+        ];
+    }
+
+    public function validateConfigurationValues(array $values)
+    {
+        foreach ($values as $key => $value) {
+            if (!$this->validateConfigurationValue($key, $value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function validateConfigurationValue($key, $value)
+    {
+        if (in_array($key, self::BOOLEAN_CONFIGURATION_KEYS, true)) {
+            return in_array($value, [0, 1, '0', '1'], true);
+        }
+
+        switch ($key) {
+            case 'ART_PUZZLE_PRODUCT_IDS':
+                if ($value === '' || $value === null) {
+                    return true;
+                }
+
+                if (!is_string($value)) {
+                    return false;
+                }
+
+                $ids = array_filter(array_map('trim', explode(',', $value)), 'strlen');
+                foreach ($ids as $id) {
+                    if (!ctype_digit($id) || (int) $id <= 0) {
+                        return false;
+                    }
+                }
+
+                return true;
+
+            case 'ART_PUZZLE_MAX_UPLOAD_SIZE':
+                return is_numeric($value) && (int) $value > 0;
+
+            case 'ART_PUZZLE_ALLOWED_FILE_TYPES':
+                if (!is_string($value) || $value === '') {
+                    return false;
+                }
+
+                $extensions = array_filter(array_map('trim', explode(',', strtolower($value))));
+                if (empty($extensions)) {
+                    return false;
+                }
+
+                foreach ($extensions as $extension) {
+                    if (!preg_match('/^[a-z0-9]+$/', $extension)) {
+                        return false;
+                    }
+                }
+
+                return true;
+
+            case 'ART_PUZZLE_UPLOAD_FOLDER':
+                return is_string($value) && $value !== '' && strpos($value, '..') === false;
+
+            case 'ART_PUZZLE_DEFAULT_BOX_TEXT':
+                return is_string($value);
+
+            case 'ART_PUZZLE_MAX_BOX_TEXT_LENGTH':
+                return is_numeric($value) && (int) $value > 0;
+
+            case 'ART_PUZZLE_BOX_COLORS':
+                if (!is_string($value)) {
+                    return false;
+                }
+
+                $decoded = json_decode($value, true);
+
+                if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                    return false;
+                }
+
+                if (!is_array($decoded)) {
+                    return false;
+                }
+
+                foreach ($decoded as $colorSet) {
+                    if (!is_array($colorSet) || !isset($colorSet['box'], $colorSet['text'])) {
+                        return false;
+                    }
+
+                    foreach (['box', 'text'] as $colorKey) {
+                        if (!is_string($colorSet[$colorKey]) || !preg_match(self::HEX_COLOR_PATTERN, $colorSet[$colorKey])) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+
+            case 'ART_PUZZLE_ADMIN_EMAIL':
+                return $value === '' || (is_string($value) && Validate::isEmail($value));
+
+            case 'ART_PUZZLE_FONTS':
+                if ($value === '' || $value === null) {
+                    return true;
+                }
+
+                if (!is_string($value)) {
+                    return false;
+                }
+
+                $fonts = array_filter(array_map('trim', explode(',', $value)), 'strlen');
+                foreach ($fonts as $font) {
+                    if (!Validate::isFileName($font)) {
+                        return false;
+                    }
+                }
+
+                return true;
+        }
+
+        return true;
+    }
+
+    private function initializeConfiguration(array $values)
+    {
+        foreach ($values as $key => $value) {
+            if (!Configuration::updateValue($key, $value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getContent()

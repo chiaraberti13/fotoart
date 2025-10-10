@@ -4,7 +4,10 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once __DIR__ . '/autoload.php';
+
 use PrestaShop\PrestaShop\Core\Product\ProductExtraContent;
+use ArtPuzzle\ArtPuzzleLogger;
 
 class Art_Puzzle extends Module
 {
@@ -1265,7 +1268,6 @@ public function hookActionCartSave($params)
 {
     // Gestione personalizzazioni al salvataggio carrello
     if (isset($params['cart'])) {
-        require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
         ArtPuzzleLogger::log('Cart save event triggered', 'INFO', ['cart_id' => $params['cart']->id]);
     }
 }
@@ -1293,7 +1295,6 @@ public function hookDisplayOrderConfirmation($params)
 private function sendFinalOrderNotifications($order)
 {
     // Logica per email finali con PDF allegati
-    require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
     ArtPuzzleLogger::log('Sending final order notifications for order: ' . $order->id, 'INFO');
     
     // Qui implementerai l'invio delle email finali

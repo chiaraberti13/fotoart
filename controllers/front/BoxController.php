@@ -1,4 +1,9 @@
 <?php
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
+
 /**
  * Controller: art_puzzle/controllers/front/BoxController.php
  * Gestisce la selezione e il salvataggio della scatola personalizzata
@@ -34,7 +39,7 @@ class ArtPuzzleBoxModuleFrontController extends ModuleFrontController
     private function logAndError($message)
     {
         $this->errors[] = $this->module->l($message);
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[BOX] ' . $message);
         }
     }

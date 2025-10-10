@@ -1,4 +1,7 @@
 <?php
+
+namespace ArtPuzzle;
+
 /**
  * Art Puzzle - Processor immagini
  * Classe che gestisce l'elaborazione delle immagini per i puzzle personalizzati
@@ -283,7 +286,6 @@ class PuzzleImageProcessor
         // Se è specificato un formato, adatta l'immagine al formato
         if (!empty($options['format_id'])) {
             // Importa la classe del formato
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php');
             
             // Ottiene le informazioni sul formato
             $format = PuzzleFormatManager::getFormat($options['format_id']);

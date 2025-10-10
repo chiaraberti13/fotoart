@@ -1,5 +1,9 @@
 <?php
 
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
+use ArtPuzzle\PuzzleImageProcessor;
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
 class ArtPuzzleUploadModuleFrontController extends ModuleFrontController
@@ -43,7 +47,6 @@ class ArtPuzzleUploadModuleFrontController extends ModuleFrontController
             }
 
             // Crop immagine
-            require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php';
             $processor = new PuzzleImageProcessor();
             $croppedPath = $processor->cropImage($targetPath);
 
@@ -62,7 +65,7 @@ class ArtPuzzleUploadModuleFrontController extends ModuleFrontController
     private function logAndError($message)
     {
         $this->errors[] = $this->module->l($message);
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[UPLOAD] ' . $message);
         }
     }

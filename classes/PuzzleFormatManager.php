@@ -1,4 +1,7 @@
 <?php
+
+namespace ArtPuzzle;
+
 /**
  * Art Puzzle - Format Manager
  * Classe che gestisce i formati dei puzzle disponibili
@@ -13,7 +16,7 @@ class PuzzleFormatManager
     public static function getAllFormats()
     {
         // Recupera i formati dalla configurazione
-        $formatsJson = Configuration::get('ART_PUZZLE_FORMATS');
+        $formatsJson = \Configuration::get('ART_PUZZLE_FORMATS');
         
         // Se non ci sono formati configurati, restituisci i formati predefiniti
         if (!$formatsJson) {
@@ -327,7 +330,7 @@ class PuzzleFormatManager
         $formatsJson = json_encode($formats);
         
         // Salva nella configurazione
-        return Configuration::updateValue('ART_PUZZLE_FORMATS', $formatsJson);
+        return \Configuration::updateValue('ART_PUZZLE_FORMATS', $formatsJson);
     }
     
     /**

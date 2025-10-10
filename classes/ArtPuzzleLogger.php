@@ -1,4 +1,9 @@
 <?php
+
+namespace ArtPuzzle;
+
+use DateTime;
+
 /**
  * Art Puzzle - Logger
  * Classe che gestisce il logging delle operazioni del modulo
@@ -97,7 +102,7 @@ class ArtPuzzleLogger
     public static function debug($message, $context = [])
     {
         // Verifica che il debug sia abilitato
-        if (!Configuration::get('ART_PUZZLE_DEBUG_MODE')) {
+        if (!\Configuration::get('ART_PUZZLE_DEBUG_MODE')) {
             return false;
         }
         

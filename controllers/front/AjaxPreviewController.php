@@ -1,5 +1,9 @@
 <?php
-require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleAjaxErrorHandler.php';
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleAjaxErrorHandler;
+use ArtPuzzle\ArtPuzzleLogger;
 
 /**
  * Controller: art_puzzle/controllers/front/AjaxPreviewController.php
@@ -103,7 +107,7 @@ class ArtPuzzleAjaxPreviewModuleFrontController extends ModuleFrontController
 
     private function ajaxError($message)
     {
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[AJAX PREVIEW] ' . $message);
         }
         $this->ajaxDie(json_encode([

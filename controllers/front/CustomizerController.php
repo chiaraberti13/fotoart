@@ -1,4 +1,9 @@
 <?php
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleLogger;
+
 /**
  * Controller: art_puzzle/controllers/front/CustomizerController.php
  * Gestisce la schermata di personalizzazione iniziale del puzzle
@@ -62,7 +67,7 @@ $this->context->smarty->assign([
     private function logAndError($message)
     {
         $this->errors[] = $this->module->l($message);
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             ArtPuzzleLogger::log('[CUSTOMIZER] ' . $message);
         }
     }

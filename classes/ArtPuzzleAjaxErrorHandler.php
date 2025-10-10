@@ -1,5 +1,7 @@
 <?php
 
+namespace ArtPuzzle;
+
 
 class ArtPuzzleAjaxErrorHandler
 {
@@ -110,11 +112,11 @@ class ArtPuzzleAjaxErrorHandler
     {
         $loggerPath = _PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleLogger.php';
 
-        if (!class_exists('ArtPuzzleLogger') && file_exists($loggerPath)) {
+        if (!class_exists(ArtPuzzleLogger::class) && file_exists($loggerPath)) {
             require_once $loggerPath;
         }
 
-        if (class_exists('ArtPuzzleLogger')) {
+        if (class_exists(ArtPuzzleLogger::class)) {
             $context = sprintf('%s:%d', $throwable->getFile(), $throwable->getLine());
             $message = sprintf('[AJAX ERROR] %s - %s', $throwable->getMessage(), $context);
             ArtPuzzleLogger::log($message, 'ERROR');

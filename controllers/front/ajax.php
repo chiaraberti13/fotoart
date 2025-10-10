@@ -1,5 +1,13 @@
 <?php
-require_once _PS_MODULE_DIR_ . 'art_puzzle/classes/ArtPuzzleAjaxErrorHandler.php';
+
+require_once _PS_MODULE_DIR_ . 'art_puzzle/autoload.php';
+
+use ArtPuzzle\ArtPuzzleAjaxErrorHandler;
+use ArtPuzzle\ArtPuzzleLogger;
+use ArtPuzzle\PDFGeneratorPuzzle;
+use ArtPuzzle\PuzzleBoxManager;
+use ArtPuzzle\PuzzleFormatManager;
+use ArtPuzzle\PuzzleImageProcessor;
 
 /**
  * Art Puzzle - AJAX Controller
@@ -189,7 +197,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     {
         $this->executeAjax(function () {
                 // Debug iniziale
-                require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
                 ArtPuzzleLogger::log('=== INIZIO UPLOAD IMMAGINE ===', 'INFO');
                 ArtPuzzleLogger::log('FILES ricevuti: ' . print_r($_FILES, true), 'DEBUG');
                 ArtPuzzleLogger::log('POST ricevuti: ' . print_r($_POST, true), 'DEBUG');
@@ -365,7 +372,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     protected function handleGetPuzzleFormats()
     {
         $this->executeAjax(function () {
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php');
 
                 // Controlla se è richiesto un filtro per orientamento
                 $orientation = Tools::getValue('orientation', '');
@@ -396,7 +402,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     protected function handleGetBoxTemplates()
     {
         $this->executeAjax(function () {
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleBoxManager.php');
 
                 $templates = PuzzleBoxManager::getAllBoxTemplates();
                 $fonts = PuzzleBoxManager::getAllFonts();
@@ -414,7 +419,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     protected function handleGenerateBoxPreview()
     {
         $this->executeAjax(function () {
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleBoxManager.php');
 
                 // Recupera i parametri
                 $boxData = [
@@ -466,8 +470,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     protected function handleGeneratePuzzlePreview()
     {
         $this->executeAjax(function () {
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php');
 
             // Recupera i parametri
             $formatId = Tools::getValue('format', '');
@@ -618,9 +620,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
     protected function handleGenerateSummaryPreview()
     {
         $this->executeAjax(function () {
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleBoxManager.php');
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
-            require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php');
 
             // Recupera dati dalla sessione
             $imageSessionKey = 'art_puzzle_image';
@@ -727,9 +726,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 }
 
                 // Carica le classi necessarie
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleBoxManager.php');
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleImageProcessor.php');
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PuzzleFormatManager.php');
 
                 // Decodifica i dati
                 $boxData = json_decode($boxDataJson, true);
@@ -835,7 +831,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 }
 
                 // Registra il successo nel log
-                require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
                 ArtPuzzleLogger::log('Puzzle personalizzato aggiunto al carrello. ID Customization: ' . $customization_id);
 
                 // Invia email di notifica se richiesto
@@ -993,7 +988,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $this->cleanupTempFiles($upload_dir, 86400); // 86400 secondi = 24 ore
 
                 // Registra il successo nel log
-                require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
                 ArtPuzzleLogger::log('Personalizzazione puzzle salvata con successo. ID: ' . $customization_id);
 
                 // Restituisci successo
@@ -1360,7 +1354,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
             $fileAttachment = null;
             if (Configuration::get('ART_PUZZLE_ENABLE_PDF_USER') && file_exists($imagePath)) {
                 // Crea PDF se abilitato
-                require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PDFGeneratorPuzzle.php');
                 $pdfPath = _PS_MODULE_DIR_ . 'art_puzzle/upload/pdf_' . time() . '_' . Tools::passwdGen(8) . '.pdf';
                 PDFGeneratorPuzzle::generateClientPDF($imagePath, $customer->firstname . ' ' . $customer->lastname, $pdfPath);
                 
@@ -1412,7 +1405,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 $fileAttachment = null;
                 if (Configuration::get('ART_PUZZLE_ENABLE_PDF_ADMIN') && file_exists($imagePath)) {
                     // Crea PDF se abilitato
-                    require_once(_PS_MODULE_DIR_ . 'art_puzzle/classes/PDFGeneratorPuzzle.php');
                     $pdfPath = _PS_MODULE_DIR_ . 'art_puzzle/upload/pdf_admin_' . time() . '_' . Tools::passwdGen(8) . '.pdf';
                     $boxImagePath = ""; // In una versione completa, qui andrebbe generata l'immagine della scatola
                     PDFGeneratorPuzzle::generateAdminPDF($imagePath, $boxImagePath, $data['customization']['boxText'], $pdfPath);
@@ -1475,7 +1467,6 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                 if ($now - filemtime($filePath) > $maxAge) {
                     @unlink($filePath);
                     
-                    require_once(_PS_MODULE_DIR_.'art_puzzle/classes/ArtPuzzleLogger.php');
                     ArtPuzzleLogger::log('File temporaneo eliminato: ' . $file);
                 }
             }

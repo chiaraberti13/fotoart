@@ -252,7 +252,11 @@ class ArtPuzzleAjaxModuleFrontController extends ModuleFrontController
                     IMAGETYPE_GIF => 'gif',
                 ];
 
-                $detectedType = @exif_imagetype($file['tmp_name']);
+                $detectedType = false;
+                if (function_exists('exif_imagetype')) {
+                    $detectedType = @exif_imagetype($file['tmp_name']);
+                }
+
                 if ($detectedType === false && function_exists('finfo_open')) {
                     $finfo = finfo_open(FILEINFO_MIME_TYPE);
                     if ($finfo) {

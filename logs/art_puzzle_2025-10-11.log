@@ -1,0 +1,5 @@
+[2025-10-11 10:16:58] [ERROR] Error in hookDisplayProductExtraContent: Syntax error in template "file:/Users/chiaraberti/Sites/localhost/modules/art_puzzle/views/templates/hook/displayProductExtraContent.tpl"  on line 55 "fileTypeNotAllowed: "{l s='Tipo di file non supportato. Formati consentiti: {$allowed_file_types|implode:', '}.' mod='art_puzzle' js=1}""  - Unexpected ", ", expected one of: "}"
+[2025-10-11 15:25:01] [INFO] Cart save event triggered {"cart_id":7}
+[2025-10-11 15:25:01] [INFO] Cart save event triggered {"cart_id":7}
+[2025-10-11 15:25:54] [INFO] Cart save event triggered {"cart_id":7}
+[2025-10-11 15:25:54] [INFO] Cart save event triggered {"cart_id":7}

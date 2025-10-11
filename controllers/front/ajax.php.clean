@@ -1,0 +1,118 @@
+<?php
+/**
+ * Art Puzzle AJAX Controller
+ * FIXED VERSION - Nome classe corretto
+ */
+
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
+class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
+{
+    public $ajax = true;
+    
+    public function init()
+    {
+        parent::init();
+        $this->ajax = true;
+    }
+    
+    public function initContent()
+    {
+        parent::initContent();
+        $this->ajax = true;
+    }
+    
+    public function displayAjax()
+    {
+        try {
+            // Abilita output JSON
+            header('Content-Type: application/json');
+            
+            // Ottieni l'azione richiesta
+            $action = Tools::getValue('action', 'test');
+            
+            // Log per debug
+            error_log('Art Puzzle AJAX - Action: ' . $action);
+            
+            // Rispondi in base all'azione
+            switch ($action) {
+                case 'checkDirectoryPermissions':
+                    $this->checkDirectoryPermissions();
+                    break;
+                    
+                case 'uploadImage':
+                    $this->handleUploadImage();
+                    break;
+                    
+                case 'test':
+                default:
+                    // Test response
+                    $response = [
+                        'success' => true,
+                        'message' => 'Controller AJAX funzionante',
+                        'data' => [
+                            'version' => '1.0.0',
+                            'timestamp' => date('Y-m-d H:i:s'),
+                            'action' => $action
+                        ]
+                    ];
+                    die(json_encode($response));
+                    break;
+            }
+            
+        } catch (Exception $e) {
+            $response = [
+                'success' => false,
+                'message' => 'Errore: ' . $e->getMessage()
+            ];
+            die(json_encode($response));
+        }
+    }
+    
+    protected function checkDirectoryPermissions()
+    {
+        $module_dir = _PS_MODULE_DIR_ . 'art_puzzle/';
+        $directories = [
+            'upload' => $module_dir . 'upload/',
+            'logs' => $module_dir . 'logs/',
+            'fonts' => $module_dir . 'views/fonts/'
+        ];
+        
+        $results = [];
+        foreach ($directories as $name => $path) {
+            $results[$name] = [
+                'exists' => is_dir($path),
+                'writable' => is_writable($path),
+                'path' => $path
+            ];
+        }
+        
+        $response = [
+            'success' => true,
+            'message' => 'Controllo permessi completato',
+            'data' => $results
+        ];
+        
+        die(json_encode($response));
+    }
+    
+    protected function handleUploadImage()
+    {
+        $response = [
+            'success' => false,
+            'message' => 'Upload non ancora implementato'
+        ];
+        die(json_encode($response));
+    }
+    
+    /**
+     * Check if is XmlHttpRequest (deve essere public)
+     */
+    public function isXmlHttpRequest()
+    {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+    }
+}

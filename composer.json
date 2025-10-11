@@ -1,0 +1,13 @@
+{
+    "name": "fotoart/art-puzzle",
+    "description": "Art Puzzle module",
+    "type": "prestashop-module",
+    "autoload": {
+        "psr-4": {
+            "ArtPuzzle\\": "classes/"
+        }
+    },
+    "scripts": {
+        "check-php73": "@php tools/php73_compatibility_check.php"
+    }
+}

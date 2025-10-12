@@ -150,6 +150,24 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         }
         $formatId = trim($formatId);
 
+        $requestedFormatName = Tools::getValue('format_name');
+        if (!is_string($requestedFormatName)) {
+            $requestedFormatName = '';
+        }
+        $requestedFormatName = trim($requestedFormatName);
+
+        $requestedFormatPrice = Tools::getValue('format_price');
+        if (!is_numeric($requestedFormatPrice)) {
+            $requestedFormatPrice = 0.0;
+        }
+        $requestedFormatPrice = (float) $requestedFormatPrice;
+
+        $requestedFormatPriceDisplay = Tools::getValue('format_price_display');
+        if (!is_string($requestedFormatPriceDisplay)) {
+            $requestedFormatPriceDisplay = '';
+        }
+        $requestedFormatPriceDisplay = trim($requestedFormatPriceDisplay);
+
         if ($productId <= 0) {
             $response['message'] = 'Prodotto non valido';
             die(json_encode($response));
@@ -162,16 +180,35 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         }
 
         $formatData = $this->module->getProductFormatOption($productId, $formatId);
+        if (!$formatData && $requestedFormatName !== '') {
+            $fallbackId = $formatId !== '' ? $formatId : Tools::link_rewrite($requestedFormatName);
+            $formatData = [
+                'id' => $fallbackId,
+                'name' => $requestedFormatName,
+                'price' => $requestedFormatPrice,
+                'price_display' => $requestedFormatPriceDisplay,
+            ];
+        }
         if (!$formatData) {
             $response['message'] = 'Formato non valido';
             die(json_encode($response));
         }
 
         $canonicalFormatId = isset($formatData['id']) ? (string) $formatData['id'] : $formatId;
+        if ($canonicalFormatId === '' && $requestedFormatName !== '') {
+            $canonicalFormatId = Tools::link_rewrite($requestedFormatName);
+        }
 
-        $priceTaxIncl = (float)$formatData['price'];
+        $priceTaxIncl = isset($formatData['price']) ? (float) $formatData['price'] : 0.0;
+        if ($priceTaxIncl <= 0 && $requestedFormatPrice > 0) {
+            $priceTaxIncl = $requestedFormatPrice;
+        }
         if ($priceTaxIncl <= 0) {
-            $priceTaxIncl = (float)Product::getPriceStatic($productId, true, null, 6, null, false, true, 1, false, null, false, true);
+            $priceTaxIncl = (float) Product::getPriceStatic($productId, true, null, 6, null, false, true, 1, false, null, false, true);
+        }
+
+        if (!isset($formatData['price_display']) || $formatData['price_display'] === '') {
+            $formatData['price_display'] = Tools::displayPrice($priceTaxIncl, $this->context->currency, false);
         }
 
         $priceTaxExcl = $this->module->computePriceTaxExcl($priceTaxIncl, $product);
@@ -182,6 +219,7 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             'format_name' => $formatData['name'],
             'price' => $priceTaxIncl,
             'price_tax_excl' => $priceTaxExcl,
+            'format_price_display' => $formatData['price_display'],
             'box_text' => Tools::getValue('box_text'),
             'box_color' => Tools::getValue('box_color'),
             'box_font' => Tools::getValue('box_font'),

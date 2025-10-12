@@ -523,6 +523,9 @@
                         saveData.append('action', 'saveCustomization');
                         saveData.append('product_id', customizationData.productId);
                         saveData.append('format', customizationData.formatId);
+                        saveData.append('format_name', customizationData.formatName || '');
+                        saveData.append('format_price', customizationData.price || '');
+                        saveData.append('format_price_display', customizationData.priceFormatted || '');
                         saveData.append('box_text', customizationData.boxText);
                         saveData.append('box_color', customizationData.boxColor);
                         saveData.append('box_font', customizationData.boxFont);

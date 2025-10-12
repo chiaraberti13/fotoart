@@ -47,8 +47,9 @@
                             <div class="row puzzle-size-row mb-3">
                                 <div class="col-lg-3">
                                     <div class="input-group">
-                                        <input type="text" name="puzzle_size_name[]" class="form-control" 
-                                               value="{$size_data.name|escape:'html':'UTF-8'}" 
+                                        <input type="hidden" name="puzzle_size_id[]" value="{if isset($size_data.id)}{$size_data.id|escape:'html':'UTF-8'}{/if}">
+                                        <input type="text" name="puzzle_size_name[]" class="form-control"
+                                               value="{$size_data.name|escape:'html':'UTF-8'}"
                                                placeholder="{l s='Nome formato' mod='art_puzzle'}">
                                     </div>
                                 </div>
@@ -78,12 +79,13 @@
                         {/foreach}
                     {else}
                         <div class="row puzzle-size-row mb-3">
-                            <div class="col-lg-3">
-                                <div class="input-group">
-                                    <input type="text" name="puzzle_size_name[]" class="form-control" 
-                                           value="Piccolo" placeholder="{l s='Nome formato' mod='art_puzzle'}">
+                                <div class="col-lg-3">
+                                    <div class="input-group">
+                                        <input type="hidden" name="puzzle_size_id[]" value="">
+                                        <input type="text" name="puzzle_size_name[]" class="form-control"
+                                               value="Piccolo" placeholder="{l s='Nome formato' mod='art_puzzle'}">
+                                    </div>
                                 </div>
-                            </div>
                             <div class="col-lg-4">
                                 <div class="input-group">
                                     <input type="number" name="puzzle_size_width[]" class="form-control" 
@@ -316,7 +318,8 @@
     <div class="row puzzle-size-row mb-3">
         <div class="col-lg-3">
             <div class="input-group">
-                <input type="text" name="puzzle_size_name[]" class="form-control" 
+                <input type="hidden" name="puzzle_size_id[]" value="">
+                <input type="text" name="puzzle_size_name[]" class="form-control"
                        value="" placeholder="{l s='Nome formato' mod='art_puzzle'}">
             </div>
         </div>
@@ -564,6 +567,7 @@ $(document).ready(function() {
             $('.puzzle-size-row').each(function() {
                 var row = $(this);
                 sizes.push({
+                    id: row.find('input[name="puzzle_size_id[]"]').val(),
                     name: row.find('input[name="puzzle_size_name[]"]').val(),
                     width: parseInt(row.find('input[name="puzzle_size_width[]"]').val()),
                     height: parseInt(row.find('input[name="puzzle_size_height[]"]').val()),

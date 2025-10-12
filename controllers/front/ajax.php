@@ -141,12 +141,44 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         $response = ['success' => false];
         
         // Recupera i dati
+        $this->module->ensureCustomizationStorageReady();
+
+        $productId = (int)Tools::getValue('product_id');
+        $formatId = Tools::getValue('format');
+
+        if ($productId <= 0) {
+            $response['message'] = 'Prodotto non valido';
+            die(json_encode($response));
+        }
+
+        $product = new Product($productId, false, $this->context->language->id);
+        if (!Validate::isLoadedObject($product)) {
+            $response['message'] = 'Prodotto non trovato';
+            die(json_encode($response));
+        }
+
+        $formatData = $this->module->getProductFormatOption($productId, $formatId);
+        if (!$formatData) {
+            $response['message'] = 'Formato non valido';
+            die(json_encode($response));
+        }
+
+        $priceTaxIncl = (float)$formatData['price'];
+        if ($priceTaxIncl <= 0) {
+            $priceTaxIncl = (float)Product::getPriceStatic($productId, true, null, 6, null, false, true, 1, false, null, false, true);
+        }
+
+        $priceTaxExcl = $this->module->computePriceTaxExcl($priceTaxIncl, $product);
+
         $customization_data = [
-            'product_id' => (int)Tools::getValue('product_id'),
-            'format' => Tools::getValue('format'),
-            'price' => (float)Tools::getValue('price'),
+            'product_id' => $productId,
+            'format' => $formatId,
+            'format_name' => $formatData['name'],
+            'price' => $priceTaxIncl,
+            'price_tax_excl' => $priceTaxExcl,
             'box_text' => Tools::getValue('box_text'),
             'box_color' => Tools::getValue('box_color'),
+            'box_font' => Tools::getValue('box_font'),
             'image_filename' => Tools::getValue('image_filename'),
             'customer_id' => (int)$this->context->customer->id,
             'date_add' => date('Y-m-d H:i:s')
@@ -188,6 +220,7 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             'id_cart' => (int)$this->context->cart->id,
             'format' => pSQL($customization_data['format']),
             'price' => $customization_data['price'],
+            'price_tax_excl' => $customization_data['price_tax_excl'],
             'box_text' => pSQL($customization_data['box_text']),
             'box_color' => pSQL($customization_data['box_color']),
             'image_filename' => pSQL($customization_data['image_filename']),
@@ -224,27 +257,46 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         $product_id = (int)Tools::getValue('product_id');
         $customization_id = (int)Tools::getValue('customization_id');
         $format = Tools::getValue('format');
-        $custom_price = (float)Tools::getValue('price');
-        
+
         // Verifica che il prodotto esista
         $product = new Product($product_id, false, $this->context->language->id);
         if (!Validate::isLoadedObject($product)) {
             $response['message'] = 'Prodotto non trovato';
             die(json_encode($response));
         }
-        
+
+        $customRow = Db::getInstance()->getRow('SELECT * FROM `'._DB_PREFIX_.'art_puzzle_customization` WHERE `id_customization` = ' . (int)$customization_id);
+        if (!$customRow) {
+            $response['message'] = 'Personalizzazione non trovata';
+            die(json_encode($response));
+        }
+
         // Crea o recupera il carrello
         if (!$this->context->cart->id) {
             $this->context->cart->add();
             $this->context->cookie->id_cart = (int)$this->context->cart->id;
             $this->context->cookie->write();
         }
-        
+
+        $prestaCustomization = new Customization();
+        $prestaCustomization->id_product = $product_id;
+        $prestaCustomization->id_product_attribute = 0;
+        $prestaCustomization->id_cart = (int)$this->context->cart->id;
+        $prestaCustomization->id_address_delivery = (int)$this->context->cart->id_address_delivery;
+        $prestaCustomization->id_shop = (int)$this->context->shop->id;
+        $prestaCustomization->id_shop_group = (int)$this->context->shop->id_shop_group;
+        $prestaCustomization->quantity = 0;
+        $prestaCustomization->in_cart = 0;
+        $prestaCustomization->add();
+
+        $prestaCustomizationId = (int)$prestaCustomization->id;
+
         // Aggiungi il prodotto al carrello
         $update_quantity = $this->context->cart->updateQty(
             1, // quantity
             $product_id,
             null, // id_product_attribute
+            $prestaCustomizationId, // id_customization
             false, // operator
             'up', // operator for display
             0, // id_address_delivery
@@ -259,10 +311,23 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             // Aggiorna la tabella di personalizzazione con l'ID del carrello
             if ($customization_id) {
                 Db::getInstance()->update('art_puzzle_customization', [
-                    'id_cart' => (int)$this->context->cart->id
+                    'id_cart' => (int)$this->context->cart->id,
+                    'presta_customization_id' => $prestaCustomizationId
                 ], 'id_customization = ' . (int)$customization_id);
+
+                $customRow['presta_customization_id'] = $prestaCustomizationId;
+
+                if (!empty($customRow['customization_data'])) {
+                    $jsonData = json_decode($customRow['customization_data'], true);
+                    if (is_array($jsonData)) {
+                        $jsonData['presta_customization_id'] = $prestaCustomizationId;
+                        Db::getInstance()->update('art_puzzle_customization', [
+                            'customization_data' => json_encode($jsonData),
+                        ], 'id_customization = ' . (int)$customization_id);
+                    }
+                }
             }
-            
+
             // Conta prodotti nel carrello
             $cart_products = $this->context->cart->getProducts();
             $cart_count = 0;
@@ -277,12 +342,16 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
                 'cart_count' => $cart_count,
                 'cart_url' => $this->context->link->getPageLink('cart', true, null, ['action' => 'show']),
                 'product_name' => $product->name,
-                'format' => $format
+                'format' => $format,
+                'customization_id' => $customization_id,
+                'presta_customization_id' => $prestaCustomizationId,
+                'price_tax_incl' => isset($customRow['price']) ? (float)$customRow['price'] : 0,
+                'price_tax_excl' => isset($customRow['price_tax_excl']) ? (float)$customRow['price_tax_excl'] : 0,
             ];
         } else {
             $response['message'] = 'Errore nell\'aggiunta al carrello';
         }
-        
+
         die(json_encode($response));
     }
     

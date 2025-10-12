@@ -335,7 +335,45 @@ class Art_Puzzle extends Module
     {
         $formats = $this->getProductFormats($idProduct);
 
-        return isset($formats[$formatId]) ? $formats[$formatId] : null;
+        if (!is_array($formats) || empty($formats)) {
+            return null;
+        }
+
+        $formatId = is_string($formatId) ? trim($formatId) : '';
+        if ($formatId === '') {
+            return null;
+        }
+
+        if (isset($formats[$formatId])) {
+            return $formats[$formatId];
+        }
+
+        $normalizedId = Tools::link_rewrite($formatId);
+        if ($normalizedId !== '' && isset($formats[$normalizedId])) {
+            return $formats[$normalizedId];
+        }
+
+        foreach ($formats as $format) {
+            if (!is_array($format)) {
+                continue;
+            }
+
+            if (isset($format['id'])) {
+                if ($format['id'] === $formatId) {
+                    return $format;
+                }
+
+                if ($normalizedId !== '' && Tools::link_rewrite((string) $format['id']) === $normalizedId) {
+                    return $format;
+                }
+            }
+
+            if ($normalizedId !== '' && isset($format['name']) && Tools::link_rewrite((string) $format['name']) === $normalizedId) {
+                return $format;
+            }
+        }
+
+        return null;
     }
 
     private function getBoxColorOptions()

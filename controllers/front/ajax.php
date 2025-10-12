@@ -145,6 +145,10 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
 
         $productId = (int)Tools::getValue('product_id');
         $formatId = Tools::getValue('format');
+        if (!is_string($formatId)) {
+            $formatId = '';
+        }
+        $formatId = trim($formatId);
 
         if ($productId <= 0) {
             $response['message'] = 'Prodotto non valido';
@@ -163,6 +167,8 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
             die(json_encode($response));
         }
 
+        $canonicalFormatId = isset($formatData['id']) ? (string) $formatData['id'] : $formatId;
+
         $priceTaxIncl = (float)$formatData['price'];
         if ($priceTaxIncl <= 0) {
             $priceTaxIncl = (float)Product::getPriceStatic($productId, true, null, 6, null, false, true, 1, false, null, false, true);
@@ -172,7 +178,7 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
 
         $customization_data = [
             'product_id' => $productId,
-            'format' => $formatId,
+            'format' => $canonicalFormatId,
             'format_name' => $formatData['name'],
             'price' => $priceTaxIncl,
             'price_tax_excl' => $priceTaxExcl,
@@ -263,6 +269,10 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         $product_id = (int)Tools::getValue('product_id');
         $customization_id = (int)Tools::getValue('customization_id');
         $format = Tools::getValue('format');
+        if (!is_string($format)) {
+            $format = '';
+        }
+        $format = trim($format);
 
         // Verifica che il prodotto esista
         $product = new Product($product_id, false, $this->context->language->id);
@@ -311,9 +321,16 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         );
         
         if ($update_quantity) {
+            $formatData = $this->module->getProductFormatOption($product_id, $format);
+            if ($formatData) {
+                $format = isset($formatData['id']) ? (string) $formatData['id'] : $format;
+            } elseif (!empty($customRow['format'])) {
+                $format = $customRow['format'];
+            }
+
             // Aggiorna il prezzo se necessario (richiede override o modulo specifico)
             // Per ora salviamo il riferimento alla personalizzazione
-            
+
             // Aggiorna la tabella di personalizzazione con l'ID del carrello
             if ($customization_id) {
                 Db::getInstance()->update('art_puzzle_customization', [

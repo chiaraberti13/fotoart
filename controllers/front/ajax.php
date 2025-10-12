@@ -190,17 +190,20 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
         // Verifica se la tabella esiste, altrimenti creala
         $sql_check = "SHOW TABLES LIKE '" . pSQL($table) . "'";
         if (!Db::getInstance()->executeS($sql_check)) {
-            // Crea la tabella
+            // Crea la tabella includendo i campi richiesti dalle logiche di prezzo
             $sql_create = "CREATE TABLE IF NOT EXISTS `" . pSQL($table) . "` (
                 `id_customization` int(11) NOT NULL AUTO_INCREMENT,
                 `id_product` int(11) NOT NULL,
                 `id_customer` int(11) DEFAULT NULL,
                 `id_cart` int(11) DEFAULT NULL,
+                `presta_customization_id` int(11) DEFAULT NULL,
                 `id_order` int(11) DEFAULT NULL,
                 `format` varchar(50) DEFAULT NULL,
                 `price` decimal(10,2) DEFAULT NULL,
+                `price_tax_excl` decimal(20,6) DEFAULT NULL,
                 `box_text` varchar(255) DEFAULT NULL,
                 `box_color` varchar(50) DEFAULT NULL,
+                `box_font` varchar(100) DEFAULT NULL,
                 `image_filename` varchar(255) DEFAULT NULL,
                 `customization_data` text,
                 `date_add` datetime NOT NULL,
@@ -209,8 +212,11 @@ class Art_puzzleAjaxModuleFrontController extends ModuleFrontController
                 KEY `id_customer` (`id_customer`),
                 KEY `id_cart` (`id_cart`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8";
-            
+
             Db::getInstance()->execute($sql_create);
+
+            // Applica eventuali aggiornamenti schema/index richiesti dal modulo
+            $this->module->ensureCustomizationStorageReady();
         }
         
         // Inserisci la personalizzazione

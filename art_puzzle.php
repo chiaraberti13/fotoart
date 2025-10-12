@@ -8,7 +8,6 @@ require_once __DIR__ . '/autoload.php';
 
 use PrestaShop\PrestaShop\Core\Product\ProductExtraContent;
 use ArtPuzzle\ArtPuzzleLogger;
-
 class Art_Puzzle extends Module
 {
     private const BOOLEAN_CONFIGURATION_KEYS = [
@@ -69,12 +68,14 @@ class Art_Puzzle extends Module
             $this->registerHook('displayAdminProductsMainStepLeftColumnMiddle') &&
             $this->registerHook('displayShoppingCartFooter') &&
             $this->registerHook('actionCartSave') &&
+            $this->registerHook('actionCartGetProductsAfter') &&
             $this->registerHook('actionOrderStatusPostUpdate') &&
             $this->registerHook('displayOrderConfirmation') &&
             $this->registerHook('actionValidateOrder') &&          // NUOVO
             $this->registerHook('actionPaymentConfirmation') &&    // NUOVO
             $this->initializeConfiguration($defaultConfiguration) &&
-            $this->ensureCustomizationTableIndexes();
+            $this->ensureCustomizationTableIndexes() &&
+            $this->ensureCustomizationTableSchema();
     }
 
     private function createRequiredDirectories()
@@ -156,6 +157,60 @@ class Art_Puzzle extends Module
         return true;
     }
 
+    public function ensureCustomizationStorageReady()
+    {
+        return $this->ensureCustomizationTableIndexes() && $this->ensureCustomizationTableSchema();
+    }
+
+    /**
+     * Ensure optional columns used by the module exist on the customization table.
+     *
+     * @return bool
+     */
+    private function ensureCustomizationTableSchema()
+    {
+        $db = Db::getInstance();
+        $tableName = _DB_PREFIX_ . 'art_puzzle_customization';
+
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . pSQL($tableName) . "'");
+        if (empty($tableExists)) {
+            return true;
+        }
+
+        $columns = $db->executeS('SHOW COLUMNS FROM `' . pSQL($tableName) . '`');
+        $existingColumns = [];
+
+        if (is_array($columns)) {
+            foreach ($columns as $column) {
+                if (isset($column['Field'])) {
+                    $existingColumns[] = $column['Field'];
+                }
+            }
+        }
+
+        $updates = [];
+
+        if (!in_array('presta_customization_id', $existingColumns)) {
+            $updates[] = 'ADD COLUMN `presta_customization_id` INT(11) NULL AFTER `id_cart`';
+        }
+
+        if (!in_array('price_tax_excl', $existingColumns)) {
+            $updates[] = 'ADD COLUMN `price_tax_excl` DECIMAL(20,6) NULL AFTER `price`';
+        }
+
+        if (empty($updates)) {
+            return true;
+        }
+
+        $sql = sprintf(
+            'ALTER TABLE `%s` %s',
+            pSQL($tableName),
+            implode(', ', $updates)
+        );
+
+        return (bool) $db->execute($sql);
+    }
+
     public function uninstall()
     {
         if (!parent::uninstall()) {
@@ -195,6 +250,274 @@ class Art_Puzzle extends Module
             'ART_PUZZLE_ADMIN_EMAIL' => $adminEmail,
             'ART_PUZZLE_FONTS' => '',
         ];
+    }
+
+    private function getProductConfigurationKey($idProduct)
+    {
+        return 'ART_PUZZLE_PRODUCT_CONFIG_' . (int) $idProduct;
+    }
+
+    public function getProductConfiguration($idProduct)
+    {
+        $configJson = Configuration::get($this->getProductConfigurationKey($idProduct));
+        if (!$configJson) {
+            return [];
+        }
+
+        $data = json_decode($configJson, true);
+
+        return is_array($data) ? $data : [];
+    }
+
+    private function buildFormatId($name, $width, $height, array &$existingIds)
+    {
+        $candidate = Tools::link_rewrite($name);
+        if ($candidate === '') {
+            $candidate = 'format-' . (int) $width . 'x' . (int) $height;
+        }
+
+        $base = $candidate;
+        $suffix = 1;
+        while (in_array($candidate, $existingIds)) {
+            $candidate = $base . '-' . $suffix;
+            ++$suffix;
+        }
+
+        $existingIds[] = $candidate;
+
+        return $candidate;
+    }
+
+    public function getProductFormats($idProduct)
+    {
+        $config = $this->getProductConfiguration($idProduct);
+        $formats = [];
+        $existingIds = [];
+
+        if (!empty($config['sizes']) && is_array($config['sizes'])) {
+            foreach ($config['sizes'] as $index => $size) {
+                $name = isset($size['name']) ? trim((string) $size['name']) : '';
+                $width = isset($size['width']) ? (int) $size['width'] : 0;
+                $height = isset($size['height']) ? (int) $size['height'] : 0;
+                $price = isset($size['price']) ? (float) $size['price'] : 0.0;
+                $id = isset($size['id']) ? Tools::link_rewrite($size['id']) : '';
+
+                if ($name === '' || $width <= 0 || $height <= 0) {
+                    continue;
+                }
+
+                if ($id === '') {
+                    $id = $this->buildFormatId($name, $width, $height, $existingIds);
+                } else {
+                    if (in_array($id, $existingIds)) {
+                        $id = $this->buildFormatId($name, $width, $height, $existingIds);
+                    } else {
+                        $existingIds[] = $id;
+                    }
+                }
+
+                $formats[$id] = [
+                    'id' => $id,
+                    'name' => $name,
+                    'width' => $width,
+                    'height' => $height,
+                    'dimensions' => sprintf('%d x %d cm', $width, $height),
+                    'price' => $price,
+                    'price_display' => Tools::displayPrice($price, $this->context->currency, false),
+                ];
+            }
+        }
+
+        return $formats;
+    }
+
+    public function getProductFormatOption($idProduct, $formatId)
+    {
+        $formats = $this->getProductFormats($idProduct);
+
+        return isset($formats[$formatId]) ? $formats[$formatId] : null;
+    }
+
+    private function getBoxColorOptions()
+    {
+        $colorsJson = Configuration::get('ART_PUZZLE_BOX_COLORS');
+        $colors = [];
+
+        if ($colorsJson) {
+            $decoded = json_decode($colorsJson, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $colorSet) {
+                    if (!isset($colorSet['box'], $colorSet['text'])) {
+                        continue;
+                    }
+
+                    $label = sprintf('%s / %s', Tools::strtoupper($colorSet['box']), Tools::strtoupper($colorSet['text']));
+                    $colors[] = [
+                        'value' => Tools::strtoupper($colorSet['box']),
+                        'text_color' => Tools::strtoupper($colorSet['text']),
+                        'label' => $label,
+                    ];
+                }
+            }
+        }
+
+        if (empty($colors)) {
+            foreach (self::DEFAULT_BOX_COLORS as $colorSet) {
+                $colors[] = [
+                    'value' => Tools::strtoupper($colorSet['box']),
+                    'text_color' => Tools::strtoupper($colorSet['text']),
+                    'label' => sprintf('%s / %s', Tools::strtoupper($colorSet['box']), Tools::strtoupper($colorSet['text'])),
+                ];
+            }
+        }
+
+        return $colors;
+    }
+
+    private function getFontOptions()
+    {
+        $fonts = [];
+        $fontsConfig = Configuration::get('ART_PUZZLE_FONTS');
+
+        if ($fontsConfig) {
+            $fontFiles = array_filter(array_map('trim', explode(',', $fontsConfig)));
+            foreach ($fontFiles as $index => $file) {
+                $fonts[] = [
+                    'id' => $file,
+                    'label' => Tools::ucfirst(str_replace(['_', '-'], ' ', pathinfo($file, PATHINFO_FILENAME))),
+                    'font_family' => 'puzzle-font-' . $index,
+                ];
+            }
+        }
+
+        return $fonts;
+    }
+
+    private function getPuzzleProductIds()
+    {
+        $ids = Configuration::get('ART_PUZZLE_PRODUCT_IDS');
+        if (!$ids) {
+            return [];
+        }
+
+        $list = array_unique(array_filter(array_map('trim', explode(',', $ids))));
+
+        return array_map('intval', $list);
+    }
+
+    private function savePuzzleProductIds(array $ids)
+    {
+        $clean = [];
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            if ($id > 0 && !in_array($id, $clean, true)) {
+                $clean[] = $id;
+            }
+        }
+
+        Configuration::updateValue('ART_PUZZLE_PRODUCT_IDS', implode(',', $clean));
+    }
+
+    private function sanitizeFormatRows(array $rows)
+    {
+        $clean = [];
+        $existing = [];
+
+        foreach ($rows as $row) {
+            $name = isset($row['name']) ? trim((string) $row['name']) : '';
+            $width = isset($row['width']) ? (int) $row['width'] : 0;
+            $height = isset($row['height']) ? (int) $row['height'] : 0;
+            $price = isset($row['price']) ? (float) $row['price'] : 0.0;
+            $id = isset($row['id']) ? Tools::link_rewrite((string) $row['id']) : '';
+
+            if ($name === '' || $width <= 0 || $height <= 0) {
+                continue;
+            }
+
+            if ($id === '') {
+                $id = $this->buildFormatId($name, $width, $height, $existing);
+            } else {
+                if (in_array($id, $existing, true)) {
+                    $id = $this->buildFormatId($name, $width, $height, $existing);
+                } else {
+                    $existing[] = $id;
+                }
+            }
+
+            $clean[] = [
+                'id' => $id,
+                'name' => $name,
+                'width' => $width,
+                'height' => $height,
+                'price' => Tools::ps_round($price, 2),
+            ];
+        }
+
+        return $clean;
+    }
+
+    private function sanitizePiecesRows(array $rows)
+    {
+        $clean = [];
+
+        foreach ($rows as $row) {
+            $count = isset($row['count']) ? (int) $row['count'] : 0;
+            $name = isset($row['name']) ? trim((string) $row['name']) : '';
+            $price = isset($row['price']) ? (float) $row['price'] : 0.0;
+
+            if ($count <= 0) {
+                continue;
+            }
+
+            $clean[] = [
+                'count' => $count,
+                'name' => $name,
+                'price' => Tools::ps_round($price, 2),
+            ];
+        }
+
+        return $clean;
+    }
+
+    public function computePriceTaxExcl($priceTaxIncl, Product $product)
+    {
+        $priceTaxIncl = (float) $priceTaxIncl;
+        if ($priceTaxIncl <= 0) {
+            return 0.0;
+        }
+
+        $context = Context::getContext();
+        $idAddress = (int) $context->cart->id_address_delivery;
+        if (!$idAddress) {
+            $idAddress = (int) $context->cart->id_address_invoice;
+        }
+
+        if ($idAddress) {
+            $address = new Address($idAddress);
+        } else {
+            $address = new Address((int) Configuration::get('PS_SHOP_DEFAULT'));
+        }
+
+        $taxCalculator = TaxManagerFactory::getManager($address, (int) $product->id_tax_rules_group)->getTaxCalculator();
+
+        if ($taxCalculator) {
+            $priceTaxExcl = $taxCalculator->removeTaxes($priceTaxIncl);
+        } else {
+            $priceTaxExcl = $priceTaxIncl;
+        }
+
+        return (float) Tools::ps_round($priceTaxExcl, 6);
+    }
+
+    private function getCustomizationByPrestaId($prestaCustomizationId)
+    {
+        if (!$prestaCustomizationId) {
+            return false;
+        }
+
+        $sql = 'SELECT * FROM `' . _DB_PREFIX_ . "art_puzzle_customization` WHERE `presta_customization_id` = " . (int) $prestaCustomizationId;
+
+        return Db::getInstance()->getRow($sql);
     }
 
     public function validateConfigurationValues(array $values)
@@ -541,6 +864,71 @@ class Art_Puzzle extends Module
         return $output . $this->displayForm();
     }
 
+    public function ajaxProcessSavePuzzleConfig()
+    {
+        header('Content-Type: application/json');
+
+        $idProduct = (int) Tools::getValue('id_product');
+        $enabled = (int) Tools::getValue('enabled');
+
+        if ($idProduct <= 0) {
+            die(json_encode([
+                'success' => false,
+                'message' => $this->l('ID prodotto non valido.'),
+            ]));
+        }
+
+        $productIds = $this->getPuzzleProductIds();
+
+        if ($enabled !== 1) {
+            if (($key = array_search($idProduct, $productIds, true)) !== false) {
+                unset($productIds[$key]);
+                $this->savePuzzleProductIds($productIds);
+            }
+
+            Configuration::deleteByName($this->getProductConfigurationKey($idProduct));
+
+            die(json_encode([
+                'success' => true,
+                'message' => $this->l('Personalizzazione puzzle disabilitata per il prodotto.'),
+            ]));
+        }
+
+        $sizesRaw = Tools::getValue('sizes', []);
+        $piecesRaw = Tools::getValue('pieces_options', []);
+
+        $sizes = $this->sanitizeFormatRows(is_array($sizesRaw) ? $sizesRaw : []);
+        if (empty($sizes)) {
+            die(json_encode([
+                'success' => false,
+                'message' => $this->l('Definisci almeno un formato puzzle valido.'),
+            ]));
+        }
+
+        $piecesOptions = $this->sanitizePiecesRows(is_array($piecesRaw) ? $piecesRaw : []);
+
+        $config = [
+            'sizes' => $sizes,
+            'pieces_options' => $piecesOptions,
+            'custom_box' => (int) Tools::getValue('custom_box', 0),
+            'min_resolution' => Tools::getValue('min_resolution'),
+            'max_file_size' => Tools::getValue('max_file_size'),
+            'formats' => Tools::getValue('formats', []),
+        ];
+
+        Configuration::updateValue($this->getProductConfigurationKey($idProduct), json_encode($config));
+
+        if (!in_array($idProduct, $productIds, true)) {
+            $productIds[] = $idProduct;
+            $this->savePuzzleProductIds($productIds);
+        }
+
+        die(json_encode([
+            'success' => true,
+            'message' => $this->l('Configurazione puzzle salvata con successo.'),
+        ]));
+    }
+
     public function hookActionFrontControllerSetMedia($params)
     {
         // Aggiungi variabili JavaScript globali necessarie
@@ -670,7 +1058,12 @@ class Art_Puzzle extends Module
                 'upload_max_size' => Configuration::get('ART_PUZZLE_MAX_UPLOAD_SIZE'),
                 'allowed_file_types' => explode(',', Configuration::get('ART_PUZZLE_ALLOWED_FILE_TYPES')),
                 'enable_orientation' => Configuration::get('ART_PUZZLE_ENABLE_ORIENTATION'),
-                'enable_crop_tool' => Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL')
+                'enable_crop_tool' => Configuration::get('ART_PUZZLE_ENABLE_CROP_TOOL'),
+                'puzzle_formats' => $this->getProductFormats($id_product),
+                'puzzle_box_colors' => $this->getBoxColorOptions(),
+                'puzzle_fonts' => $this->getFontOptions(),
+                'default_box_text' => Configuration::get('ART_PUZZLE_DEFAULT_BOX_TEXT'),
+                'max_box_text_length' => (int) Configuration::get('ART_PUZZLE_MAX_BOX_TEXT_LENGTH'),
             ]);
             
             $extraContent = new $extraContentClass();
@@ -747,8 +1140,9 @@ public function hookDisplayAdminProductsExtra($params)
         'module_dir' => $this->_path,
         'module_token' => Tools::getAdminTokenLite('AdminModules'),
         'ajax_url' => $this->context->link->getAdminLink('AdminModules', true, [], ['configure' => $this->name]),
+        'puzzle_config' => $this->getProductConfiguration($id_product),
     ]);
-    
+
     return $this->display(__FILE__, 'views/templates/admin/product_tab.tpl');
 }
 
@@ -1539,14 +1933,98 @@ public function hookDisplayOrderConfirmation($params)
 {
     if (isset($params['order'])) {
         $order = $params['order'];
-        
+
         // Invia email finali se ci sono puzzle personalizzati
         $this->sendFinalOrderNotifications($order);
-        
+
         return $this->display(__FILE__, 'views/templates/hook/displayOrderConfirmation.tpl');
     }
-    
+
     return '';
+}
+
+public function hookActionCartGetProductsAfter($params)
+{
+    if (!isset($params['products']) || !is_array($params['products'])) {
+        return;
+    }
+
+    foreach ($params['products'] as &$product) {
+        if (empty($product['id_customization'])) {
+            continue;
+        }
+
+        $customRow = $this->getCustomizationByPrestaId((int) $product['id_customization']);
+        if (!$customRow) {
+            continue;
+        }
+
+        $priceTaxIncl = (float) $customRow['price'];
+        $priceTaxExcl = isset($customRow['price_tax_excl']) ? (float) $customRow['price_tax_excl'] : 0.0;
+
+        if ($priceTaxExcl <= 0) {
+            $priceTaxExcl = $this->computePriceTaxExcl($priceTaxIncl, new Product((int) $product['id_product'], false, $this->context->language->id));
+        }
+
+        $quantity = isset($product['cart_quantity']) ? (int) $product['cart_quantity'] : 1;
+
+        $product['price'] = $priceTaxExcl;
+        $product['price_without_reduction'] = $priceTaxExcl;
+        $product['price_with_reduction_without_tax'] = $priceTaxExcl;
+        $product['price_with_reduction'] = $priceTaxIncl;
+        $product['price_wt'] = $priceTaxIncl;
+        $product['total'] = $priceTaxExcl * $quantity;
+        $product['total_wt'] = $priceTaxIncl * $quantity;
+    }
+}
+
+public function hookActionValidateOrder($params)
+{
+    if (!isset($params['order']) || !Validate::isLoadedObject($params['order'])) {
+        return;
+    }
+
+    /** @var Order $order */
+    $order = $params['order'];
+    $orderProducts = $order->getProducts();
+
+    foreach ($orderProducts as $product) {
+        if (empty($product['id_customization'])) {
+            continue;
+        }
+
+        $customRow = $this->getCustomizationByPrestaId((int) $product['id_customization']);
+        if (!$customRow) {
+            continue;
+        }
+
+        $orderDetail = new OrderDetail((int) $product['id_order_detail']);
+        if (!Validate::isLoadedObject($orderDetail)) {
+            continue;
+        }
+
+        $priceTaxIncl = (float) $customRow['price'];
+        $priceTaxExcl = isset($customRow['price_tax_excl']) ? (float) $customRow['price_tax_excl'] : 0.0;
+        if ($priceTaxExcl <= 0) {
+            $priceTaxExcl = $this->computePriceTaxExcl($priceTaxIncl, new Product((int) $product['product_id'], false, $this->context->language->id));
+        }
+
+        $quantity = (int) $product['product_quantity'];
+
+        $orderDetail->unit_price_tax_incl = $priceTaxIncl;
+        $orderDetail->unit_price_tax_excl = $priceTaxExcl;
+        $orderDetail->total_price_tax_incl = $priceTaxIncl * $quantity;
+        $orderDetail->total_price_tax_excl = $priceTaxExcl * $quantity;
+        $orderDetail->update();
+
+        Db::getInstance()->update(
+            'art_puzzle_customization',
+            [
+                'id_order' => (int) $order->id,
+            ],
+            'presta_customization_id = ' . (int) $product['id_customization']
+        );
+    }
 }
 
 /**

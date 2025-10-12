@@ -34,42 +34,29 @@
                 <div class="step-container mt-4" id="step-format" style="display: none;">
                     <h4><span class="badge badge-primary">2</span> {l s='Scegli il formato del puzzle' mod='art_puzzle'}</h4>
                     <div class="format-options row">
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="format-option card h-100" data-format="small" data-price="19.99" style="cursor: pointer;">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Small</h5>
-                                    <p class="card-text">100 pezzi<br>20x30 cm</p>
-                                    <p class="price font-weight-bold text-primary">€19.99</p>
+                        {if isset($puzzle_formats) && $puzzle_formats|@count > 0}
+                            {foreach from=$puzzle_formats item=format}
+                                <div class="col-md-3 col-sm-6 mb-3">
+                                    <div class="format-option card h-100" style="cursor: pointer;"
+                                         data-format-id="{$format.id|escape:'html':'UTF-8'}"
+                                         data-format-name="{$format.name|escape:'html':'UTF-8'}"
+                                         data-price="{$format.price|floatval}"
+                                         data-price-display="{$format.price_display|escape:'html':'UTF-8'}">
+                                        <div class="card-body text-center">
+                                            <h5 class="card-title">{$format.name|escape:'html':'UTF-8'}</h5>
+                                            <p class="card-text">{$format.dimensions|escape:'html':'UTF-8'}</p>
+                                            <p class="price font-weight-bold text-primary">{$format.price_display|escape:'html':'UTF-8'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {/foreach}
+                        {else}
+                            <div class="col-12">
+                                <div class="alert alert-warning mb-0">
+                                    {l s='Non sono stati configurati formati disponibili per questo prodotto.' mod='art_puzzle'}
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="format-option card h-100" data-format="medium" data-price="29.99" style="cursor: pointer;">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Medium</h5>
-                                    <p class="card-text">500 pezzi<br>40x60 cm</p>
-                                    <p class="price font-weight-bold text-primary">€29.99</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="format-option card h-100" data-format="large" data-price="39.99" style="cursor: pointer;">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Large</h5>
-                                    <p class="card-text">1000 pezzi<br>50x70 cm</p>
-                                    <p class="price font-weight-bold text-primary">€39.99</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="format-option card h-100" data-format="xlarge" data-price="49.99" style="cursor: pointer;">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">XLarge</h5>
-                                    <p class="card-text">2000 pezzi<br>60x90 cm</p>
-                                    <p class="price font-weight-bold text-primary">€49.99</p>
-                                </div>
-                            </div>
-                        </div>
+                        {/if}
                     </div>
                 </div>
                 
@@ -80,24 +67,56 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>{l s='Testo sulla scatola' mod='art_puzzle'}</label>
-                                <input type="text" class="form-control" id="box-text" 
-                                       placeholder="{l s='Es: Il nostro puzzle speciale' mod='art_puzzle'}" 
-                                       maxlength="30">
-                                <small class="form-text text-muted">{l s='Max 30 caratteri' mod='art_puzzle'}</small>
+                                <input type="text" class="form-control" id="box-text"
+                                       value="{if isset($default_box_text)}{$default_box_text|escape:'html':'UTF-8'}{/if}"
+                                       placeholder="{l s='Es: Il nostro puzzle speciale' mod='art_puzzle'}"
+                                       {if isset($max_box_text_length)}maxlength="{$max_box_text_length|intval}"{/if}>
+                                <small class="form-text text-muted">
+                                    {if isset($max_box_text_length)}
+                                        {l s='Max %d caratteri' sprintf=[$max_box_text_length|intval] mod='art_puzzle'}
+                                    {else}
+                                        {l s='Max 30 caratteri' mod='art_puzzle'}
+                                    {/if}
+                                </small>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <label>{l s='Colore scatola' mod='art_puzzle'}</label>
-                                <div class="color-options d-flex">
-                                    <div class="color-option mr-2" data-color="white" 
-                                         style="width: 40px; height: 40px; background: white; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;"></div>
-                                    <div class="color-option mr-2" data-color="black" 
-                                         style="width: 40px; height: 40px; background: black; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;"></div>
-                                    <div class="color-option mr-2" data-color="red" 
-                                         style="width: 40px; height: 40px; background: #e74c3c; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;"></div>
-                                    <div class="color-option mr-2" data-color="blue" 
-                                         style="width: 40px; height: 40px; background: #3498db; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;"></div>
+                                <div class="color-options d-flex flex-wrap">
+                                    {if isset($puzzle_box_colors) && $puzzle_box_colors|@count > 0}
+                                        {foreach from=$puzzle_box_colors item=color name=colorLoop}
+                                            <div class="color-option mr-2 mb-2{if $smarty.foreach.colorLoop.iteration == 1} selected{/if}"
+                                                 data-color="{$color.value|escape:'html':'UTF-8'}"
+                                                 data-text-color="{$color.text_color|escape:'html':'UTF-8'}"
+                                                 data-color-label="{$color.label|escape:'html':'UTF-8'}"
+                                                 style="width: 40px; height: 40px; background: {$color.value|escape:'html':'UTF-8'}; border: 2px solid #ccc; cursor: pointer; border-radius: 4px;">
+                                                <span class="sr-only">{$color.label|escape:'html':'UTF-8'}</span>
+                                            </div>
+                                        {/foreach}
+                                    {else}
+                                        <div class="text-muted">{l s='Nessun colore disponibile' mod='art_puzzle'}</div>
+                                    {/if}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>{l s='Font del testo' mod='art_puzzle'}</label>
+                                <div class="font-options d-flex flex-wrap">
+                                    {if isset($puzzle_fonts) && $puzzle_fonts|@count > 0}
+                                        {foreach from=$puzzle_fonts item=font name=fontLoop}
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary font-option mr-2 mb-2{if $smarty.foreach.fontLoop.iteration == 1} active{/if}"
+                                                    data-font="{$font.id|escape:'html':'UTF-8'}"
+                                                    data-font-label="{$font.label|escape:'html':'UTF-8'}"
+                                                    style="font-family: {$font.font_family|escape:'html':'UTF-8'};">
+                                                {$font.label|escape:'html':'UTF-8'}
+                                            </button>
+                                        {/foreach}
+                                    {else}
+                                        <div class="text-muted">{l s='Utilizzeremo il font predefinito' mod='art_puzzle'}</div>
+                                    {/if}
                                 </div>
                             </div>
                         </div>
@@ -117,9 +136,10 @@
                                     <h5>{l s='Il tuo puzzle personalizzato' mod='art_puzzle'}</h5>
                                     <ul class="list-unstyled">
                                         <li><strong>{l s='Formato:' mod='art_puzzle'}</strong> <span id="summary-format"></span></li>
-                                        <li><strong>{l s='Prezzo:' mod='art_puzzle'}</strong> €<span id="summary-price"></span></li>
+                                        <li><strong>{l s='Prezzo:' mod='art_puzzle'}</strong> <span id="summary-price"></span></li>
                                         <li><strong>{l s='Testo scatola:' mod='art_puzzle'}</strong> <span id="summary-text"></span></li>
                                         <li><strong>{l s='Colore scatola:' mod='art_puzzle'}</strong> <span id="summary-color"></span></li>
+                                        <li><strong>{l s='Font:' mod='art_puzzle'}</strong> <span id="summary-font"></span></li>
                                     </ul>
                                 </div>
                             </div>
@@ -164,6 +184,10 @@
     border: 3px solid #2196F3 !important;
     transform: scale(1.1);
 }
+.font-option.active {
+    border-color: #2196F3;
+    color: #2196F3;
+}
 .upload-area.dragover {
     background-color: #e3f2fd !important;
     border-color: #1976D2 !important;
@@ -198,10 +222,15 @@
         var customizationData = {
             image: null,
             imagePreview: null,
-            format: null,
-            price: null,
-            boxText: '',
-            boxColor: 'white',
+            formatId: null,
+            formatName: '',
+            price: 0,
+            priceFormatted: '',
+            boxText: document.getElementById('box-text') ? document.getElementById('box-text').value : '',
+            boxColor: '',
+            boxColorLabel: '',
+            boxFont: document.querySelector('.font-option.active') ? document.querySelector('.font-option.active').getAttribute('data-font') : '',
+            boxFontLabel: document.querySelector('.font-option.active') ? document.querySelector('.font-option.active').getAttribute('data-font-label') : '',
             productId: document.getElementById('art-puzzle-product-id')?.value || ''
         };
         
@@ -214,6 +243,7 @@
             changeImageBtn: document.getElementById('change-image'),
             formatOptions: document.querySelectorAll('.format-option'),
             colorOptions: document.querySelectorAll('.color-option'),
+            fontOptions: document.querySelectorAll('.font-option'),
             boxText: document.getElementById('box-text'),
             btnNext: document.getElementById('btn-next'),
             btnBack: document.getElementById('btn-back'),
@@ -269,27 +299,53 @@
         }
         
         // Event: Selezione formato
-        elements.formatOptions.forEach(function(option) {
+        elements.formatOptions.forEach(function(option, index) {
             option.addEventListener('click', function() {
                 elements.formatOptions.forEach(function(opt) {
                     opt.classList.remove('selected');
                 });
                 this.classList.add('selected');
-                customizationData.format = this.getAttribute('data-format');
-                customizationData.price = this.getAttribute('data-price');
-                console.log('Formato selezionato:', customizationData.format);
+                customizationData.formatId = this.getAttribute('data-format-id');
+                customizationData.formatName = this.getAttribute('data-format-name') || '';
+                customizationData.price = parseFloat(this.getAttribute('data-price') || '0');
+                customizationData.priceFormatted = this.getAttribute('data-price-display') || '';
             });
+
+            if (index === 0) {
+                option.click();
+            }
         });
-        
+
         // Event: Selezione colore
-        elements.colorOptions.forEach(function(option) {
+        elements.colorOptions.forEach(function(option, index) {
             option.addEventListener('click', function() {
                 elements.colorOptions.forEach(function(opt) {
                     opt.classList.remove('selected');
                 });
                 this.classList.add('selected');
-                customizationData.boxColor = this.getAttribute('data-color');
+                customizationData.boxColor = this.getAttribute('data-color') || '';
+                customizationData.boxColorLabel = this.getAttribute('data-color-label') || customizationData.boxColor;
             });
+
+            if (index === 0) {
+                option.click();
+            }
+        });
+
+        // Event: Selezione font
+        elements.fontOptions.forEach(function(option, index) {
+            option.addEventListener('click', function() {
+                elements.fontOptions.forEach(function(opt) {
+                    opt.classList.remove('active');
+                });
+                this.classList.add('active');
+                customizationData.boxFont = this.getAttribute('data-font') || '';
+                customizationData.boxFontLabel = this.getAttribute('data-font-label') || '';
+            });
+
+            if (index === 0) {
+                option.click();
+            }
         });
         
         // Event: Testo scatola
@@ -352,7 +408,7 @@
                     }
                     break;
                 case 2:
-                    if (!customizationData.format) {
+                    if (!customizationData.formatId) {
                         alert('{l s="Seleziona un formato per continuare" mod="art_puzzle" js=1}');
                         return false;
                     }
@@ -426,14 +482,16 @@
             var summaryPrice = document.getElementById('summary-price');
             var summaryText = document.getElementById('summary-text');
             var summaryColor = document.getElementById('summary-color');
-            
+            var summaryFont = document.getElementById('summary-font');
+
             if (summaryImage) summaryImage.src = customizationData.imagePreview || '';
-            if (summaryFormat) summaryFormat.textContent = customizationData.format || '-';
-            if (summaryPrice) summaryPrice.textContent = customizationData.price || '0';
+            if (summaryFormat) summaryFormat.textContent = customizationData.formatName || '-';
+            if (summaryPrice) summaryPrice.textContent = customizationData.priceFormatted || '0';
             if (summaryText) summaryText.textContent = customizationData.boxText || '{l s="Nessun testo" mod="art_puzzle" js=1}';
-            if (summaryColor) summaryColor.textContent = customizationData.boxColor || 'white';
+            if (summaryColor) summaryColor.textContent = customizationData.boxColorLabel || customizationData.boxColor || '-';
+            if (summaryFont) summaryFont.textContent = customizationData.boxFontLabel || '{l s="Font predefinito" mod="art_puzzle" js=1}';
         }
-        
+
         function addToCart() {
             console.log('Aggiunta al carrello:', customizationData);
             
@@ -464,10 +522,10 @@
                         var saveData = new FormData();
                         saveData.append('action', 'saveCustomization');
                         saveData.append('product_id', customizationData.productId);
-                        saveData.append('format', customizationData.format);
-                        saveData.append('price', customizationData.price);
+                        saveData.append('format', customizationData.formatId);
                         saveData.append('box_text', customizationData.boxText);
                         saveData.append('box_color', customizationData.boxColor);
+                        saveData.append('box_font', customizationData.boxFont);
                         saveData.append('image_filename', uploadResult.data.filename);
                         saveData.append('ajax', '1');
                         saveData.append('token', document.getElementById('art-puzzle-token')?.value || '');
@@ -490,8 +548,7 @@
                         cartData.append('action', 'addToCart');
                         cartData.append('product_id', customizationData.productId);
                         cartData.append('customization_id', saveResult.data.customization_id);
-                        cartData.append('format', customizationData.format);
-                        cartData.append('price', customizationData.price);
+                        cartData.append('format', customizationData.formatId);
                         cartData.append('ajax', '1');
                         cartData.append('token', document.getElementById('art-puzzle-token')?.value || '');
                         

@@ -6,7 +6,7 @@ ART PUZZLE MODULE – CUSTOM PUZZLE PERSONALIZATION FOR PRESTASHOP
 -----------------------------------------------------------
 
 Version: 1.0.0
-Author: Chiara Berti
+Author: Chiara Berti 13
 Compatibility: PrestaShop 1.7.6.9 | PHP 7.3.33
 
 DESCRIPTION (ENG)
@@ -66,3 +66,13 @@ Installazione:
 
 ℹ️ Assicurati che le cartelle "upload/" e "logs/" abbiano permessi di scrittura.
 
+
+Compatibilità PHP 7.3
+---------------------
+Per garantire che il modulo resti compatibile con PHP 7.3, è disponibile uno script di verifica automatica:
+
+```
+composer run check-php73
+```
+
+Il comando segnala l'eventuale presenza di `create_function()`, `each()` o di costanti definite come case-insensitive.

@@ -1,4 +1,7 @@
 <?php
+require_once dirname(__DIR__, 2) . '/classes/ImageProcessor.php';
+require_once dirname(__DIR__, 2) . '/classes/PuzzleCustomization.php';
+
 /**
  * Salva configurazione del puzzle nella sessione/carrello.
  */

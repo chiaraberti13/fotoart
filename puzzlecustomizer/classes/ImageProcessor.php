@@ -12,6 +12,45 @@ class PuzzleImageProcessorException extends Exception
 class ImageProcessor
 {
     /**
+     * Check if image processing is available.
+     *
+     * @return array
+     */
+    public static function getAvailableLibraries()
+    {
+        return [
+            'imagick' => extension_loaded('imagick'),
+            'gd' => extension_loaded('gd'),
+            'exif' => function_exists('exif_read_data'),
+        ];
+    }
+
+    /**
+     * Verify system can process images.
+     *
+     * @throws PuzzleImageProcessorException
+     */
+    public function verifySystemRequirements()
+    {
+        $libs = self::getAvailableLibraries();
+
+        if (!$libs['imagick'] && !$libs['gd']) {
+            throw new PuzzleImageProcessorException(
+                'No image processing library available. Please install ImageMagick or GD extension.'
+            );
+        }
+
+        if (!$libs['imagick']) {
+            PrestaShopLogger::addLog(
+                'Puzzle Customizer: ImageMagick not available, using GD (limited features)',
+                2
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Valida il file caricato.
      *
      * @throws PuzzleImageProcessorException

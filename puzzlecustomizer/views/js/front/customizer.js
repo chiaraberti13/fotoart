@@ -66,7 +66,14 @@
       })
         .then(function (response) {
           if (!response.ok) {
-            throw new Error('Upload failed');
+            return response
+              .json()
+              .then(function (data) {
+                throw new Error(data.message || 'Upload failed with status: ' + response.status);
+              })
+              .catch(function () {
+                throw new Error('Upload failed with status: ' + response.status);
+              });
           }
           return response.json();
         })
@@ -93,7 +100,7 @@
         })
         .catch(function (error) {
           console.error('Upload error:', error);
-          showError('Network error during upload. Please try again.');
+          showError('Error: ' + error.message);
         });
     }
 
@@ -183,12 +190,37 @@
         addTextBtn.addEventListener('click', function () {
           var text = prompt('Enter text:');
           if (text) {
-            var fontSelect = document.getElementById('text-font');
-            var colorSelect = document.getElementById('text-color');
+            var fontSelect = document.getElementById('puzzle-font');
+            var colorSelect = document.getElementById('puzzle-text-color');
+
+            var selectedFontOption = null;
+            if (fontSelect) {
+              if (fontSelect.selectedOptions && fontSelect.selectedOptions.length) {
+                selectedFontOption = fontSelect.selectedOptions[0];
+              } else if (typeof fontSelect.selectedIndex === 'number' && fontSelect.selectedIndex >= 0) {
+                selectedFontOption = fontSelect.options[fontSelect.selectedIndex];
+              }
+            }
+
+            var selectedColorOption = null;
+            if (colorSelect) {
+              if (colorSelect.selectedOptions && colorSelect.selectedOptions.length) {
+                selectedColorOption = colorSelect.selectedOptions[0];
+              } else if (typeof colorSelect.selectedIndex === 'number' && colorSelect.selectedIndex >= 0) {
+                selectedColorOption = colorSelect.options[colorSelect.selectedIndex];
+              }
+            }
+
+            var fontFamily = selectedFontOption ? selectedFontOption.textContent.trim() : 'Arial';
+            var colorHex = '#000000';
+
+            if (selectedColorOption) {
+              colorHex = selectedColorOption.getAttribute('data-hex') || selectedColorOption.value || colorHex;
+            }
 
             window.puzzleEditor.addText(text, {
-              fontFamily: fontSelect ? fontSelect.value : 'Arial',
-              fill: colorSelect ? colorSelect.value : '#000000',
+              fontFamily: fontFamily || 'Arial',
+              fill: colorHex,
               fontSize: 40
             });
           }

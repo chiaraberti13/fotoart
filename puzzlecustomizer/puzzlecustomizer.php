@@ -22,6 +22,8 @@ class PuzzleCustomizer extends Module
 
         parent::__construct();
 
+        require_once __DIR__ . '/autoload.php';
+
         $this->displayName = $this->l('Puzzle Customizer');
         $this->description = $this->l('Consente ai clienti di personalizzare puzzle con immagini e opzioni avanzate.');
         $this->ps_versions_compliancy = ['min' => '1.7.0.0', 'max' => _PS_VERSION_];
@@ -51,7 +53,6 @@ class PuzzleCustomizer extends Module
         $hooks = [
             'displayHeader',
             'displayFooter',
-            'moduleRoutes',
             'actionValidateOrder',
             'actionOrderStatusPostUpdate',
             'displayAdminOrder',
@@ -68,12 +69,13 @@ class PuzzleCustomizer extends Module
 
     protected function installTabs()
     {
+        // First, create the parent tab
+        if (!$this->createTab('AdminPuzzleCustomizer', 'IMPROVE', $this->l('Puzzle Customizer'))) {
+            return false;
+        }
+
+        // Then create child tabs
         $tabs = [
-            [
-                'class_name' => 'AdminPuzzleCustomizer',
-                'parent_class_name' => 'AdminParentModulesSf',
-                'name' => $this->l('Puzzle Customizer'),
-            ],
             [
                 'class_name' => 'AdminPuzzleProducts',
                 'parent_class_name' => 'AdminPuzzleCustomizer',
@@ -136,18 +138,47 @@ class PuzzleCustomizer extends Module
         $tab->active = 1;
         $tab->class_name = $className;
         $tab->name = [];
+
         foreach (Language::getLanguages(false) as $lang) {
             $tab->name[$lang['id_lang']] = $name;
         }
 
-        $tab->id_parent = (int) Tab::getIdFromClassName($parentClassName);
-        if (!$tab->id_parent) {
-            $tab->id_parent = 0;
+        // Handle parent ID
+        if ($parentClassName === 'IMPROVE') {
+            // For PrestaShop 1.7.7+
+            $tab->id_parent = (int) Tab::getIdFromClassName('IMPROVE');
+
+            // Fallback for older versions
+            if (!$tab->id_parent) {
+                $tab->id_parent = (int) Tab::getIdFromClassName('AdminParentModulesSf');
+            }
+
+            // Last fallback
+            if (!$tab->id_parent) {
+                $tab->id_parent = 0;
+            }
+        } else {
+            $tab->id_parent = (int) Tab::getIdFromClassName($parentClassName);
+            if (!$tab->id_parent) {
+                PrestaShopLogger::addLog(
+                    'Puzzle Customizer: Cannot find parent tab: ' . $parentClassName,
+                    3
+                );
+                return false;
+            }
         }
 
         $tab->module = $this->name;
 
-        return (bool) $tab->add();
+        if (!$tab->add()) {
+            PrestaShopLogger::addLog(
+                'Puzzle Customizer: Failed to create tab: ' . $className . ' - ' . Db::getInstance()->getMsgError(),
+                3
+            );
+            return false;
+        }
+
+        return true;
     }
 
     protected function uninstallTabs()
@@ -177,9 +208,22 @@ class PuzzleCustomizer extends Module
 
     protected function installDatabase()
     {
-        include_once __DIR__ . '/sql/install.php';
+        require_once __DIR__ . '/sql/install.php';
 
-        return PuzzleCustomizerSqlInstall::install();
+        $result = PuzzleCustomizerSqlInstall::install();
+
+        if (!$result) {
+            $this->_errors[] = $this->l('Failed to create database tables. Check PrestaShop logs for details.');
+
+            return false;
+        }
+
+        Configuration::updateValue('PUZZLE_MAX_FILESIZE', 50);
+        Configuration::updateValue('PUZZLE_DEFAULT_DPI', 300);
+        Configuration::updateValue('PUZZLE_MIN_IMAGE_WIDTH', 1000);
+        Configuration::updateValue('PUZZLE_MIN_IMAGE_HEIGHT', 1000);
+
+        return true;
     }
 
     protected function uninstallDatabase()
@@ -219,11 +263,24 @@ class PuzzleCustomizer extends Module
     public function hookDisplayHeader($params)
     {
         if ($this->isCustomizerController()) {
+            $this->context->controller->registerJavascript(
+                'fabricjs',
+                'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js',
+                ['position' => 'bottom', 'priority' => 50, 'server' => 'remote']
+            );
+
+            $this->context->controller->registerJavascript(
+                'threejs',
+                'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+                ['position' => 'bottom', 'priority' => 51, 'server' => 'remote']
+            );
+
             $this->context->controller->registerStylesheet(
                 'module-' . $this->name . '-customizer',
                 'modules/' . $this->name . '/views/css/front/customizer.css',
                 ['media' => 'all', 'priority' => 100]
             );
+
             $this->context->controller->registerStylesheet(
                 'module-' . $this->name . '-editor',
                 'modules/' . $this->name . '/views/css/front/editor.css',
@@ -231,40 +288,29 @@ class PuzzleCustomizer extends Module
             );
 
             $this->context->controller->registerJavascript(
-                'module-' . $this->name . '-customizer',
-                'modules/' . $this->name . '/views/js/front/customizer.js',
-                ['position' => 'bottom', 'priority' => 100]
+                'module-' . $this->name . '-validations',
+                'modules/' . $this->name . '/views/js/front/validations.js',
+                ['position' => 'bottom', 'priority' => 98]
             );
+
             $this->context->controller->registerJavascript(
                 'module-' . $this->name . '-canvas',
                 'modules/' . $this->name . '/views/js/front/canvas-editor.js',
-                ['position' => 'bottom', 'priority' => 101]
+                ['position' => 'bottom', 'priority' => 99]
+            );
+
+            $this->context->controller->registerJavascript(
+                'module-' . $this->name . '-customizer',
+                'modules/' . $this->name . '/views/js/front/customizer.js',
+                ['position' => 'bottom', 'priority' => 100]
             );
         }
     }
 
     public function hookDisplayFooter($params)
     {
-        if ($this->isCustomizerController()) {
-            return $this->display(__FILE__, 'views/templates/front/preview.tpl');
-        }
-
+        // Hook kept for backward compatibility but no output required.
         return '';
-    }
-
-    public function hookModuleRoutes($params)
-    {
-        return [
-            'module-puzzlecustomizer-customizer' => [
-                'controller' => 'customizer',
-                'rule' => 'puzzle/customizza',
-                'keywords' => [],
-                'params' => [
-                    'fc' => 'module',
-                    'module' => $this->name,
-                ],
-            ],
-        ];
     }
 
     protected function isCustomizerController()

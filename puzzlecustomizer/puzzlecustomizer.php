@@ -52,6 +52,9 @@ class PuzzleCustomizer extends Module
             'displayHeader',
             'displayFooter',
             'moduleRoutes',
+            'actionValidateOrder',
+            'actionOrderStatusPostUpdate',
+            'displayAdminOrder',
         ];
 
         foreach ($hooks as $hook) {
@@ -191,6 +194,7 @@ class PuzzleCustomizer extends Module
         $paths = [
             _PS_MODULE_DIR_ . $this->name . '/uploads/temp/',
             _PS_MODULE_DIR_ . $this->name . '/uploads/customizations/',
+            _PS_MODULE_DIR_ . $this->name . '/uploads/production/',
             _PS_MODULE_DIR_ . $this->name . '/fonts/',
         ];
 
@@ -266,5 +270,88 @@ class PuzzleCustomizer extends Module
     protected function isCustomizerController()
     {
         return $this->context->controller && get_class($this->context->controller) === 'PuzzlecustomizerCustomizerModuleFrontController';
+    }
+
+    public function hookActionValidateOrder($params)
+    {
+        if (!isset($params['cart']) || !isset($params['order'])) {
+            return;
+        }
+
+        $cart = $params['cart'];
+        $order = $params['order'];
+
+        $sql = 'UPDATE ' . _DB_PREFIX_ . 'puzzle_customization'
+            . ' SET id_order = ' . (int) $order->id . ', status = "ordered", updated_at = NOW()'
+            . ' WHERE id_cart = ' . (int) $cart->id;
+
+        Db::getInstance()->execute($sql);
+
+        $this->generateProductionFilesForOrder($order->id);
+    }
+
+    public function hookActionOrderStatusPostUpdate($params)
+    {
+        if (!isset($params['newOrderStatus']) || !isset($params['id_order'])) {
+            return;
+        }
+
+        $idOrder = (int) $params['id_order'];
+        $newStatus = $params['newOrderStatus'];
+
+        if (in_array($newStatus->id, [3, 4])) {
+            $this->generateProductionFilesForOrder($idOrder);
+        }
+    }
+
+    public function hookDisplayAdminOrder($params)
+    {
+        $idOrder = (int) $params['id_order'];
+
+        $customizations = Db::getInstance()->executeS(
+            'SELECT * FROM ' . _DB_PREFIX_ . 'puzzle_customization WHERE id_order = ' . (int) $idOrder
+        );
+
+        if (empty($customizations)) {
+            return '';
+        }
+
+        $this->context->smarty->assign([
+            'customizations' => $customizations,
+            'module_dir' => $this->getPathUri(),
+        ]);
+
+        return $this->display(__FILE__, 'views/templates/admin/order-customizations.tpl');
+    }
+
+    protected function generateProductionFilesForOrder($idOrder)
+    {
+        require_once __DIR__ . '/classes/ImageProcessor.php';
+
+        $customizations = Db::getInstance()->executeS(
+            'SELECT * FROM ' . _DB_PREFIX_ . 'puzzle_customization WHERE id_order = ' . (int) $idOrder
+        );
+
+        foreach ($customizations as $customization) {
+            try {
+                $processor = new ImageProcessor();
+                $config = json_decode($customization['configuration'], true);
+
+                $processor->generateProductionPackage(
+                    (int) $customization['id_puzzle_customization'],
+                    is_array($config) ? $config : []
+                );
+
+                Db::getInstance()->execute(
+                    'UPDATE ' . _DB_PREFIX_ . 'puzzle_customization SET status = "production_ready"'
+                    . ' WHERE id_puzzle_customization = ' . (int) $customization['id_puzzle_customization']
+                );
+            } catch (Exception $e) {
+                PrestaShopLogger::addLog(
+                    'Failed to generate production files for customization ' . (int) $customization['id_puzzle_customization'] . ': ' . $e->getMessage(),
+                    3
+                );
+            }
+        }
     }
 }

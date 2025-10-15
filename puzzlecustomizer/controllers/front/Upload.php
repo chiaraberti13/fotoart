@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__DIR__, 2) . '/classes/ImageProcessor.php';
+
 /**
  * Gestione caricamento immagini via AJAX.
  */

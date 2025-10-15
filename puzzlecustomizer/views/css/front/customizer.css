@@ -1,0 +1,20 @@
+.puzzle-customizer {
+  background: #fff;
+  padding: 1.5rem;
+  border: 1px solid #eee;
+}
+
+.puzzle-customizer__title {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.puzzle-customizer__section {
+  margin-bottom: 1.5rem;
+}
+
+.puzzle-customizer__preview {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f5f5f5;
+}

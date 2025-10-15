@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+  <name>puzzlecustomizer</name>
+  <displayName>Puzzle Customizer</displayName>
+  <version>1.0.0</version>
+  <description>Consente ai clienti di personalizzare puzzle foto.</description>
+  <author>FotoArt</author>
+  <need_instance>0</need_instance>
+  <tab>front_office_features</tab>
+</module>

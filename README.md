@@ -66,6 +66,12 @@ Installazione:
 
 ℹ️ Assicurati che le cartelle "upload/" e "logs/" abbiano permessi di scrittura.
 
+📌 **Nota sul logo del modulo**
+
+Per rispettare il vincolo del repository che non consente il versionamento di file binari, l'icona del modulo (`logo.png`) non è
+inclusa in questa sorgente. Prima di impacchettare il modulo per l'installazione in PrestaShop, aggiungi manualmente un file PNG
+quadrato da 200×200 px nella cartella principale del modulo (`puzzlecustomizer/logo.png`).
+
 
 Compatibilità PHP 7.3
 ---------------------

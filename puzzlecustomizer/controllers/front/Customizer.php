@@ -17,6 +17,8 @@ class PuzzlecustomizerCustomizerModuleFrontController extends ModuleFrontControl
                 'upload_url' => $this->context->link->getModuleLink($this->module->name, 'upload'),
                 'save_url' => $this->context->link->getModuleLink($this->module->name, 'saveconfig'),
                 'preview_url' => $this->context->link->getModuleLink($this->module->name, 'preview'),
+                'uploads_url' => $this->module->getPathUri() . 'uploads',
+                'csrf_token' => Tools::getToken(false),
             ],
         ]);
 

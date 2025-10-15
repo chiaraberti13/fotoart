@@ -12,9 +12,11 @@
 </div>
 <script>
   window.puzzleCustomizer = {
-    uploadUrl: '{$customizer_config.upload_url|escape:'javascript'}',
-    saveUrl: '{$customizer_config.save_url|escape:'javascript'}',
-    previewUrl: '{$customizer_config.preview_url|escape:'javascript'}'
+    uploadUrl: '{$customizer_config.upload_url|escape:\'javascript\'}',
+    saveUrl: '{$customizer_config.save_url|escape:\'javascript\'}',
+    previewUrl: '{$customizer_config.preview_url|escape:\'javascript\'}',
+    uploadsUrl: '{$customizer_config.uploads_url|escape:\'javascript\'}',
+    csrfToken: '{$customizer_config.csrf_token|escape:\'javascript\'}'
   };
 </script>
 {/block}

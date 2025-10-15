@@ -79,20 +79,22 @@ class PuzzleCartManager
             $customizationFields = Product::getCustomizationFieldIds($idProduct);
         }
 
-        $idCustomization = (int) Db::getInstance()->getValue(
-            'SELECT MAX(id_customization) FROM ' . _DB_PREFIX_ . 'customization'
-            . ' WHERE id_cart = ' . (int) $idCart . ' AND id_product = ' . (int) $idProduct
-        ) + 1;
+        $inserted = Db::getInstance()->insert('customization', [
+            'id_cart' => (int) $idCart,
+            'id_product' => (int) $idProduct,
+            'id_product_attribute' => 0,
+            'id_address_delivery' => 0,
+            'quantity' => 0,
+            'in_cart' => 1,
+        ]);
 
-        $sql = 'INSERT INTO ' . _DB_PREFIX_ . 'customization'
-            . ' (id_customization, id_cart, id_product, id_product_attribute, id_address_delivery, quantity, in_cart)'
-            . ' VALUES ('
-            . (int) $idCustomization . ', '
-            . (int) $idCart . ', '
-            . (int) $idProduct . ', '
-            . '0, 0, 0, 1)';
+        if (!$inserted) {
+            return false;
+        }
 
-        if (!Db::getInstance()->execute($sql)) {
+        $idCustomization = (int) Db::getInstance()->Insert_ID();
+
+        if (!$idCustomization) {
             return false;
         }
 
@@ -108,13 +110,12 @@ class PuzzleCartManager
                 $value = '';
             }
 
-            $sql = 'INSERT INTO ' . _DB_PREFIX_ . 'customized_data'
-                . ' (id_customization, type, index, value) VALUES ('
-                . (int) $idCustomization . ', '
-                . (int) $type . ', '
-                . (int) $idCustomizationField . ', "' . pSQL($value) . '")';
-
-            Db::getInstance()->execute($sql);
+            Db::getInstance()->insert('customized_data', [
+                'id_customization' => (int) $idCustomization,
+                'type' => (int) $type,
+                'index' => (int) $idCustomizationField,
+                'value' => (string) $value,
+            ]);
         }
 
         return $idCustomization;
